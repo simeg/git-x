@@ -52,13 +52,13 @@ pub fn run() {
     let bold = console::Style::new().bold();
 
     // Print all the info
-    println!("📂 Repo: {}", bold.apply_to(repo_name));
-    println!("🔀 Branch: {}", bold.apply_to(branch));
-    println!("🌿 Tracking: {}", bold.apply_to(tracking));
+    println!("Repo: {}", bold.apply_to(repo_name));
+    println!("Branch: {}", bold.apply_to(branch));
+    println!("Tracking: {}", bold.apply_to(tracking));
     println!(
-        "⬆️ Ahead: {} ⬇️ Behind: {}",
+        "Ahead: {} Behind: {}",
         bold.apply_to(ahead),
         bold.apply_to(behind)
     );
-    println!("📌 Last Commit: \"{}\"", bold.apply_to(last_commit));
+    println!("Last Commit: \"{}\"", bold.apply_to(last_commit));
 }

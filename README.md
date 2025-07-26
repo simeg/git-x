@@ -8,26 +8,27 @@ It wraps common Git actions in muscle-memory-friendly, no-brainer commands — p
 
 ## 📚 Table of Contents
 
-- [🧨 Why Does This Exist?](#-why-does-this-exist)
-- [🔧 Installation](#-installation)
-- [🔌 Git Integration: How `git-x` Just Works™](#-git-integration-how-git-x-just-works)
-- [🔬 What's Under the Hood?](#-whats-under-the-hood)
-- [🔍 Example Commands](#-example-commands)
-    - [🧠 `git xinfo`](#-git-xinfo)
-    - [📊 `git xgraph`](#-git-xgraph)
-    - [🧹 `git x prune-branches`](#-git-x-prune-branches)
-    - [🧪 `git xsince`](#-git-xsince-ref)
-    - [💥 `git xundo`](#-git-xundo)
-    - [🚚 `git xclean-branches`](#-git-xclean-branches)
-    - [🧱 `git xwhat`](#-git-xwhat-branch)
-    - [🗞️ `git xsummary`](#-git-xsummary)
-- [🛣️ Roadmap Ideas](#️-roadmap-ideas)
-- [🛠 Built With](#-built-with)
-- [📄 License](#-license)
+- [Why Does This Exist?](#why-does-this-exist)
+- [Installation](#installation)
+- [Example Commands](#example-commands)
+    - [`info`](#info)
+    - [`graph`](#graph)
+    - [`color-graph`](#color-graph)
+    - [`prune-branches`](#prune-branches)
+    - [`since [ref]`](#since-ref)
+    - [`undo`](#undo)
+    - [`clean-branches`](#clean-branches)
+    - [`what [branch]`](#what-branch)
+    - [`summary`](#summary)
+- [Git Integration: How `git-x` Just Works™](#git-integration-how-git-x-just-works)
+- [What's Under the Hood?](#whats-under-the-hood)
+- [Roadmap Ideas](#roadmap-ideas)
+- [Built With](#built-with)
+- [License](#license)
 
 ---
 
-## 🧨 Why Does This Exist?
+## Why Does This Exist?
 
 Git is powerful, but its UX is stuck in the early 2000s.
 
@@ -47,7 +48,7 @@ Most Git tools either:
 
 ---
 
-## 🔧 Installation
+## Installation
 
 ```shell
 cargo install git-x
@@ -64,49 +65,11 @@ cargo install --path .
 
 ---
 
-### 🔌 Git Integration: How `git-x` Just Works™
-
-Once installed, the `git-x` binary is automatically available as a Git subcommand.
-
-Thanks to how Git is designed, **any executable in your `PATH` named `git-<something>` can be invoked as `git <something>`**.
-
-So if you install `git-x`, you can run:
-```shell
-git x summary
-git x clean-branches
-git x what
-```
-and Git will execute the `git-x` binary with the remaining arguments.
-
-You can even tab-complete like with any normal Git command — no aliases, symlinks, or shell hacks needed.
-
-#### How it works:
-
-When you type `git x summary`, Git looks for:
-- `git-xsummary` (unlikely)
-- Then falls back to `git-x` and passes `summary` as the first argument
-
-This is exactly what `git-x` is built for — **one binary to rule many Git subcommands**.
-
-> 💡 Bonus: You can also run `git-x summary` directly if you prefer.
+## Example Commands
 
 ---
 
-### 🔬 What's Under the Hood?
-
-Want to know exactly what each `git-x` command does?
-
-We’ve got you covered. No magic here — just well-wrapped Git commands.
-
-Check out the [Command Internals](./docs/command-internals.md) to see what each command runs behind the scenes, from `git log` to `git branch --merged`.
-
----
-
-## 🔍 Example Commands
-
----
-
-### 🧠 `git x info`
+### `info`
 
 > Show a high-level overview of the current repo
 
@@ -117,16 +80,16 @@ git x info
 #### Output:
 
 ```shell
-📂 Repo: my-project
-🔀 Branch: feature/auth
-🌿 Tracking: origin/feature/auth
-⬆️ Ahead: 2   ⬇️ Behind: 0
-📌 Last Commit: "fix login bug" (2 hours ago)
+Repo: my-project
+Branch: feature/auth
+Tracking: origin/feature/auth
+Ahead: 2 Behind: 0
+Last Commit: "fix login bug" (2 hours ago)
 ```
 
 ---
 
-### 📊 `git x graph`
+### `graph`
 
 > Pretty Git log with branches, remotes, and HEADs
 
@@ -143,7 +106,29 @@ git log --oneline --graph --decorate --all
 
 ---
 
-### 🧹 `git x prune-branches`
+### `color-graph`
+
+> Colorized Git log with branches, remotes, HEADs, and author info
+
+```shell
+git x color-graph
+```
+
+#### Output:
+
+Enhanced version of `git x graph` with:
+- **Full color support** for branches, commits, and decorations
+- **Author names and timestamps** for each commit
+- **Rich formatting** that's easy to scan
+
+(essentially wraps this)
+```shell
+git log --oneline --graph --decorate --all --color=always --pretty=format:"%C(auto)%h%d %s %C(dim)(%an, %ar)%C(reset)"
+```
+
+---
+
+### `prune-branches`
 
 Deletes all **local branches** that have already been **merged into the current branch**, while skipping protected ones.
 
@@ -163,7 +148,7 @@ git x prune-branches --except "release,v1.0-temp"
 
 ---
 
-### 🧪 `git x since [ref]`
+### `since [ref]`
 
 > Show commits since a reference (e.g., main, origin/main)
 
@@ -181,7 +166,7 @@ git x since origin/main
 
 ---
 
-### 💥 `git x undo`
+### `undo`
 
 > Undo the last commit (without losing changes)
 
@@ -197,7 +182,7 @@ Last commit undone (soft reset). Changes kept in working directory.
 
 ---
 
-### 🚚 `git x clean-branches`
+### `clean-branches`
 
 > Delete all fully merged local branches (except protected ones)
 
@@ -216,7 +201,7 @@ git x clean-branches
 
 ---
 
-### 🧱 `git x what [branch]`
+### `what [branch]`
 
 > Show what’s different between this branch and another (default: main)
 
@@ -239,7 +224,7 @@ Changes:
 
 ---
 
-### 🗞️ `git x summary`
+### `summary`
 
 > Show a short, changelog-style summary of recent commits
 
@@ -275,7 +260,49 @@ git x summary --since "2 days ago"
 
 ---
 
-## 🛣️ Roadmap Ideas
+## Git Integration: How `git-x` Just Works™
+
+Since `git-x` is installed as a standalone binary, Git automatically recognizes it as a subcommand when you type `git x [command]`.
+
+This is Git's standard extension mechanism — no configuration needed.
+
+**How it works:**
+1. You run `git x info`
+2. Git looks for an executable called `git-x` in your `$PATH`
+3. Git runs `git-x info` and displays the output
+
+**Why this rocks:**
+- Zero setup required
+- Works in any Git repo
+- Integrates seamlessly with your existing Git workflow
+- All your Git aliases, hooks, and config still work
+
+---
+
+## What's Under the Hood?
+
+`git-x` is a thin, opinionated wrapper around native Git commands.
+
+**Philosophy:**
+- **No magic** — Every `git-x` command maps to standard Git operations
+- **Readable** — You can see exactly what Git commands are being run
+- **Predictable** — Follows Git's existing patterns and conventions
+- **Fast** — Minimal overhead, direct subprocess calls
+
+**Example:** `git x graph` literally runs:
+```shell
+git log --oneline --graph --decorate --all
+```
+
+**Why Rust?**
+- **Fast startup** — Sub-millisecond command execution
+- **Zero dependencies** — Single binary, no runtime requirements
+- **Cross-platform** — Works on macOS, Linux, Windows
+- **Memory safe** — No crashes, no memory leaks
+
+---
+
+## Roadmap Ideas
 
 - `git x stash`: A smarter stash viewer with preview
 - `git x prune`: Aggressively delete stale branches (with dry-run)
@@ -283,7 +310,7 @@ git x summary --since "2 days ago"
 
 ---
 
-## 🛠 Built With
+## Built With
 
 - Language: Rust 🦀
 - Shell: Integrates cleanly with Bash, Zsh, Fish, etc.

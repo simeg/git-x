@@ -4,7 +4,7 @@ This document explains how each `git-x` subcommand works under the hood. We aim 
 
 ---
 
-## 🧠 `git xinfo`
+## `info`
 
 ### What it does:
 - Displays a high-level overview of the current repository.
@@ -18,7 +18,7 @@ This document explains how each `git-x` subcommand works under the hood. We aim 
 
 ---
 
-## 📊 `git xgraph`
+## `graph`
 
 ### What it does:
 - Visual Git log showing commits across branches.
@@ -31,7 +31,20 @@ This document explains how each `git-x` subcommand works under the hood. We aim 
 
 ---
 
-## 🧹 `git x prune-branches`
+## `color-graph`
+
+### What it does:
+- Enhanced visual Git log with full color support, showing commits, branches, and author information.
+
+### Under the hood:
+- Executes:
+  ```shell
+  git log --oneline --graph --decorate --all --color=always --pretty=format:"%C(auto)%h%d %s %C(dim)(%an, %ar)%C(reset)"
+  ```
+
+---
+
+## `prune-branches`
 
 ### What it does:
 - Deletes local branches that are fully merged into the current one, skipping protected branches.
@@ -43,17 +56,17 @@ This document explains how each `git-x` subcommand works under the hood. We aim 
 
 ---
 
-## 🧪 `git xsince [ref]`
+## `since [ref]`
 
 ### What it does:
-- Lists commits since a given ref (e.g., `main`, `origin/main`).
+- Lists commits since a given ref (e.g., `cb676ec`, `origin/main`).
 
 ### Under the hood:
 - `git log <ref>..HEAD --oneline`
 
 ---
 
-## 💥 `git xundo`
+## `undo`
 
 ### What it does:
 - Soft-resets the last commit, keeping changes in the working directory.
@@ -63,7 +76,7 @@ This document explains how each `git-x` subcommand works under the hood. We aim 
 
 ---
 
-## 🚚 `git xclean-branches`
+## `clean-branches`
 
 ### What it does:
 - Deletes fully merged local branches, similar to `x prune-branches`, but doesn't take `--except`.
@@ -73,7 +86,7 @@ This document explains how each `git-x` subcommand works under the hood. We aim 
 
 ---
 
-## 🧱 `git xwhat [branch]`
+## `what [branch]`
 
 ### What it does:
 - Compares current branch to another (default: `main`).
@@ -85,7 +98,7 @@ This document explains how each `git-x` subcommand works under the hood. We aim 
 
 ---
 
-## 🗞️ `git xsummary`
+## `summary`
 
 ### What it does:
 - Generates a short, human-friendly changelog grouped by day.
