@@ -18,6 +18,20 @@ impl TestRepo {
         &self.path
     }
 
+    /// Configure Git user identity for this repository
+    fn configure_git_identity(&self) {
+        StdCommand::new("git")
+            .args(["config", "user.name", "Test User"])
+            .current_dir(&self.path)
+            .assert()
+            .success();
+        StdCommand::new("git")
+            .args(["config", "user.email", "test@example.com"])
+            .current_dir(&self.path)
+            .assert()
+            .success();
+    }
+
     /// Run a git-x command in this repo and return the Command for assertions
     pub fn run_git_x(&self, args: &[&str]) -> assert_cmd::assert::Assert {
         Command::cargo_bin("git-x")
@@ -113,6 +127,12 @@ pub fn basic_repo() -> TestRepo {
         .assert()
         .success();
 
+    let repo = TestRepo {
+        _temp_dir: temp,
+        path: path.clone(),
+    };
+    repo.configure_git_identity();
+
     fs::write(path.join("README.md"), "# test").unwrap();
     StdCommand::new("git")
         .args(["add", "."])
@@ -125,10 +145,7 @@ pub fn basic_repo() -> TestRepo {
         .assert()
         .success();
 
-    TestRepo {
-        _temp_dir: temp,
-        path,
-    }
+    repo
 }
 
 /// Create a repo with a specific branch name and initial commit
@@ -141,6 +158,12 @@ pub fn repo_with_branch(branch_name: &str) -> TestRepo {
         .current_dir(&path)
         .assert()
         .success();
+
+    let repo = TestRepo {
+        _temp_dir: temp,
+        path: path.clone(),
+    };
+    repo.configure_git_identity();
 
     StdCommand::new("git")
         .args(["checkout", "-b", branch_name])
@@ -160,10 +183,7 @@ pub fn repo_with_branch(branch_name: &str) -> TestRepo {
         .assert()
         .success();
 
-    TestRepo {
-        _temp_dir: temp,
-        path,
-    }
+    repo
 }
 
 /// Create a repo with multiple commits for testing commit-related commands
@@ -191,6 +211,12 @@ pub fn repo_with_merged_branch(feature_branch: &str, main_branch: &str) -> TestR
         .current_dir(&path)
         .assert()
         .success();
+
+    let repo = TestRepo {
+        _temp_dir: temp,
+        path: path.clone(),
+    };
+    repo.configure_git_identity();
 
     // Rename default branch to the requested main branch if it's not "master"
     if main_branch != "master" {
@@ -244,10 +270,7 @@ pub fn repo_with_merged_branch(feature_branch: &str, main_branch: &str) -> TestR
         .assert()
         .success();
 
-    TestRepo {
-        _temp_dir: temp,
-        path,
-    }
+    repo
 }
 
 /// Create a repo with feature branch ahead of main
@@ -260,6 +283,12 @@ pub fn repo_with_feature_ahead(feature_branch: &str, _main_branch: &str) -> Test
         .current_dir(&path)
         .assert()
         .success();
+
+    let repo = TestRepo {
+        _temp_dir: temp,
+        path: path.clone(),
+    };
+    repo.configure_git_identity();
 
     fs::write(path.join("file.txt"), "initial").unwrap();
     StdCommand::new("git")
@@ -291,10 +320,7 @@ pub fn repo_with_feature_ahead(feature_branch: &str, _main_branch: &str) -> Test
         .assert()
         .success();
 
-    TestRepo {
-        _temp_dir: temp,
-        path,
-    }
+    repo
 }
 
 /// Create a repo with conventional commits for summary testing
@@ -307,6 +333,12 @@ pub fn repo_with_conventional_commits() -> TestRepo {
         .current_dir(&path)
         .assert()
         .success();
+
+    let repo = TestRepo {
+        _temp_dir: temp,
+        path: path.clone(),
+    };
+    repo.configure_git_identity();
 
     fs::write(path.join("file1.txt"), "Initial").unwrap();
     StdCommand::new("git")
@@ -342,10 +374,7 @@ pub fn repo_with_conventional_commits() -> TestRepo {
         .assert()
         .success();
 
-    TestRepo {
-        _temp_dir: temp,
-        path,
-    }
+    repo
 }
 
 /// Create repo with remote that has commits ahead (for testing behind status)
@@ -365,6 +394,18 @@ pub fn repo_with_remote_ahead(branch_name: &str) -> (TestRepo, TestRepo) {
 
     StdCommand::new("git")
         .args(["checkout", branch_name])
+        .current_dir(clone_path)
+        .assert()
+        .success();
+
+    // Configure git identity in clone
+    StdCommand::new("git")
+        .args(["config", "user.name", "Test User"])
+        .current_dir(clone_path)
+        .assert()
+        .success();
+    StdCommand::new("git")
+        .args(["config", "user.email", "test@example.com"])
         .current_dir(clone_path)
         .assert()
         .success();
