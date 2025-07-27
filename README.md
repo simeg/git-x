@@ -23,6 +23,7 @@ It wraps common Git actions in muscle-memory-friendly, no-brainer commands — p
 - [Git Integration: How `git-x` Just Works™](#git-integration-how-git-x-just-works)
 - [What's Under the Hood?](#whats-under-the-hood)
 - [Roadmap Ideas](#roadmap-ideas)
+- [Tab Completion](#-tab-completion-)
 - [Built With](#built-with)
 - [License](#license)
 
