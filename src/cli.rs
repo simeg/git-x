@@ -28,6 +28,8 @@ pub enum Commands {
     Graph,
     #[clap(about = "Colorized Git log with branches, remotes, and HEADs")]
     ColorGraph,
+    #[clap(about = "Check repository health and show potential issues")]
+    Health,
     #[clap(about = "Show commits since a reference (e.g., cb676ec, origin/main)")]
     Since {
         #[clap(help = "Reference point")]

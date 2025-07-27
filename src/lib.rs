@@ -2,6 +2,7 @@ pub mod clean_branches;
 pub mod cli;
 pub mod color_graph;
 pub mod graph;
+pub mod health;
 pub mod info;
 pub mod prune_branches;
 pub mod rename_branch;

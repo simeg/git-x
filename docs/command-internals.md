@@ -44,6 +44,21 @@ This document explains how each `git-x` subcommand works under the hood. We aim 
 
 ---
 
+## `health`
+
+### What it does:
+- Performs a comprehensive repository health check to identify potential issues and maintenance needs.
+
+### Under the hood:
+- `git rev-parse --git-dir` → Verify we're in a Git repository
+- `git status --porcelain` → Check working directory status
+- `git ls-files --others --exclude-standard` → Count untracked files
+- `git for-each-ref --format='%(refname:short) %(committerdate:relative)' refs/heads/` → Identify stale branches
+- `du -sh .git` → Check repository size
+- `git diff --cached --name-only` → Check for staged changes
+
+---
+
 ## `prune-branches`
 
 ### What it does:

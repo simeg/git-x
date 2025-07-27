@@ -16,6 +16,7 @@ It wraps common Git actions in muscle-memory-friendly, no-brainer commands — p
     - [`info`](#info)
     - [`graph`](#graph)
     - [`color-graph`](#color-graph)
+    - [`health`](#health)
     - [`prune-branches`](#prune-branches)
     - [`since [ref]`](#since-ref)
     - [`undo`](#undo)
@@ -128,6 +129,44 @@ Enhanced version of `git x graph` with:
 ```shell
 git log --oneline --graph --decorate --all --color=always --pretty=format:"%C(auto)%h%d %s %C(dim)(%an, %ar)%C(reset)"
 ```
+
+---
+
+### `health`
+
+> Check repository health and identify potential issues
+
+```shell
+git x health
+```
+
+#### Output:
+
+```shell
+Repository Health Check
+=========================
+
+✓ Working directory is clean
+✓ No untracked files
+✓ No stale branches (older than 1 month)
+✓ Repository size: 524K (healthy)
+✓ No staged changes
+
+Health check complete!
+```
+
+#### What it checks:
+- **Working directory status** - Detects uncommitted changes
+- **Untracked files** - Counts files not under version control
+- **Stale branches** - Identifies branches older than 1 month
+- **Repository size** - Warns about large repositories that may need cleanup
+- **Staged changes** - Shows files ready for commit
+
+Useful for:
+- Daily repository maintenance
+- Pre-commit health checks
+- Identifying cleanup opportunities
+- Team onboarding (ensuring clean local state)
 
 ---
 
