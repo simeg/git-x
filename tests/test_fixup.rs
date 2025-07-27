@@ -77,13 +77,17 @@ fn test_is_valid_commit_hash_format() {
     // Valid hashes
     assert!(is_valid_commit_hash_format("abc123"));
     assert!(is_valid_commit_hash_format("1234567890abcdef"));
-    assert!(is_valid_commit_hash_format("abcdef1234567890abcdef1234567890abcdef12"));
+    assert!(is_valid_commit_hash_format(
+        "abcdef1234567890abcdef1234567890abcdef12"
+    ));
 
     // Invalid hashes
     assert!(!is_valid_commit_hash_format(""));
     assert!(!is_valid_commit_hash_format("abc"));
     assert!(!is_valid_commit_hash_format("xyz123")); // invalid hex chars
-    assert!(!is_valid_commit_hash_format("1234567890abcdef1234567890abcdef123456789")); // too long
+    assert!(!is_valid_commit_hash_format(
+        "1234567890abcdef1234567890abcdef123456789"
+    )); // too long
     assert!(!is_valid_commit_hash_format("abc 123")); // contains space
 }
 
@@ -247,11 +251,11 @@ fn test_fixup_with_rebase_flag() {
         .assert()
         .success();
 
-    // Note: This test might fail if run in a non-interactive environment
-    // but it tests the command parsing and validation
+    // Set environment to make interactive rebase work in tests
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["fixup", &commit_hash[0..7], "--rebase"])
         .current_dir(&repo_path)
+        .env("GIT_SEQUENCE_EDITOR", "true") // Auto-accept rebase plan
         .assert()
         .success()
         .stdout(predicate::str::contains("Fixup commit created"));
