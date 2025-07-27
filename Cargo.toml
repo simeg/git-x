@@ -13,6 +13,10 @@ readme = "README.md"
 license = "MIT"
 edition = "2024"
 
+exclude = [
+    "tests/*",
+]
+
 [[bin]]
 name = "git-x"
 path = "src/main.rs"
