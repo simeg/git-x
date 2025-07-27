@@ -116,3 +116,6 @@ fn test_format_no_branches_to_prune_message() {
         "✅ No merged branches to prune."
     );
 }
+
+// Note: prune_branches::run() calls exit() on errors, making it difficult to test directly
+// The CLI integration tests cover this functionality instead

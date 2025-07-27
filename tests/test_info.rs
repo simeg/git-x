@@ -82,3 +82,15 @@ fn test_format_tracking_branch() {
         "Tracking: upstream/develop"
     );
 }
+
+#[test]
+fn test_info_run_function() {
+    let (repo, _remote) = repo_with_remote_ahead("main");
+
+    // Change to repo directory and run the function directly
+    std::env::set_current_dir(repo.path()).unwrap();
+
+    // Test that the function doesn't panic and git commands work
+    // This repo has a remote upstream so it should work
+    git_x::info::run();
+}

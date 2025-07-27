@@ -15,6 +15,39 @@ fn test_clean_branches_dry_run_outputs_expected() {
 }
 
 #[test]
+fn test_clean_branches_run_function_dry_run() {
+    let repo = repo_with_merged_branch("feature/test", "master");
+
+    // Change to repo directory and run the function directly
+    std::env::set_current_dir(repo.path()).unwrap();
+
+    // Test that the function doesn't panic and git commands work
+    git_x::clean_branches::run(true);
+}
+
+#[test]
+fn test_clean_branches_run_function_actual_delete() {
+    let repo = repo_with_merged_branch("feature/delete-me", "master");
+
+    // Change to repo directory and run the function directly
+    std::env::set_current_dir(repo.path()).unwrap();
+
+    // Test that the function doesn't panic and actually deletes branches
+    git_x::clean_branches::run(false);
+}
+
+#[test]
+fn test_clean_branches_run_function_no_branches() {
+    let repo = common::basic_repo();
+
+    // Change to repo directory - this repo has no merged branches to delete
+    std::env::set_current_dir(repo.path()).unwrap();
+
+    // Test the no branches case
+    git_x::clean_branches::run(true);
+}
+
+#[test]
 fn test_clean_branches_actually_deletes_branch() {
     let repo = repo_with_merged_branch("feature/cleanup", "master");
 

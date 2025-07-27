@@ -50,3 +50,14 @@ fn test_format_success_message() {
 fn test_format_error_message() {
     assert_eq!(format_error_message(), "❌ Failed to undo last commit.");
 }
+
+#[test]
+fn test_undo_run_function() {
+    let repo = repo_with_commits(3);
+
+    // Change to repo directory and run the function directly
+    std::env::set_current_dir(repo.path()).unwrap();
+
+    // Test that the function doesn't panic and git commands work
+    git_x::undo::run();
+}

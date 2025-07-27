@@ -38,3 +38,25 @@ fn test_is_log_empty() {
     assert!(!is_log_empty("some log output"));
     assert!(!is_log_empty("commit abc123"));
 }
+
+#[test]
+fn test_since_run_function() {
+    let repo = repo_with_commits(3);
+
+    // Change to repo directory and run the function directly
+    std::env::set_current_dir(repo.path()).unwrap();
+
+    // Test that the function doesn't panic and git commands work
+    git_x::since::run("HEAD~1".to_string());
+}
+
+#[test]
+fn test_since_run_function_no_commits() {
+    let repo = common::basic_repo();
+
+    // Change to repo directory and run the function directly
+    std::env::set_current_dir(repo.path()).unwrap();
+
+    // Test with a reference that should show no commits
+    git_x::since::run("HEAD".to_string());
+}

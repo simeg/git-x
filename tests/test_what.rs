@@ -94,3 +94,25 @@ fn test_format_diff_line() {
     assert_eq!(format_diff_line("A"), None);
     assert_eq!(format_diff_line(""), None);
 }
+
+#[test]
+fn test_what_run_function() {
+    let repo = repo_with_feature_ahead("feature/test", "main");
+
+    // Change to repo directory and run the function directly
+    std::env::set_current_dir(repo.path()).unwrap();
+
+    // Test that the function doesn't panic and git commands work
+    git_x::what::run(None);
+}
+
+#[test]
+fn test_what_run_function_with_target() {
+    let repo = repo_with_feature_ahead("feature/compare", "main");
+
+    // Change to repo directory and run the function directly
+    std::env::set_current_dir(repo.path()).unwrap();
+
+    // Test with specific target
+    git_x::what::run(Some("main".to_string()));
+}

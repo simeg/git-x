@@ -123,3 +123,25 @@ fn test_parse_git_log_output() {
     let result = parse_git_log_output(output);
     assert_eq!(result.len(), 2);
 }
+
+#[test]
+fn test_summary_run_function() {
+    let repo = common::repo_with_conventional_commits();
+
+    // Change to repo directory and run the function directly
+    std::env::set_current_dir(repo.path()).unwrap();
+
+    // Test that the function doesn't panic and git commands work
+    git_x::summary::run("1 day ago".to_string());
+}
+
+#[test]
+fn test_summary_run_function_no_commits() {
+    let repo = common::basic_repo();
+
+    // Change to repo directory and run the function directly
+    std::env::set_current_dir(repo.path()).unwrap();
+
+    // Test with a time range that should show no commits
+    git_x::summary::run("1 minute ago".to_string());
+}

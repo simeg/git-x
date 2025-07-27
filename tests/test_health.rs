@@ -107,3 +107,25 @@ fn test_is_git_repo_returns_false_for_non_git_dir() {
     let temp_dir = tempfile::tempdir().unwrap();
     assert!(!is_git_repo(temp_dir.path()));
 }
+
+#[test]
+fn test_health_run_function_in_git_repo() {
+    let repo = common::basic_repo();
+
+    // Change to repo directory and run the function directly
+    std::env::set_current_dir(repo.path()).unwrap();
+
+    // Test that the function doesn't panic and executes all health checks
+    git_x::health::run();
+}
+
+#[test]
+fn test_health_run_function_outside_git_repo() {
+    let temp_dir = tempfile::tempdir().unwrap();
+
+    // Change to non-git directory
+    std::env::set_current_dir(temp_dir.path()).unwrap();
+
+    // Test that the function handles non-git directory gracefully
+    git_x::health::run();
+}

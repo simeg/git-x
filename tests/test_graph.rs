@@ -48,3 +48,14 @@ fn test_format_git_error() {
         "❌ git log failed:\npermission denied"
     );
 }
+
+#[test]
+fn test_graph_run_function() {
+    let repo = common::basic_repo();
+
+    // Change to repo directory and run the function directly
+    std::env::set_current_dir(repo.path()).unwrap();
+
+    // Test that the function doesn't panic and git commands work
+    git_x::graph::run();
+}

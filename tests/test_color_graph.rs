@@ -1,3 +1,5 @@
+mod common;
+
 use git_x::color_graph::*;
 use std::process::{ExitStatus, Output};
 
@@ -53,4 +55,31 @@ fn test_convert_output_to_string() {
         convert_output_to_string(b"git log output"),
         "git log output"
     );
+}
+
+#[test]
+fn test_color_graph_run_function() {
+    let repo = common::basic_repo();
+
+    // Change to repo directory and run the function directly
+    std::env::set_current_dir(repo.path()).unwrap();
+
+    // Test that the function doesn't panic and git commands work
+    git_x::color_graph::run();
+}
+
+#[test]
+fn test_print_git_output() {
+    let test_output = b"* commit1 message\n* commit2 message";
+
+    // Test that print_git_output doesn't panic
+    git_x::color_graph::print_git_output(test_output);
+}
+
+#[test]
+fn test_print_git_error() {
+    let test_error = b"not a git repository";
+
+    // Test that print_git_error doesn't panic
+    git_x::color_graph::print_git_error(test_error);
 }

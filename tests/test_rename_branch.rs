@@ -138,3 +138,6 @@ fn test_format_rename_success_message() {
         "Branch renamed successfully."
     );
 }
+
+// Note: rename_branch::run() interacts with remotes, making it difficult to test directly
+// The CLI integration tests cover this functionality instead
