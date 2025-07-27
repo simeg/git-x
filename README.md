@@ -310,6 +310,14 @@ git log --oneline --graph --decorate --all
 
 ---
 
+## 🚧 Tab Completion 🚧
+
+I'm looking for help to get tab completion working! 🆘 By that I mean `git x <TAB>` should show available commands. I've given it my best shot without success 😅 so if anyone can help, that would be much appreciated!
+
+Your shell expertise could make `git-x` so much more pleasant to use!
+
+---
+
 ## Built With
 
 - Language: Rust 🦀
