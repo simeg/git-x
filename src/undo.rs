@@ -28,25 +28,4 @@ pub fn format_error_message() -> &'static str {
     "❌ Failed to undo last commit."
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
 
-    #[test]
-    fn test_get_git_reset_args() {
-        assert_eq!(get_git_reset_args(), ["reset", "--soft", "HEAD~1"]);
-    }
-
-    #[test]
-    fn test_format_success_message() {
-        assert_eq!(
-            format_success_message(),
-            "Last commit undone (soft reset). Changes kept in working directory."
-        );
-    }
-
-    #[test]
-    fn test_format_error_message() {
-        assert_eq!(format_error_message(), "❌ Failed to undo last commit.");
-    }
-}

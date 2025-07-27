@@ -34,26 +34,4 @@ pub fn is_log_empty(log_output: &str) -> bool {
     log_output.trim().is_empty()
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
 
-    #[test]
-    fn test_format_git_log_range() {
-        assert_eq!(format_git_log_range("main"), "main..HEAD");
-        assert_eq!(
-            format_git_log_range("origin/develop"),
-            "origin/develop..HEAD"
-        );
-        assert_eq!(format_git_log_range("abc123"), "abc123..HEAD");
-    }
-
-    #[test]
-    fn test_is_log_empty() {
-        assert!(is_log_empty(""));
-        assert!(is_log_empty("   "));
-        assert!(is_log_empty("\n\t  \n"));
-        assert!(!is_log_empty("- abc123 commit message"));
-        assert!(!is_log_empty("some content"));
-    }
-}

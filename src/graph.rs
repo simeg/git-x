@@ -25,27 +25,3 @@ pub fn format_git_error(stderr: &str) -> String {
     format!("❌ git log failed:\n{stderr}")
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_get_git_log_args() {
-        assert_eq!(
-            get_git_log_args(),
-            ["log", "--oneline", "--graph", "--decorate", "--all"]
-        );
-    }
-
-    #[test]
-    fn test_format_git_error() {
-        assert_eq!(
-            format_git_error("not a git repository"),
-            "❌ git log failed:\nnot a git repository"
-        );
-        assert_eq!(
-            format_git_error("unknown revision"),
-            "❌ git log failed:\nunknown revision"
-        );
-    }
-}

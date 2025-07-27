@@ -2,6 +2,7 @@ mod common;
 
 use common::{basic_repo, repo_with_branch};
 use predicates::str::contains;
+use git_x::health::*;
 
 #[test]
 fn test_health_command_runs_successfully() {
@@ -98,4 +99,11 @@ fn test_health_fails_outside_git_repo() {
         .assert()
         .success()
         .stdout(contains("✗ Not in a Git repository"));
+}
+
+// Unit tests for helper functions
+#[test]
+fn test_is_git_repo_returns_false_for_non_git_dir() {
+    let temp_dir = tempfile::tempdir().unwrap();
+    assert!(!is_git_repo(temp_dir.path()));
 }

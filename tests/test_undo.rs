@@ -3,6 +3,7 @@ mod common;
 use common::repo_with_commits;
 use predicates::str::contains;
 use std::process::Command;
+use git_x::undo::*;
 
 #[test]
 fn test_git_xundo_soft_resets_last_commit() {
@@ -29,4 +30,20 @@ fn test_git_xundo_soft_resets_last_commit() {
         .unwrap();
     let diff_output = String::from_utf8_lossy(&diff.stdout);
     assert!(diff_output.contains("file.txt"));
+}
+
+// Unit tests for helper functions
+#[test]
+fn test_get_git_reset_args() {
+    assert_eq!(get_git_reset_args(), ["reset", "--soft", "HEAD~1"]);
+}
+
+#[test]
+fn test_format_success_message() {
+    assert_eq!(format_success_message(), "Last commit undone (soft reset). Changes kept in working directory.");
+}
+
+#[test]
+fn test_format_error_message() {
+    assert_eq!(format_error_message(), "❌ Failed to undo last commit.");
 }

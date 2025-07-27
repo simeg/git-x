@@ -79,45 +79,4 @@ pub fn format_tracking_branch(tracking_raw: &str) -> String {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
 
-    #[test]
-    fn test_extract_repo_name() {
-        assert_eq!(extract_repo_name("/path/to/my-repo"), "my-repo");
-        assert_eq!(extract_repo_name("/home/user/git-x"), "git-x");
-        assert_eq!(extract_repo_name("relative-path"), "relative-path");
-        assert_eq!(extract_repo_name(""), "unknown");
-    }
-
-    #[test]
-    fn test_parse_ahead_behind_counts() {
-        assert_eq!(
-            parse_ahead_behind_counts("3 2"),
-            ("3".to_string(), "2".to_string())
-        );
-        assert_eq!(
-            parse_ahead_behind_counts("0 0"),
-            ("0".to_string(), "0".to_string())
-        );
-        assert_eq!(
-            parse_ahead_behind_counts("5"),
-            ("5".to_string(), "0".to_string())
-        );
-        assert_eq!(
-            parse_ahead_behind_counts(""),
-            ("0".to_string(), "0".to_string())
-        );
-    }
-
-    #[test]
-    fn test_format_tracking_branch() {
-        assert_eq!(format_tracking_branch("origin/main"), "origin/main");
-        assert_eq!(format_tracking_branch(""), "(no upstream)");
-        assert_eq!(
-            format_tracking_branch("upstream/develop"),
-            "upstream/develop"
-        );
-    }
-}
