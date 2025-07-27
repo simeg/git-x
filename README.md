@@ -150,7 +150,7 @@ git x prune-branches --except "release,v1.0-temp"
 
 ### `since [ref]`
 
-> Show commits since a reference (e.g., d926b4b, my-branch, origin/main)
+> Show commits since a reference (e.g., `d926b4b`, my-branch, origin/main)
 
 ```shell
 git x since origin/main
