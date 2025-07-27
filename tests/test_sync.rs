@@ -333,3 +333,222 @@ fn test_run_function_complete_flow() {
         .success()
         .stderr(predicate::str::contains("Not in a git repository"));
 }
+
+// Additional comprehensive tests for better coverage
+
+#[test]
+fn test_parse_sync_counts_comprehensive() {
+    // Test various valid formats
+    assert_eq!(parse_sync_counts("0\t0\n"), Ok((0, 0)));
+    assert_eq!(parse_sync_counts("5\t0"), Ok((5, 0)));
+    assert_eq!(parse_sync_counts("0\t3"), Ok((0, 3)));
+    assert_eq!(parse_sync_counts("2\t4"), Ok((2, 4)));
+    assert_eq!(parse_sync_counts("10\t20\n"), Ok((10, 20)));
+
+    // Test with extra whitespace
+    assert_eq!(parse_sync_counts("  1  \t  2  "), Ok((1, 2)));
+    assert_eq!(parse_sync_counts("100\t200\n\n"), Ok((100, 200)));
+}
+
+#[test]
+fn test_parse_sync_counts_edge_cases() {
+    // Test various invalid formats
+    assert!(parse_sync_counts("").is_err());
+    assert!(parse_sync_counts("abc\tdef").is_err());
+    assert!(parse_sync_counts("1").is_err());
+    assert!(parse_sync_counts("1\t").is_err());
+    assert!(parse_sync_counts("\t2").is_err());
+    assert!(parse_sync_counts("1\tabc").is_err());
+    assert!(parse_sync_counts("abc\t2").is_err());
+    assert!(parse_sync_counts("1\t2\t3").is_ok()); // Should still work, extra ignored
+}
+
+#[test]
+fn test_fetch_upstream_remote_parsing() {
+    let (_temp_dir, repo_path) = create_test_repo();
+
+    std::env::set_current_dir(&repo_path).expect("Failed to change directory");
+
+    // Test various upstream formats
+    let result1 = fetch_upstream("origin/main");
+    let result2 = fetch_upstream("upstream/develop");
+    let result3 = fetch_upstream("fork/feature");
+
+    std::env::set_current_dir("/").expect("Failed to reset directory");
+
+    // All should fail since remotes don't exist, but tests the parsing logic
+    assert!(result1.is_err());
+    assert!(result2.is_err());
+    assert!(result3.is_err());
+}
+
+#[test]
+fn test_get_sync_status_error_scenarios() {
+    let (_temp_dir, repo_path) = create_test_repo();
+
+    std::env::set_current_dir(&repo_path).expect("Failed to change directory");
+
+    // Test with non-existent upstream
+    let result = get_sync_status("main", "nonexistent/branch");
+    std::env::set_current_dir("/").expect("Failed to reset directory");
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_sync_with_upstream_merge_error() {
+    let (_temp_dir, repo_path) = create_test_repo();
+
+    std::env::set_current_dir(&repo_path).expect("Failed to change directory");
+
+    // Test merge with non-existent upstream (should fail)
+    let result = sync_with_upstream("nonexistent/branch", true);
+    std::env::set_current_dir("/").expect("Failed to reset directory");
+
+    assert!(result.is_err());
+    assert_eq!(result.unwrap_err(), "Merge failed");
+}
+
+#[test]
+fn test_sync_with_upstream_rebase_error() {
+    let (_temp_dir, repo_path) = create_test_repo();
+
+    std::env::set_current_dir(&repo_path).expect("Failed to change directory");
+
+    // Test rebase with non-existent upstream (should fail)
+    let result = sync_with_upstream("nonexistent/branch", false);
+    std::env::set_current_dir("/").expect("Failed to reset directory");
+
+    assert!(result.is_err());
+    assert_eq!(result.unwrap_err(), "Rebase failed");
+}
+
+#[test]
+fn test_sync_status_enum_all_variants() {
+    // Test PartialEq for all variants
+    assert_eq!(SyncStatus::UpToDate, SyncStatus::UpToDate);
+    assert_eq!(SyncStatus::Behind(5), SyncStatus::Behind(5));
+    assert_eq!(SyncStatus::Ahead(3), SyncStatus::Ahead(3));
+    assert_eq!(SyncStatus::Diverged(2, 4), SyncStatus::Diverged(2, 4));
+
+    // Test inequality
+    assert_ne!(SyncStatus::Behind(1), SyncStatus::Behind(2));
+    assert_ne!(SyncStatus::Ahead(1), SyncStatus::Ahead(2));
+    assert_ne!(SyncStatus::UpToDate, SyncStatus::Behind(1));
+    assert_ne!(SyncStatus::Diverged(1, 2), SyncStatus::Diverged(2, 1));
+}
+
+#[test]
+fn test_sync_status_debug_all_variants() {
+    let variants = vec![
+        SyncStatus::UpToDate,
+        SyncStatus::Behind(5),
+        SyncStatus::Ahead(3),
+        SyncStatus::Diverged(2, 4),
+    ];
+
+    for variant in variants {
+        let debug_str = format!("{variant:?}");
+        assert!(!debug_str.is_empty());
+        // Ensure debug contains the variant name
+        assert!(
+            debug_str.contains("UpToDate")
+                || debug_str.contains("Behind")
+                || debug_str.contains("Ahead")
+                || debug_str.contains("Diverged")
+        );
+    }
+}
+
+#[test]
+fn test_comprehensive_formatting_functions() {
+    // Test all formatting functions with various inputs
+    assert_eq!(
+        format_sync_start_message("feature-branch", "origin/main"),
+        "🔄 Syncing branch 'feature-branch' with 'origin/main'..."
+    );
+
+    assert_eq!(
+        format_error_message("Custom error message"),
+        "❌ Custom error message"
+    );
+
+    assert_eq!(
+        format_behind_message(0),
+        "⬇️ Branch is 0 commit(s) behind upstream"
+    );
+
+    assert_eq!(
+        format_ahead_message(0),
+        "⬆️ Branch is 0 commit(s) ahead of upstream"
+    );
+
+    assert_eq!(
+        format_diverged_message(0, 0),
+        "🔀 Branch has diverged: 0 behind, 0 ahead"
+    );
+
+    assert_eq!(
+        format_sync_success_message(true),
+        "✅ Successfully merged upstream changes"
+    );
+
+    assert_eq!(
+        format_sync_success_message(false),
+        "✅ Successfully rebased onto upstream"
+    );
+}
+
+#[test]
+fn test_fetch_upstream_edge_cases() {
+    let (_temp_dir, repo_path) = create_test_repo();
+
+    std::env::set_current_dir(&repo_path).expect("Failed to change directory");
+
+    // Test edge cases for upstream parsing
+    let result1 = fetch_upstream("/main"); // Should use "" as remote
+    let result2 = fetch_upstream("main"); // No slash, should use "main" as remote
+
+    std::env::set_current_dir("/").expect("Failed to reset directory");
+
+    // These should fail since remotes don't exist, but tests the parsing logic
+    assert!(result2.is_err()); // "main" remote doesn't exist
+
+    // result1 behavior depends on git's handling of empty remote names - just test it doesn't panic
+    let _ = result1;
+}
+
+#[test]
+fn test_get_upstream_branch_error_path() {
+    let temp_dir = TempDir::new().expect("Failed to create temp directory");
+
+    std::env::set_current_dir(temp_dir.path()).expect("Failed to change directory");
+
+    let result = get_upstream_branch("main");
+    std::env::set_current_dir("/").expect("Failed to reset directory");
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_get_current_branch_comprehensive() {
+    // Test successful case
+    let (_temp_dir, repo_path) = create_test_repo();
+
+    std::env::set_current_dir(&repo_path).expect("Failed to change directory");
+    let result_success = get_current_branch();
+    std::env::set_current_dir("/").expect("Failed to reset directory");
+
+    assert!(result_success.is_ok());
+    let branch = result_success.unwrap();
+    assert!(!branch.is_empty());
+
+    // Test error case
+    let temp_dir = TempDir::new().expect("Failed to create temp directory");
+    std::env::set_current_dir(temp_dir.path()).expect("Failed to change directory");
+    let result_error = get_current_branch();
+    std::env::set_current_dir("/").expect("Failed to reset directory");
+
+    assert!(result_error.is_err());
+    assert_eq!(result_error.unwrap_err(), "Not in a git repository");
+}

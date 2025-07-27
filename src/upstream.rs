@@ -196,7 +196,7 @@ pub enum SyncResult {
 }
 
 // Helper function to validate upstream format
-fn validate_upstream_format(upstream: &str) -> Result<(), &'static str> {
+pub fn validate_upstream_format(upstream: &str) -> Result<(), &'static str> {
     if upstream.is_empty() {
         return Err("Upstream cannot be empty");
     }
@@ -214,7 +214,7 @@ fn validate_upstream_format(upstream: &str) -> Result<(), &'static str> {
 }
 
 // Helper function to validate upstream exists
-fn validate_upstream_exists(upstream: &str) -> Result<(), &'static str> {
+pub fn validate_upstream_exists(upstream: &str) -> Result<(), &'static str> {
     let output = Command::new("git")
         .args(["rev-parse", "--verify", upstream])
         .output()
@@ -228,7 +228,7 @@ fn validate_upstream_exists(upstream: &str) -> Result<(), &'static str> {
 }
 
 // Helper function to get current branch
-fn get_current_branch() -> Result<String, &'static str> {
+pub fn get_current_branch() -> Result<String, &'static str> {
     let output = Command::new("git")
         .args(["rev-parse", "--abbrev-ref", "HEAD"])
         .output()
@@ -256,7 +256,7 @@ fn set_branch_upstream(branch: &str, upstream: &str) -> Result<(), &'static str>
 }
 
 // Helper function to get all local branches
-fn get_all_local_branches() -> Result<Vec<String>, &'static str> {
+pub fn get_all_local_branches() -> Result<Vec<String>, &'static str> {
     let output = Command::new("git")
         .args(["branch", "--format=%(refname:short)"])
         .output()
@@ -277,7 +277,7 @@ fn get_all_local_branches() -> Result<Vec<String>, &'static str> {
 }
 
 // Helper function to get branch upstream
-fn get_branch_upstream(branch: &str) -> Result<String, &'static str> {
+pub fn get_branch_upstream(branch: &str) -> Result<String, &'static str> {
     let output = Command::new("git")
         .args(["rev-parse", "--abbrev-ref", &format!("{branch}@{{u}}")])
         .output()
@@ -291,7 +291,7 @@ fn get_branch_upstream(branch: &str) -> Result<String, &'static str> {
 }
 
 // Helper function to get branch sync status
-fn get_branch_sync_status(branch: &str, upstream: &str) -> Result<SyncStatus, &'static str> {
+pub fn get_branch_sync_status(branch: &str, upstream: &str) -> Result<SyncStatus, &'static str> {
     let output = Command::new("git")
         .args([
             "rev-list",
@@ -329,7 +329,7 @@ fn get_branch_sync_status(branch: &str, upstream: &str) -> Result<SyncStatus, &'
 }
 
 // Helper function to get branches with upstreams
-fn get_branches_with_upstreams() -> Result<Vec<(String, String)>, &'static str> {
+pub fn get_branches_with_upstreams() -> Result<Vec<(String, String)>, &'static str> {
     let branches = get_all_local_branches()?;
     let mut result = Vec::new();
 

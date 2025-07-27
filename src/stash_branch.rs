@@ -154,16 +154,16 @@ fn apply_stashes_by_branch(branch_name: String, list_only: bool) {
 }
 
 #[derive(Debug, Clone)]
-struct StashInfo {
-    name: String,
-    message: String,
-    branch: String,
+pub struct StashInfo {
+    pub name: String,
+    pub message: String,
+    pub branch: String,
     #[allow(dead_code)]
-    timestamp: String,
+    pub timestamp: String,
 }
 
 // Helper function to validate branch name
-fn validate_branch_name(name: &str) -> Result<(), &'static str> {
+pub fn validate_branch_name(name: &str) -> Result<(), &'static str> {
     if name.is_empty() {
         return Err("Branch name cannot be empty");
     }
@@ -184,7 +184,7 @@ fn validate_branch_name(name: &str) -> Result<(), &'static str> {
 }
 
 // Helper function to check if branch exists
-fn branch_exists(branch_name: &str) -> bool {
+pub fn branch_exists(branch_name: &str) -> bool {
     Command::new("git")
         .args([
             "show-ref",
@@ -198,7 +198,7 @@ fn branch_exists(branch_name: &str) -> bool {
 }
 
 // Helper function to validate stash exists
-fn validate_stash_exists(stash_ref: &str) -> Result<(), &'static str> {
+pub fn validate_stash_exists(stash_ref: &str) -> Result<(), &'static str> {
     let output = Command::new("git")
         .args(["rev-parse", "--verify", stash_ref])
         .output()
@@ -272,7 +272,7 @@ fn get_stash_list_with_branches() -> Result<Vec<StashInfo>, &'static str> {
 }
 
 // Helper function to parse stash line with date
-fn parse_stash_line_with_date(line: &str) -> Option<StashInfo> {
+pub fn parse_stash_line_with_date(line: &str) -> Option<StashInfo> {
     let parts: Vec<&str> = line.splitn(3, '|').collect();
     if parts.len() != 3 {
         return None;
@@ -287,7 +287,7 @@ fn parse_stash_line_with_date(line: &str) -> Option<StashInfo> {
 }
 
 // Helper function to parse stash line with branch
-fn parse_stash_line_with_branch(line: &str) -> Option<StashInfo> {
+pub fn parse_stash_line_with_branch(line: &str) -> Option<StashInfo> {
     let parts: Vec<&str> = line.splitn(2, '|').collect();
     if parts.len() != 2 {
         return None;
@@ -302,7 +302,7 @@ fn parse_stash_line_with_branch(line: &str) -> Option<StashInfo> {
 }
 
 // Helper function to extract branch name from stash message
-fn extract_branch_from_message(message: &str) -> String {
+pub fn extract_branch_from_message(message: &str) -> String {
     // Stash messages typically start with "On branch_name:" or "WIP on branch_name:"
     if let Some(start) = message.find("On ") {
         let rest = &message[start + 3..];
@@ -322,7 +322,10 @@ fn extract_branch_from_message(message: &str) -> String {
 }
 
 // Helper function to filter stashes by age
-fn filter_stashes_by_age(stashes: &[StashInfo], age: &str) -> Result<Vec<StashInfo>, &'static str> {
+pub fn filter_stashes_by_age(
+    stashes: &[StashInfo],
+    age: &str,
+) -> Result<Vec<StashInfo>, &'static str> {
     // For simplicity, we'll implement basic age filtering
     // In a real implementation, you'd parse the age string and compare timestamps
     if age.ends_with('d') || age.ends_with('w') || age.ends_with('m') {

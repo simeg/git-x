@@ -3,7 +3,7 @@
 BINARY_NAME = git-x
 CARGO = cargo
 
-.PHONY: all build ci run test install uninstall fmt fmt-check lint lint-check clean publish help
+.PHONY: all build ci run test coverage install uninstall fmt fmt-check lint lint-check clean publish help
 
 ## Build and run the project (default)
 all: run
@@ -22,6 +22,10 @@ run: build
 ## Run unit and integration tests
 test:
 	$(CARGO) test
+
+## Run test coverage analysis using tarpaulin
+coverage:
+	$(CARGO) tarpaulin --workspace --timeout 120 --out Stdout
 
 ## Format all source files
 fmt:
@@ -63,6 +67,7 @@ help:
 	@echo "  make build     Build release binary"
 	@echo "  make run       Run binary with ARGS=\"xinfo\""
 	@echo "  make test      Run tests"
+	@echo "  make coverage  Generate test coverage report"
 	@echo "  make fmt       Format code"
 	@echo "  make fmt-check  Check formatting"
 	@echo "  make lint      Lint with Clippy"
