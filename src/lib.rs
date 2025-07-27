@@ -10,3 +10,31 @@ pub mod since;
 pub mod summary;
 pub mod undo;
 pub mod what;
+
+/// Common error type for git-x operations
+#[derive(Debug)]
+pub enum GitXError {
+    GitCommand(String),
+    Io(std::io::Error),
+    Parse(String),
+}
+
+impl std::fmt::Display for GitXError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            GitXError::GitCommand(cmd) => write!(f, "Git command failed: {cmd}"),
+            GitXError::Io(err) => write!(f, "IO error: {err}"),
+            GitXError::Parse(msg) => write!(f, "Parse error: {msg}"),
+        }
+    }
+}
+
+impl std::error::Error for GitXError {}
+
+impl From<std::io::Error> for GitXError {
+    fn from(err: std::io::Error) -> Self {
+        GitXError::Io(err)
+    }
+}
+
+pub type Result<T> = std::result::Result<T, GitXError>;

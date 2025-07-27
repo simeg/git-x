@@ -22,7 +22,7 @@ pub fn run(dry_run: bool) {
         } else {
             let delete_args = get_git_delete_args(&branch);
             let status = Command::new("git")
-                .args(&delete_args)
+                .args(delete_args)
                 .status()
                 .expect("Failed to delete branch");
 
@@ -48,8 +48,10 @@ pub fn get_git_branch_args() -> [&'static str; 2] {
 }
 
 // Helper function to get protected branches
-pub fn get_protected_branches() -> Vec<&'static str> {
-    vec!["main", "master", "develop"]
+const PROTECTED_BRANCHES: &[&str] = &["main", "master", "develop"];
+
+pub fn get_protected_branches() -> &'static [&'static str] {
+    PROTECTED_BRANCHES
 }
 
 // Helper function to clean branch name
@@ -59,12 +61,12 @@ pub fn clean_branch_name(line: &str) -> String {
 
 // Helper function to is_protected_branch
 pub fn is_protected_branch(branch: &str) -> bool {
-    get_protected_branches().contains(&branch)
+    PROTECTED_BRANCHES.contains(&branch)
 }
 
 // Helper function to get git delete args
-pub fn get_git_delete_args(branch: &str) -> Vec<String> {
-    vec!["branch".to_string(), "-d".to_string(), branch.to_string()]
+pub fn get_git_delete_args(branch: &str) -> [&str; 3] {
+    ["branch", "-d", branch]
 }
 
 // Helper function to format dry run message

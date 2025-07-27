@@ -134,14 +134,7 @@ fn test_is_protected_branch() {
 
 #[test]
 fn test_get_git_delete_args() {
-    assert_eq!(
-        get_git_delete_args("feature"),
-        vec![
-            "branch".to_string(),
-            "-d".to_string(),
-            "feature".to_string()
-        ]
-    );
+    assert_eq!(get_git_delete_args("feature"), ["branch", "-d", "feature"]);
 }
 
 #[test]

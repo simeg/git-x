@@ -26,3 +26,8 @@ chrono = "0.4"
 assert_cmd = "2.0"
 tempfile = "3.20"
 predicates = "3.1"
+criterion = "0.5"
+
+[[bench]]
+name = "performance_benchmarks"
+harness = false

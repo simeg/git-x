@@ -73,13 +73,10 @@ fn test_parse_ahead_behind_counts() {
 
 #[test]
 fn test_format_tracking_branch() {
-    assert_eq!(
-        format_tracking_branch("origin/main"),
-        "Tracking: origin/main"
-    );
+    assert_eq!(format_tracking_branch("origin/main"), "origin/main");
     assert_eq!(
         format_tracking_branch("upstream/develop"),
-        "Tracking: upstream/develop"
+        "upstream/develop"
     );
 }
 

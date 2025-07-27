@@ -85,11 +85,7 @@ fn test_is_branch_protected() {
 fn test_get_git_branch_delete_args() {
     assert_eq!(
         get_git_branch_delete_args("feature"),
-        [
-            "branch".to_string(),
-            "-d".to_string(),
-            "feature".to_string()
-        ]
+        ["branch", "-d", "feature"]
     );
 }
 

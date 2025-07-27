@@ -45,7 +45,7 @@ pub fn run(except: Option<String>) {
     for branch in branches {
         let delete_args = get_git_branch_delete_args(&branch);
         let status = Command::new("git")
-            .args(&delete_args)
+            .args(delete_args)
             .status()
             .expect("Failed to delete branch");
 
@@ -58,8 +58,10 @@ pub fn run(except: Option<String>) {
 }
 
 // Helper function to get default protected branches
-pub fn get_default_protected_branches() -> Vec<&'static str> {
-    vec!["main", "master", "develop"]
+const DEFAULT_PROTECTED_BRANCHES: &[&str] = &["main", "master", "develop"];
+
+pub fn get_default_protected_branches() -> &'static [&'static str] {
+    DEFAULT_PROTECTED_BRANCHES
 }
 
 // Helper function to parse except string into vec
@@ -73,9 +75,9 @@ pub fn parse_except_branches(except: &str) -> Vec<String> {
 
 // Helper function to get all protected branches
 pub fn get_all_protected_branches(except: Option<&str>) -> Vec<String> {
-    let mut protected: Vec<String> = get_default_protected_branches()
-        .into_iter()
-        .map(|s| s.to_string())
+    let mut protected: Vec<String> = DEFAULT_PROTECTED_BRANCHES
+        .iter()
+        .map(|&s| s.to_string())
         .collect();
 
     if let Some(except_str) = except {
@@ -100,8 +102,8 @@ pub fn is_branch_protected(
 }
 
 // Helper function to get git branch delete args
-pub fn get_git_branch_delete_args(branch: &str) -> [String; 3] {
-    ["branch".to_string(), "-d".to_string(), branch.to_string()]
+pub fn get_git_branch_delete_args(branch: &str) -> [&str; 3] {
+    ["branch", "-d", branch]
 }
 
 // Helper function to format success message

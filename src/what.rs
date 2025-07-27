@@ -54,8 +54,10 @@ pub fn run(target: Option<String>) {
 }
 
 // Helper function to get default target branch
+const DEFAULT_TARGET: &str = "main";
+
 pub fn get_default_target() -> String {
-    "main".to_string()
+    DEFAULT_TARGET.to_string()
 }
 
 // Helper function to format branch comparison header
@@ -78,9 +80,9 @@ pub fn format_rev_list_range(target: &str, current: &str) -> String {
 
 // Helper function to parse ahead/behind counts
 pub fn parse_commit_counts(output: &str) -> (String, String) {
-    let counts = output.split_whitespace().collect::<Vec<&str>>();
-    let behind = counts.first().unwrap_or(&"0").to_string();
-    let ahead = counts.get(1).unwrap_or(&"0").to_string();
+    let mut counts = output.split_whitespace();
+    let behind = counts.next().unwrap_or("0").to_string();
+    let ahead = counts.next().unwrap_or("0").to_string();
     (ahead, behind)
 }
 

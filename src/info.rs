@@ -64,9 +64,9 @@ pub fn extract_repo_name(repo_path: &str) -> String {
 
 // Helper function to parse ahead/behind counts
 pub fn parse_ahead_behind_counts(counts_output: &str) -> (String, String) {
-    let parts: Vec<&str> = counts_output.split_whitespace().collect();
-    let ahead = parts.first().unwrap_or(&"0").to_string();
-    let behind = parts.get(1).unwrap_or(&"0").to_string();
+    let mut parts = counts_output.split_whitespace();
+    let ahead = parts.next().unwrap_or("0").to_string();
+    let behind = parts.next().unwrap_or("0").to_string();
     (ahead, behind)
 }
 
@@ -75,6 +75,6 @@ pub fn format_tracking_branch(tracking_raw: &str) -> String {
     if tracking_raw.is_empty() {
         "(no upstream)".to_string()
     } else {
-        format!("Tracking: {tracking_raw}")
+        tracking_raw.to_string()
     }
 }

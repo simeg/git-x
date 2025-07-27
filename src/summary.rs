@@ -25,13 +25,13 @@ pub fn run(since: String) {
 }
 
 // Helper function to get git log summary args
-pub fn get_git_log_summary_args(since: &str) -> Vec<String> {
+pub fn get_git_log_summary_args(since: &str) -> Vec<&str> {
     vec![
-        "log".to_string(),
-        "--since".to_string(),
-        since.to_string(),
-        "--pretty=format:%h|%ad|%s|%an|%cr".to_string(),
-        "--date=short".to_string(),
+        "log",
+        "--since",
+        since,
+        "--pretty=format:%h|%ad|%s|%an|%cr",
+        "--date=short",
     ]
 }
 
@@ -118,14 +118,30 @@ pub fn format_date_header(date: &NaiveDate) -> String {
 
 // Helper function to get emoji for commit message (public version for testing)
 pub fn get_commit_emoji_public(message: &str) -> &'static str {
-    let lower_msg = message.to_lowercase();
-    if lower_msg.contains("fix") || lower_msg.contains("bug") {
+    // Use case-insensitive matching without allocation
+    let msg_bytes = message.as_bytes();
+    if msg_bytes.windows(3).any(|w| w.eq_ignore_ascii_case(b"fix"))
+        || msg_bytes.windows(3).any(|w| w.eq_ignore_ascii_case(b"bug"))
+    {
         "🐛"
-    } else if lower_msg.contains("feat") || lower_msg.contains("add") {
+    } else if msg_bytes
+        .windows(4)
+        .any(|w| w.eq_ignore_ascii_case(b"feat"))
+        || msg_bytes.windows(3).any(|w| w.eq_ignore_ascii_case(b"add"))
+    {
         "✨"
-    } else if lower_msg.contains("remove") || lower_msg.contains("delete") {
+    } else if msg_bytes
+        .windows(6)
+        .any(|w| w.eq_ignore_ascii_case(b"remove"))
+        || msg_bytes
+            .windows(6)
+            .any(|w| w.eq_ignore_ascii_case(b"delete"))
+    {
         "🔥"
-    } else if lower_msg.contains("refactor") {
+    } else if msg_bytes
+        .windows(8)
+        .any(|w| w.eq_ignore_ascii_case(b"refactor"))
+    {
         "🛠"
     } else {
         "🔹"
