@@ -13,23 +13,23 @@ It wraps common Git actions in muscle-memory-friendly, no-brainer commands — p
 - [Why Does This Exist?](#why-does-this-exist)
 - [Installation](#installation)
 - [Example Commands](#example-commands)
-    - [`info`](#info)
-    - [`graph`](#graph)
-    - [`color-graph`](#color-graph)
-    - [`health`](#health)
-    - [`prune-branches`](#prune-branches)
-    - [`since [ref]`](#since-ref)
-    - [`undo`](#undo)
     - [`clean-branches`](#clean-branches)
-    - [`what [branch]`](#what-branch)
-    - [`summary`](#summary)
-    - [`rename-branch`](#rename-branch)
-    - [`sync`](#sync)
-    - [`new`](#new)
-    - [`large-files`](#large-files)
+    - [`color-graph`](#color-graph)
     - [`fixup`](#fixup)
+    - [`graph`](#graph)
+    - [`health`](#health)
+    - [`info`](#info)
+    - [`large-files`](#large-files)
+    - [`new`](#new)
+    - [`prune-branches`](#prune-branches)
+    - [`rename-branch`](#rename-branch)
+    - [`since [ref]`](#since-ref)
     - [`stash-branch`](#stash-branch)
+    - [`summary`](#summary)
+    - [`sync`](#sync)
+    - [`undo`](#undo)
     - [`upstream`](#upstream)
+    - [`what [branch]`](#what-branch)
 - [Git Integration: How `git-x` Just Works™](#git-integration-how-git-x-just-works)
 - [What's Under the Hood?](#whats-under-the-hood)
 - [Command Transparency](#command-transparency)
@@ -81,39 +81,21 @@ cargo install --path .
 
 ---
 
-### `info`
+### `clean-branches`
 
-> Show a high-level overview of the current repo
+> Delete all fully merged local branches (except protected ones)
 
 ```shell
-git x info
+git x clean-branches
 ```
 
 #### Output:
 
 ```shell
-Repo: my-project
-Branch: feature/auth
-Tracking: origin/feature/auth
-Ahead: 2 Behind: 0
-Last Commit: "fix login bug" (2 hours ago)
-```
-
----
-
-### `graph`
-
-> Pretty Git log with branches, remotes, and HEADs
-
-```shell
-git x graph
-```
-
-#### Output:
-
-(essentially wraps this)
-```shell
-git log --oneline --graph --decorate --all
+🧹 Deleted 5 merged branches:
+- feature/refactor
+- bugfix/signup-typo
+...
 ```
 
 ---
@@ -136,6 +118,47 @@ Enhanced version of `git x graph` with:
 (essentially wraps this)
 ```shell
 git log --oneline --graph --decorate --all --color=always --pretty=format:"%C(auto)%h%d %s %C(dim)(%an, %ar)%C(reset)"
+```
+
+---
+
+### `fixup`
+
+> Create fixup commits for easier interactive rebasing
+
+```shell
+git x fixup abc123
+git x fixup abc123 --rebase
+```
+
+#### Output:
+
+```shell
+🔧 Creating fixup commit for abc123...
+✅ Fixup commit created for abc123
+💡 To squash the fixup commit, run: git rebase -i --autosquash abc123^
+```
+
+**Flags:**
+- `--rebase` — Automatically start interactive rebase with autosquash after creating fixup
+
+Creates a fixup commit that can be automatically squashed during interactive rebase. Requires staged changes.
+
+---
+
+### `graph`
+
+> Pretty Git log with branches, remotes, and HEADs
+
+```shell
+git x graph
+```
+
+#### Output:
+
+(essentially wraps this)
+```shell
+git log --oneline --graph --decorate --all
 ```
 
 ---
@@ -178,204 +201,23 @@ Useful for:
 
 ---
 
-### `prune-branches`
+### `info`
 
-Deletes all **local branches** that have already been **merged into the current branch**, while skipping protected ones.
-
-Useful for keeping your repo tidy after merging feature branches.
-
-**Defaults:**
-- Protected branches: `main`, `master`, `develop`
-- Won’t delete current branch
-- Will only delete branches that are *fully merged*
-
-**Flags:**
-- `--except <branches>` — Comma-separated list of branch names to exclude from deletion
+> Show a high-level overview of the current repo
 
 ```shell
-git x prune-branches --except "release,v1.0-temp"
-```
-
----
-
-### `since [ref]`
-
-> Show commits since a reference (e.g., `d926b4b`, my-branch, origin/main)
-
-```shell
-git x since origin/main
+git x info
 ```
 
 #### Output:
 
 ```shell
-🔍 Commits since origin/main:
-- 8f2d9b3 fix login bug
-- b41a71e add auth test
+Repo: my-project
+Branch: feature/auth
+Tracking: origin/feature/auth
+Ahead: 2 Behind: 0
+Last Commit: "fix login bug" (2 hours ago)
 ```
-
----
-
-### `undo`
-
-> Undo the last commit (without losing changes)
-
-```shell
-git x undo
-```
-
-#### Output:
-
-```shell
-Last commit undone (soft reset). Changes kept in working directory.
-```
-
----
-
-### `clean-branches`
-
-> Delete all fully merged local branches (except protected ones)
-
-```shell
-git x clean-branches
-```
-
-#### Output:
-
-```shell
-🧹 Deleted 5 merged branches:
-- feature/refactor
-- bugfix/signup-typo
-...
-```
-
----
-
-### `what [branch]`
-
-> Show what’s different between this branch and another (default: main)
-
-```shell
-git x what
-git x what develop
-```
-
-#### Output:
-
-```shell
-Branch: feature/new-ui vs main
-+ 4 commits ahead
-- 2 commits behind
-Changes:
- - + new_ui.js
- - ~ App.tsx
- - - old_ui.css
-```
-
----
-
-### `summary`
-
-> Show a short, changelog-style summary of recent commits
-
-```shell
-git x summary
-git x summary --since "2 days ago"
-```
-
-**Flags:**
-- `--since` — Accepts natural date formats like "2 days ago", "last Monday", or exact dates like "2025-07-01". It uses Git’s built-in date parser, so most human-readable expressions work.
-
-#### Output:
-```shell
-🗞️ Commit summary since 3 days ago:
-
-📅 2025-07-25
- - 🛠 fix: update token refresh logic (by Alice, 3 hours ago)
- - ✨ feat: add dark mode support (by Bob, 6 hours ago)
-
-📅 2025-07-24
- - 🔥 remove unused dependencies (by Alice, 1 day ago)
-
-📅 2025-07-23
- - 🐛 fix: handle null response in API call (by Carol, 2 days ago)
-```
-
-- Groups commits by day
-- Shows commit message, author, and relative time
-- Useful for writing daily stand-ups, changelogs, or review summaries
-- Defaults to showing commits from the last 3 days
-- Can be customized using `--since` (e.g. `--since "1 week ago"`)
-- Sorts commits newest-first within each day
-
----
-
-### `rename-branch`
-
-> Rename the current branch locally and on remote
-
-```shell
-git x rename-branch new-feature-name
-```
-
-#### Output:
-
-```shell
-🔄 Renaming branch 'old-name' to 'new-feature-name'...
-✅ Branch renamed successfully
-```
-
-Safely renames your current branch by:
-- Renaming the local branch
-- Updating the remote tracking branch
-- Cleaning up old remote references
-
----
-
-### `sync`
-
-> Sync current branch with upstream (fetch + rebase/merge)
-
-```shell
-git x sync
-git x sync --merge
-```
-
-#### Output:
-
-```shell
-🔄 Syncing branch 'feature' with 'origin/feature'...
-⬇️ Branch is 2 commit(s) behind upstream
-✅ Successfully rebased onto upstream
-```
-
-**Flags:**
-- `--merge` — Use merge instead of rebase for integration
-
-Automatically fetches from remote and integrates upstream changes into your current branch.
-
----
-
-### `new`
-
-> Create and switch to a new branch
-
-```shell
-git x new feature-branch
-git x new hotfix --from main
-```
-
-#### Output:
-
-```shell
-🌿 Creating branch 'feature-branch' from 'current-branch'...
-✅ Created and switched to branch 'feature-branch'
-```
-
-**Flags:**
-- `--from <branch>` — Base the new branch off a specific branch instead of current
-
-Validates branch names and prevents common Git naming issues.
 
 ---
 
@@ -409,27 +251,86 @@ Useful for identifying large files that may be slowing down your repository.
 
 ---
 
-### `fixup`
+### `new`
 
-> Create fixup commits for easier interactive rebasing
+> Create and switch to a new branch
 
 ```shell
-git x fixup abc123
-git x fixup abc123 --rebase
+git x new feature-branch
+git x new hotfix --from main
 ```
 
 #### Output:
 
 ```shell
-🔧 Creating fixup commit for abc123...
-✅ Fixup commit created for abc123
-💡 To squash the fixup commit, run: git rebase -i --autosquash abc123^
+🌿 Creating branch 'feature-branch' from 'current-branch'...
+✅ Created and switched to branch 'feature-branch'
 ```
 
 **Flags:**
-- `--rebase` — Automatically start interactive rebase with autosquash after creating fixup
+- `--from <branch>` — Base the new branch off a specific branch instead of current
 
-Creates a fixup commit that can be automatically squashed during interactive rebase. Requires staged changes.
+Validates branch names and prevents common Git naming issues.
+
+---
+
+### `prune-branches`
+
+Deletes all **local branches** that have already been **merged into the current branch**, while skipping protected ones.
+
+Useful for keeping your repo tidy after merging feature branches.
+
+**Defaults:**
+- Protected branches: `main`, `master`, `develop`
+- Won't delete current branch
+- Will only delete branches that are *fully merged*
+
+**Flags:**
+- `--except <branches>` — Comma-separated list of branch names to exclude from deletion
+
+```shell
+git x prune-branches --except "release,v1.0-temp"
+```
+
+---
+
+### `rename-branch`
+
+> Rename the current branch locally and on remote
+
+```shell
+git x rename-branch new-feature-name
+```
+
+#### Output:
+
+```shell
+🔄 Renaming branch 'old-name' to 'new-feature-name'...
+✅ Branch renamed successfully
+```
+
+Safely renames your current branch by:
+- Renaming the local branch
+- Updating the remote tracking branch
+- Cleaning up old remote references
+
+---
+
+### `since [ref]`
+
+> Show commits since a reference (e.g., `d926b4b`, my-branch, origin/main)
+
+```shell
+git x since origin/main
+```
+
+#### Output:
+
+```shell
+🔍 Commits since origin/main:
+- 8f2d9b3 fix login bug
+- b41a71e add auth test
+```
 
 ---
 
@@ -456,6 +357,82 @@ git x stash-branch apply-by-branch feature-work
 - `--list` — List matching stashes instead of applying
 
 Helps manage stashes more effectively by associating them with branches.
+
+---
+
+### `summary`
+
+> Show a short, changelog-style summary of recent commits
+
+```shell
+git x summary
+git x summary --since "2 days ago"
+```
+
+**Flags:**
+- `--since` — Accepts natural date formats like "2 days ago", "last Monday", or exact dates like "2025-07-01". It uses Git's built-in date parser, so most human-readable expressions work.
+
+#### Output:
+```shell
+🗞️ Commit summary since 3 days ago:
+
+📅 2025-07-25
+ - 🛠 fix: update token refresh logic (by Alice, 3 hours ago)
+ - ✨ feat: add dark mode support (by Bob, 6 hours ago)
+
+📅 2025-07-24
+ - 🔥 remove unused dependencies (by Alice, 1 day ago)
+
+📅 2025-07-23
+ - 🐛 fix: handle null response in API call (by Carol, 2 days ago)
+```
+
+- Groups commits by day
+- Shows commit message, author, and relative time
+- Useful for writing daily stand-ups, changelogs, or review summaries
+- Defaults to showing commits from the last 3 days
+- Can be customized using `--since` (e.g. `--since "1 week ago"`)
+- Sorts commits newest-first within each day
+
+---
+
+### `sync`
+
+> Sync current branch with upstream (fetch + rebase/merge)
+
+```shell
+git x sync
+git x sync --merge
+```
+
+#### Output:
+
+```shell
+🔄 Syncing branch 'feature' with 'origin/feature'...
+⬇️ Branch is 2 commit(s) behind upstream
+✅ Successfully rebased onto upstream
+```
+
+**Flags:**
+- `--merge` — Use merge instead of rebase for integration
+
+Automatically fetches from remote and integrates upstream changes into your current branch.
+
+---
+
+### `undo`
+
+> Undo the last commit (without losing changes)
+
+```shell
+git x undo
+```
+
+#### Output:
+
+```shell
+Last commit undone (soft reset). Changes kept in working directory.
+```
 
 ---
 
@@ -487,6 +464,50 @@ git x upstream sync-all --dry-run
 - `--merge` — Use merge instead of rebase
 
 Streamlines upstream branch management across your entire repository.
+
+---
+
+### `what [branch]`
+
+> Show what's different between this branch and another (default: main)
+
+```shell
+git x what
+git x what develop
+```
+
+#### Output:
+
+```shell
+Branch: feature/new-ui vs main
++ 4 commits ahead
+- 2 commits behind
+Changes:
+ - + new_ui.js
+ - ~ App.tsx
+ - - old_ui.css
+```
+
+---
+
+## Command Transparency
+
+`git-x` believes in **complete transparency** — there's no magic, no hidden behavior, and no surprise side effects.
+
+Every `git-x` command is a **thin wrapper** around standard Git operations that you could run yourself. Want to know exactly what's happening under the hood? Check out our [**Command Internals Documentation**](docs/command-internals.md).
+
+**Why this matters:**
+- **Trust** — You can verify every operation before and after
+- **Learning** — Understand the Git commands you're actually running  
+- **Debugging** — When something goes wrong, you know exactly what to investigate
+- **Portability** — You can replicate any `git-x` workflow with plain Git
+
+**Example:** When you run `git x graph`, it literally executes:
+```shell
+git log --oneline --graph --decorate --all
+```
+
+No database calls, no hidden state, no magic — just Git doing Git things, with better UX.
 
 ---
 
@@ -529,27 +550,6 @@ git log --oneline --graph --decorate --all
 - **Zero dependencies** — Single binary, no runtime requirements
 - **Cross-platform** — Works on macOS, Linux, Windows
 - **Memory safe** — No crashes, no memory leaks
-
----
-
-## Command Transparency
-
-`git-x` believes in **complete transparency** — there's no magic, no hidden behavior, and no surprise side effects.
-
-Every `git-x` command is a **thin wrapper** around standard Git operations that you could run yourself. Want to know exactly what's happening under the hood? Check out our [**Command Internals Documentation**](docs/command-internals.md).
-
-**Why this matters:**
-- **Trust** — You can verify every operation before and after
-- **Learning** — Understand the Git commands you're actually running  
-- **Debugging** — When something goes wrong, you know exactly what to investigate
-- **Portability** — You can replicate any `git-x` workflow with plain Git
-
-**Example:** When you run `git x graph`, it literally executes:
-```shell
-git log --oneline --graph --decorate --all
-```
-
-No database calls, no hidden state, no magic — just Git doing Git things, with better UX.
 
 ---
 
