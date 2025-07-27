@@ -104,5 +104,3 @@ pub fn format_diff_line(line: &str) -> Option<String> {
         None
     }
 }
-
-

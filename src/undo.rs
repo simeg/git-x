@@ -27,5 +27,3 @@ pub fn format_success_message() -> &'static str {
 pub fn format_error_message() -> &'static str {
     "❌ Failed to undo last commit."
 }
-
-

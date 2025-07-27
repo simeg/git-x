@@ -31,7 +31,10 @@ fn test_git_xgraph_outputs_graph_symbols() {
 // Unit tests for helper functions
 #[test]
 fn test_get_git_log_args() {
-    assert_eq!(get_git_log_args(), ["log", "--oneline", "--graph", "--decorate", "--all"]);
+    assert_eq!(
+        get_git_log_args(),
+        ["log", "--oneline", "--graph", "--decorate", "--all"]
+    );
 }
 
 #[test]

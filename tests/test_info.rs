@@ -1,8 +1,8 @@
 mod common;
 
 use common::{repo_with_branch, repo_with_remote_ahead};
-use predicates::str::contains;
 use git_x::info::*;
+use predicates::str::contains;
 
 #[test]
 fn test_info_output_contains_expected_lines() {
@@ -43,17 +43,32 @@ fn test_info_output_shows_behind() {
 #[test]
 fn test_extract_repo_name() {
     assert_eq!(extract_repo_name("/path/to/my-repo"), "my-repo");
-    assert_eq!(extract_repo_name("/another/path/project-name"), "project-name");
+    assert_eq!(
+        extract_repo_name("/another/path/project-name"),
+        "project-name"
+    );
     assert_eq!(extract_repo_name("simple-name"), "simple-name");
     assert_eq!(extract_repo_name("/"), "");
 }
 
 #[test]
 fn test_parse_ahead_behind_counts() {
-    assert_eq!(parse_ahead_behind_counts("3\t2"), ("3".to_string(), "2".to_string()));
-    assert_eq!(parse_ahead_behind_counts("0\t5"), ("0".to_string(), "5".to_string()));
-    assert_eq!(parse_ahead_behind_counts(""), ("0".to_string(), "0".to_string()));
-    assert_eq!(parse_ahead_behind_counts("1"), ("1".to_string(), "0".to_string()));
+    assert_eq!(
+        parse_ahead_behind_counts("3\t2"),
+        ("3".to_string(), "2".to_string())
+    );
+    assert_eq!(
+        parse_ahead_behind_counts("0\t5"),
+        ("0".to_string(), "5".to_string())
+    );
+    assert_eq!(
+        parse_ahead_behind_counts(""),
+        ("0".to_string(), "0".to_string())
+    );
+    assert_eq!(
+        parse_ahead_behind_counts("1"),
+        ("1".to_string(), "0".to_string())
+    );
 }
 
 #[test]

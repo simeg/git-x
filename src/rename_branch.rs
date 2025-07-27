@@ -117,5 +117,3 @@ pub fn format_delete_success_message(old_branch: &str) -> String {
 pub fn format_rename_success_message() -> &'static str {
     "Branch renamed successfully."
 }
-
-

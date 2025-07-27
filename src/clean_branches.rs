@@ -9,7 +9,7 @@ pub fn run(dry_run: bool) {
     let stdout = String::from_utf8_lossy(&output.stdout);
     let branches: Vec<String> = stdout
         .lines()
-        .map(|line| clean_branch_name(line))
+        .map(clean_branch_name)
         .filter(|branch| !is_protected_branch(branch))
         .collect();
 
@@ -80,9 +80,8 @@ pub fn format_no_branches_message() -> &'static str {
 // Helper function to format deletion summary
 pub fn format_deletion_summary(count: usize, dry_run: bool) -> String {
     if dry_run {
-        format!("🧪 (dry run) {} branches would be deleted:", count)
+        format!("🧪 (dry run) {count} branches would be deleted:")
     } else {
-        format!("🧹 Deleted {} merged branches:", count)
+        format!("🧹 Deleted {count} merged branches:")
     }
 }
-

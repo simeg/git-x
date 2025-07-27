@@ -1,9 +1,9 @@
 mod common;
 
 use common::repo_with_merged_branch;
+use git_x::clean_branches::*;
 use predicates::str::contains;
 use std::process::Command as StdCommand;
-use git_x::clean_branches::*;
 
 #[test]
 fn test_clean_branches_dry_run_outputs_expected() {
@@ -75,7 +75,11 @@ fn test_is_protected_branch() {
 fn test_get_git_delete_args() {
     assert_eq!(
         get_git_delete_args("feature"),
-        vec!["branch".to_string(), "-d".to_string(), "feature".to_string()]
+        vec![
+            "branch".to_string(),
+            "-d".to_string(),
+            "feature".to_string()
+        ]
     );
 }
 
@@ -89,7 +93,10 @@ fn test_format_dry_run_message() {
 
 #[test]
 fn test_format_no_branches_message() {
-    assert_eq!(format_no_branches_message(), "No merged branches to delete.");
+    assert_eq!(
+        format_no_branches_message(),
+        "No merged branches to delete."
+    );
 }
 
 #[test]

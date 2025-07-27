@@ -218,14 +218,12 @@ pub fn repo_with_merged_branch(feature_branch: &str, main_branch: &str) -> TestR
     };
     repo.configure_git_identity();
 
-    // Rename default branch to the requested main branch if it's not "master"
-    if main_branch != "master" {
-        StdCommand::new("git")
-            .args(["checkout", "-b", main_branch])
-            .current_dir(&path)
-            .assert()
-            .success();
-    }
+    // Create the requested main branch
+    StdCommand::new("git")
+        .args(["checkout", "-b", main_branch])
+        .current_dir(&path)
+        .assert()
+        .success();
 
     // Initial commit
     fs::write(path.join("README.md"), "# test").unwrap();

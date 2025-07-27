@@ -24,4 +24,3 @@ pub fn get_git_log_args() -> [&'static str; 5] {
 pub fn format_git_error(stderr: &str) -> String {
     format!("❌ git log failed:\n{stderr}")
 }
-

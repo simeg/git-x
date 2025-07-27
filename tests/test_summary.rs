@@ -1,8 +1,8 @@
 mod common;
 
 use common::repo_with_conventional_commits;
-use predicates::str::contains;
 use git_x::summary::*;
+use predicates::str::contains;
 
 #[test]
 fn test_git_xsummary_shows_grouped_commits() {
@@ -70,7 +70,7 @@ fn test_parse_commit_line() {
     let line = "abc123|2023-07-15|fix: bug in parser|John Doe|2 hours ago";
     let result = parse_commit_line(line);
     assert!(result.is_some());
-    
+
     let invalid_line = "abc123|incomplete";
     assert!(parse_commit_line(invalid_line).is_none());
 }
@@ -118,7 +118,8 @@ fn test_format_date_header() {
 
 #[test]
 fn test_parse_git_log_output() {
-    let output = "abc123|2023-07-15|fix: bug|John|2h ago\ndef456|2023-07-14|add feature|Jane|1d ago";
+    let output =
+        "abc123|2023-07-15|fix: bug|John|2h ago\ndef456|2023-07-14|add feature|Jane|1d ago";
     let result = parse_git_log_output(output);
     assert_eq!(result.len(), 2);
 }

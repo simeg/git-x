@@ -52,4 +52,3 @@ pub fn get_color_git_log_args() -> [&'static str; 7] {
 pub fn format_color_git_error(stderr: &str) -> String {
     format!("❌ git log failed:\n{stderr}")
 }
-

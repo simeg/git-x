@@ -33,5 +33,3 @@ pub fn format_git_log_range(reference: &str) -> String {
 pub fn is_log_empty(log_output: &str) -> bool {
     log_output.trim().is_empty()
 }
-
-

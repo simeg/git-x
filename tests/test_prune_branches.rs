@@ -1,9 +1,9 @@
 mod common;
 
 use common::repo_with_merged_branch;
+use git_x::prune_branches::*;
 use predicates::boolean::PredicateBooleanExt;
 use predicates::str::contains;
-use git_x::prune_branches::*;
 
 #[test]
 fn test_prune_branches_deletes_merged_branch() {
@@ -32,7 +32,10 @@ fn test_prune_branches_respects_exclude() {
 // Unit tests for helper functions
 #[test]
 fn test_get_default_protected_branches() {
-    assert_eq!(get_default_protected_branches(), vec!["main", "master", "develop"]);
+    assert_eq!(
+        get_default_protected_branches(),
+        vec!["main", "master", "develop"]
+    );
 }
 
 #[test]
@@ -53,9 +56,12 @@ fn test_parse_except_branches() {
 fn test_get_all_protected_branches() {
     let default_only = get_all_protected_branches(None);
     assert_eq!(default_only, vec!["main", "master", "develop"]);
-    
+
     let with_except = get_all_protected_branches(Some("feature,hotfix"));
-    assert_eq!(with_except, vec!["main", "master", "develop", "feature", "hotfix"]);
+    assert_eq!(
+        with_except,
+        vec!["main", "master", "develop", "feature", "hotfix"]
+    );
 }
 
 #[test]
@@ -68,7 +74,7 @@ fn test_clean_git_branch_name() {
 #[test]
 fn test_is_branch_protected() {
     let protected = vec!["main".to_string(), "develop".to_string()];
-    
+
     assert!(is_branch_protected("main", "current", &protected));
     assert!(is_branch_protected("develop", "current", &protected));
     assert!(is_branch_protected("current", "current", &protected));
@@ -79,7 +85,11 @@ fn test_is_branch_protected() {
 fn test_get_git_branch_delete_args() {
     assert_eq!(
         get_git_branch_delete_args("feature"),
-        ["branch".to_string(), "-d".to_string(), "feature".to_string()]
+        [
+            "branch".to_string(),
+            "-d".to_string(),
+            "feature".to_string()
+        ]
     );
 }
 
@@ -101,5 +111,8 @@ fn test_format_branch_delete_failed_message() {
 
 #[test]
 fn test_format_no_branches_to_prune_message() {
-    assert_eq!(format_no_branches_to_prune_message(), "✅ No merged branches to prune.");
+    assert_eq!(
+        format_no_branches_to_prune_message(),
+        "✅ No merged branches to prune."
+    );
 }

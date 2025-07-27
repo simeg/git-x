@@ -90,7 +90,7 @@ pub fn format_commit_entry(message: &str) -> String {
 
 // Helper function to format commit meta
 pub fn format_commit_meta(author: &str, time: &str) -> String {
-    format!("(by {}, {})", author, time)
+    format!("(by {author}, {time})")
 }
 
 // Helper function to print commit summary
@@ -131,5 +131,3 @@ pub fn get_commit_emoji_public(message: &str) -> &'static str {
         "🔹"
     }
 }
-
-

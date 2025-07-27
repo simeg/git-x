@@ -1,8 +1,8 @@
 mod common;
 
 use common::repo_with_branch;
-use std::process::Command;
 use git_x::rename_branch::*;
+use std::process::Command;
 
 #[test]
 fn test_rename_branch_in_isolated_repo() {
@@ -31,7 +31,10 @@ fn test_rename_branch_in_isolated_repo() {
 // Unit tests for helper functions
 #[test]
 fn test_get_current_branch_args() {
-    assert_eq!(get_current_branch_args(), ["rev-parse", "--abbrev-ref", "HEAD"]);
+    assert_eq!(
+        get_current_branch_args(),
+        ["rev-parse", "--abbrev-ref", "HEAD"]
+    );
 }
 
 #[test]
@@ -46,11 +49,19 @@ fn test_is_branch_already_named() {
 fn test_get_local_rename_args() {
     assert_eq!(
         get_local_rename_args("new-branch"),
-        vec!["branch".to_string(), "-m".to_string(), "new-branch".to_string()]
+        vec![
+            "branch".to_string(),
+            "-m".to_string(),
+            "new-branch".to_string()
+        ]
     );
     assert_eq!(
         get_local_rename_args("feature/awesome"),
-        vec!["branch".to_string(), "-m".to_string(), "feature/awesome".to_string()]
+        vec![
+            "branch".to_string(),
+            "-m".to_string(),
+            "feature/awesome".to_string()
+        ]
     );
 }
 
@@ -122,5 +133,8 @@ fn test_format_delete_success_message() {
 
 #[test]
 fn test_format_rename_success_message() {
-    assert_eq!(format_rename_success_message(), "Branch renamed successfully.");
+    assert_eq!(
+        format_rename_success_message(),
+        "Branch renamed successfully."
+    );
 }

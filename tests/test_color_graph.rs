@@ -1,5 +1,5 @@
 use git_x::color_graph::*;
-use std::process::{Output, ExitStatus};
+use std::process::{ExitStatus, Output};
 
 #[test]
 fn test_get_color_git_log_args() {
@@ -29,7 +29,7 @@ fn test_format_color_git_error() {
 #[test]
 fn test_is_command_successful() {
     use std::os::unix::process::ExitStatusExt;
-    
+
     let success_output = Output {
         status: ExitStatus::from_raw(0),
         stdout: vec![],
@@ -49,5 +49,8 @@ fn test_is_command_successful() {
 fn test_convert_output_to_string() {
     assert_eq!(convert_output_to_string(b"hello world"), "hello world");
     assert_eq!(convert_output_to_string(b""), "");
-    assert_eq!(convert_output_to_string(b"git log output"), "git log output");
+    assert_eq!(
+        convert_output_to_string(b"git log output"),
+        "git log output"
+    );
 }

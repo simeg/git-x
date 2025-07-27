@@ -1,9 +1,9 @@
 mod common;
 
 use common::repo_with_commits;
+use git_x::undo::*;
 use predicates::str::contains;
 use std::process::Command;
-use git_x::undo::*;
 
 #[test]
 fn test_git_xundo_soft_resets_last_commit() {
@@ -40,7 +40,10 @@ fn test_get_git_reset_args() {
 
 #[test]
 fn test_format_success_message() {
-    assert_eq!(format_success_message(), "Last commit undone (soft reset). Changes kept in working directory.");
+    assert_eq!(
+        format_success_message(),
+        "Last commit undone (soft reset). Changes kept in working directory."
+    );
 }
 
 #[test]

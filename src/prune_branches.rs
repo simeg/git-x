@@ -77,11 +77,11 @@ pub fn get_all_protected_branches(except: Option<&str>) -> Vec<String> {
         .into_iter()
         .map(|s| s.to_string())
         .collect();
-    
+
     if let Some(except_str) = except {
         protected.extend(parse_except_branches(except_str));
     }
-    
+
     protected
 }
 
@@ -91,7 +91,11 @@ pub fn clean_git_branch_name(branch: &str) -> String {
 }
 
 // Helper function to check if branch should be protected
-pub fn is_branch_protected(branch: &str, current_branch: &str, protected_branches: &[String]) -> bool {
+pub fn is_branch_protected(
+    branch: &str,
+    current_branch: &str,
+    protected_branches: &[String],
+) -> bool {
     branch == current_branch || protected_branches.iter().any(|pb| pb == branch)
 }
 
@@ -114,5 +118,3 @@ pub fn format_branch_delete_failed_message(branch: &str) -> String {
 pub fn format_no_branches_to_prune_message() -> &'static str {
     "✅ No merged branches to prune."
 }
-
-

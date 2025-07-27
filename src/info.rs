@@ -59,7 +59,7 @@ pub fn extract_repo_name(repo_path: &str) -> String {
     Path::new(repo_path)
         .file_name()
         .map(|s| s.to_string_lossy().into_owned())
-        .unwrap_or_else(|| "unknown".to_string())
+        .unwrap_or_default()
 }
 
 // Helper function to parse ahead/behind counts
@@ -75,8 +75,6 @@ pub fn format_tracking_branch(tracking_raw: &str) -> String {
     if tracking_raw.is_empty() {
         "(no upstream)".to_string()
     } else {
-        tracking_raw.to_string()
+        format!("Tracking: {tracking_raw}")
     }
 }
-
-

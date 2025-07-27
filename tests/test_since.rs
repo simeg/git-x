@@ -1,8 +1,8 @@
 mod common;
 
 use common::repo_with_commits;
-use predicates::str::contains;
 use git_x::since::*;
+use predicates::str::contains;
 
 #[test]
 fn test_git_xsince_outputs_commits_since_ref() {

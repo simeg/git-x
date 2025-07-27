@@ -167,5 +167,3 @@ fn check_uncommitted_changes(green: &Style, yellow: &Style, _red: &Style) {
         );
     }
 }
-
-

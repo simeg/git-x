@@ -1,8 +1,8 @@
 mod common;
 
 use common::repo_with_feature_ahead;
-use predicates::str::contains;
 use git_x::what::*;
+use predicates::str::contains;
 
 #[test]
 fn test_git_xwhat_shows_diff_and_commits() {

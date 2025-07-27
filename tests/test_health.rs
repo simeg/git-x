@@ -1,8 +1,8 @@
 mod common;
 
 use common::{basic_repo, repo_with_branch};
-use predicates::str::contains;
 use git_x::health::*;
+use predicates::str::contains;
 
 #[test]
 fn test_health_command_runs_successfully() {
