@@ -4,6 +4,8 @@
 
 It wraps common Git actions in muscle-memory-friendly, no-brainer commands — perfect for solo developers, team leads, and anyone tired of typing `git log --oneline --graph --decorate --all` for the 400th time.
 
+⚠️ **PSA: Do you know shell tab completion? If so - I need your help! 🙏 See the [Tab Completion](#-tab-completion-) section** ⚠️
+
 ---
 
 ## 📚 Table of Contents
