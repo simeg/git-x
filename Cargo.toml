@@ -1,6 +1,6 @@
 [package]
 name = "git-x"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Simon Egersand <s.egersand@gmail.com>"]
 description = "CLI extensions for Git that simplify common workflows"
 keywords = ["git", "cli", "tooling"]
@@ -27,7 +27,3 @@ assert_cmd = "2.0"
 tempfile = "3.20"
 predicates = "3.1"
 criterion = "0.5"
-
-# [[bench]]
-# name = "performance_benchmarks"
-# harness = false
