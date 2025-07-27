@@ -7,7 +7,9 @@
       "WebFetch(domain:docs.anthropic.com)",
       "Bash(make:*)",
       "Bash(git add:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(git commit:*)",
+      "Bash(grep:*)"
     ],
     "deny": []
   }

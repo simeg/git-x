@@ -6,13 +6,33 @@ pub fn run() {
         .output()
         .expect("Failed to run git log");
 
-    if output.status.success() {
-        let result = String::from_utf8_lossy(&output.stdout);
-        println!("{result}");
+    if is_command_successful(&output) {
+        print_git_output(&output.stdout);
     } else {
-        let err = String::from_utf8_lossy(&output.stderr);
-        eprintln!("{}", format_color_git_error(&err));
+        print_git_error(&output.stderr);
     }
+}
+
+// Helper function to check if command was successful
+pub fn is_command_successful(output: &std::process::Output) -> bool {
+    output.status.success()
+}
+
+// Helper function to print git output
+pub fn print_git_output(stdout: &[u8]) {
+    let result = convert_output_to_string(stdout);
+    println!("{result}");
+}
+
+// Helper function to print git error
+pub fn print_git_error(stderr: &[u8]) {
+    let err = convert_output_to_string(stderr);
+    eprintln!("{}", format_color_git_error(&err));
+}
+
+// Helper function to convert output to string
+pub fn convert_output_to_string(output: &[u8]) -> String {
+    String::from_utf8_lossy(output).to_string()
 }
 
 // Helper function to get color git log arguments
@@ -36,6 +56,7 @@ pub fn format_color_git_error(stderr: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::process::{Output, ExitStatus};
 
     #[test]
     fn test_get_color_git_log_args() {
@@ -60,5 +81,31 @@ mod tests {
             format_color_git_error("permission denied"),
             "❌ git log failed:\npermission denied"
         );
+    }
+
+    #[test]
+    fn test_is_command_successful() {
+        use std::os::unix::process::ExitStatusExt;
+        
+        let success_output = Output {
+            status: ExitStatus::from_raw(0),
+            stdout: vec![],
+            stderr: vec![],
+        };
+        assert!(is_command_successful(&success_output));
+
+        let failure_output = Output {
+            status: ExitStatus::from_raw(256), // Exit code 1
+            stdout: vec![],
+            stderr: vec![],
+        };
+        assert!(!is_command_successful(&failure_output));
+    }
+
+    #[test]
+    fn test_convert_output_to_string() {
+        assert_eq!(convert_output_to_string(b"hello world"), "hello world");
+        assert_eq!(convert_output_to_string(b""), "");
+        assert_eq!(convert_output_to_string(b"git log output"), "git log output");
     }
 }
