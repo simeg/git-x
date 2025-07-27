@@ -1,6 +1,6 @@
 use assert_cmd::Command;
 use git_x::sync::*;
-use predicates::str;
+use predicates::prelude::*;
 use std::fs;
 use std::path::PathBuf;
 use tempfile::TempDir;
@@ -157,7 +157,8 @@ fn test_sync_run_function_outside_git_repo() {
     cmd.arg("sync")
         .current_dir(temp_dir.path())
         .assert()
-        .failure();
+        .success()
+        .stderr(predicate::str::contains("Not in a git repository"));
 }
 
 #[test]
@@ -168,8 +169,8 @@ fn test_sync_run_function_no_upstream() {
     cmd.arg("sync")
         .current_dir(&repo_path)
         .assert()
-        .failure()
-        .stderr(str::contains("No upstream"));
+        .success()
+        .stderr(predicate::str::contains("No upstream branch configured"));
 }
 
 #[test]
@@ -178,7 +179,7 @@ fn test_sync_command_help() {
     cmd.args(["sync", "--help"])
         .assert()
         .success()
-        .stdout(str::contains("Sync current branch with upstream"));
+        .stdout(predicate::str::contains("Sync current branch with upstream"));
 }
 
 #[test]
@@ -187,5 +188,5 @@ fn test_sync_merge_flag() {
     cmd.args(["sync", "--merge", "--help"])
         .assert()
         .success()
-        .stdout(str::contains("Use merge instead of rebase"));
+        .stdout(predicate::str::contains("Use merge instead of rebase"));
 }
