@@ -48,13 +48,16 @@ fn create_test_repo() -> (TempDir, PathBuf) {
 }
 
 // Helper function to create a remote repository
-fn create_remote_repo(name: &str, repo_path: &PathBuf) -> PathBuf {
-    let remote_dir = repo_path.parent().unwrap().join(format!("{name}.git"));
-    
+fn create_remote_repo(name: &str, repo_path: &PathBuf) -> (PathBuf, String) {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+    let unique_name = format!("{name}_{timestamp}");
+    let remote_dir = repo_path.parent().unwrap().join(format!("{unique_name}.git"));
+
     // Initialize bare remote repo
     Command::new("git")
         .args(["init", "--bare"])
-        .current_dir(&remote_dir.parent().unwrap())
+        .current_dir(remote_dir.parent().unwrap())
         .arg(&remote_dir)
         .assert()
         .success();
@@ -66,19 +69,30 @@ fn create_remote_repo(name: &str, repo_path: &PathBuf) -> PathBuf {
         .assert()
         .success();
 
-    // Push initial branch to remote
+    // Get current branch name
+    let branch_output = Command::new("git")
+        .args(["branch", "--show-current"])
+        .current_dir(repo_path)
+        .output()
+        .expect("Failed to get current branch");
+    let current_branch = String::from_utf8_lossy(&branch_output.stdout).trim().to_string();
+    
+    // Push initial branch to remote with set-upstream and force
     Command::new("git")
-        .args(["push", name, "master"])
+        .args(["push", "-u", name, &current_branch, "--force"])
         .current_dir(repo_path)
         .assert()
         .success();
 
-    remote_dir
+    (remote_dir, current_branch)
 }
 
 #[test]
 fn test_get_git_branch_set_upstream_args() {
-    assert_eq!(get_git_branch_set_upstream_args(), ["branch", "--set-upstream-to"]);
+    assert_eq!(
+        get_git_branch_set_upstream_args(),
+        ["branch", "--set-upstream-to"]
+    );
 }
 
 #[test]
@@ -195,7 +209,9 @@ fn test_upstream_status_command_help() {
     cmd.args(["upstream", "status", "--help"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("Show upstream status for all branches"));
+        .stdout(predicate::str::contains(
+            "Show upstream status for all branches",
+        ));
 }
 
 #[test]
@@ -204,7 +220,9 @@ fn test_upstream_sync_all_command_help() {
     cmd.args(["upstream", "sync-all", "--help"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("Sync all branches with their upstreams"));
+        .stdout(predicate::str::contains(
+            "Sync all local branches with their upstreams",
+        ));
 }
 
 #[test]
@@ -225,7 +243,9 @@ fn test_upstream_set_invalid_format() {
         .current_dir(&repo_path)
         .assert()
         .success()
-        .stderr(predicate::str::contains("must be in format 'remote/branch'"));
+        .stderr(predicate::str::contains(
+            "must be in format 'remote/branch'",
+        ));
 
     // Test upstream with empty parts
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
@@ -258,15 +278,19 @@ fn test_upstream_set_nonexistent_upstream() {
 #[test]
 fn test_upstream_set_success() {
     let (_temp_dir, repo_path) = create_test_repo();
-    let _remote_dir = create_remote_repo("origin", &repo_path);
+    let (_remote_dir, branch_name) = create_remote_repo("origin", &repo_path);
 
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.args(["upstream", "set", "origin/master"])
+    cmd.args(["upstream", "set", &format!("origin/{}", branch_name)])
         .current_dir(&repo_path)
         .assert()
         .success()
-        .stdout(predicate::str::contains("Setting upstream for 'master' to 'origin/master'"))
-        .stdout(predicate::str::contains("Upstream for 'master' set to 'origin/master'"));
+        .stdout(predicate::str::contains(
+            &format!("Setting upstream for '{}' to 'origin/{}'", branch_name, branch_name),
+        ))
+        .stdout(predicate::str::contains(
+            &format!("Upstream for '{}' set to 'origin/{}'", branch_name, branch_name),
+        ));
 }
 
 #[test]
@@ -304,7 +328,7 @@ fn test_upstream_status_no_branches() {
 #[test]
 fn test_upstream_status_with_branches() {
     let (_temp_dir, repo_path) = create_test_repo();
-    let _remote_dir = create_remote_repo("origin", &repo_path);
+    let (_remote_dir, branch_name) = create_remote_repo("origin", &repo_path);
 
     // Create a feature branch
     Command::new("git")
@@ -313,15 +337,15 @@ fn test_upstream_status_with_branches() {
         .assert()
         .success();
 
-    // Set upstream for master
+    // Set upstream for the main branch
     Command::new("git")
-        .args(["checkout", "master"])
+        .args(["checkout", &branch_name])
         .current_dir(&repo_path)
         .assert()
         .success();
-    
+
     Command::new("git")
-        .args(["branch", "--set-upstream-to", "origin/master"])
+        .args(["branch", "--set-upstream-to", &format!("origin/{}", branch_name)])
         .current_dir(&repo_path)
         .assert()
         .success();
@@ -332,7 +356,7 @@ fn test_upstream_status_with_branches() {
         .assert()
         .success()
         .stdout(predicate::str::contains("Upstream status for all branches"))
-        .stdout(predicate::str::contains("master -> origin/master"))
+        .stdout(predicate::str::contains(&format!("{} -> origin/{}", branch_name, branch_name)))
         .stdout(predicate::str::contains("feature -> (no upstream)"));
 }
 
@@ -345,17 +369,19 @@ fn test_upstream_sync_all_no_upstreams() {
         .current_dir(&repo_path)
         .assert()
         .success()
-        .stdout(predicate::str::contains("No branches with upstream configuration found"));
+        .stdout(predicate::str::contains(
+            "No branches with upstream configuration found",
+        ));
 }
 
 #[test]
 fn test_upstream_sync_all_dry_run() {
     let (_temp_dir, repo_path) = create_test_repo();
-    let _remote_dir = create_remote_repo("origin", &repo_path);
+    let (_remote_dir, branch_name) = create_remote_repo("origin", &repo_path);
 
     // Set upstream for master
     Command::new("git")
-        .args(["branch", "--set-upstream-to", "origin/master"])
+        .args(["branch", "--set-upstream-to", &format!("origin/{}", branch_name)])
         .current_dir(&repo_path)
         .assert()
         .success();
@@ -372,11 +398,11 @@ fn test_upstream_sync_all_dry_run() {
 #[test]
 fn test_upstream_sync_all_with_merge() {
     let (_temp_dir, repo_path) = create_test_repo();
-    let _remote_dir = create_remote_repo("origin", &repo_path);
+    let (_remote_dir, branch_name) = create_remote_repo("origin", &repo_path);
 
     // Set upstream for master
     Command::new("git")
-        .args(["branch", "--set-upstream-to", "origin/master"])
+        .args(["branch", "--set-upstream-to", &format!("origin/{}", branch_name)])
         .current_dir(&repo_path)
         .assert()
         .success();
@@ -398,7 +424,7 @@ fn test_upstream_command_outside_git_repo() {
         .current_dir(temp_dir.path())
         .assert()
         .success()
-        .stderr(predicate::str::contains("Failed"));
+        .stderr(predicate::str::contains("Failed to list local branches"));
 }
 
 #[test]
@@ -410,7 +436,7 @@ fn test_upstream_set_outside_git_repo() {
         .current_dir(temp_dir.path())
         .assert()
         .success()
-        .stderr(predicate::str::contains("Failed"));
+        .stderr(predicate::str::contains("Upstream branch does not exist"));
 }
 
 #[test]
@@ -419,5 +445,7 @@ fn test_upstream_main_command_help() {
     cmd.args(["upstream", "--help"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("Manage upstream branch relationships"));
+        .stdout(predicate::str::contains(
+            "Manage upstream branch relationships",
+        ));
 }

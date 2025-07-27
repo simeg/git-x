@@ -179,7 +179,9 @@ fn test_sync_command_help() {
     cmd.args(["sync", "--help"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("Sync current branch with upstream"));
+        .stdout(predicate::str::contains(
+            "Sync current branch with upstream",
+        ));
 }
 
 #[test]
