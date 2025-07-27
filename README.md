@@ -58,6 +58,8 @@ Most Git tools either:
 
 `git-x` fixes that by giving you **opinionated, purpose-built subcommands** that *just do the thing*.
 
+> 💡 **Want to see git-x in action?** Check out our [**Real-World Scenarios**](docs/real-world-scenarios.md) document to see exactly how git-x commands solve everyday developer problems like code review cleanup, branch naming mistakes, urgent context switching, and complex remote workflows.
+
 ---
 
 ## Installation
