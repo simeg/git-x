@@ -71,6 +71,13 @@ fn test_parse_commit_line() {
     let result = parse_commit_line(line);
     assert!(result.is_some());
 
+    if let Some((date, formatted)) = result {
+        assert_eq!(date.to_string(), "2023-07-15");
+        assert!(formatted.contains("fix: bug in parser"));
+        assert!(formatted.contains("John Doe"));
+        assert!(formatted.contains("2 hours ago"));
+    }
+
     let invalid_line = "abc123|incomplete";
     assert!(parse_commit_line(invalid_line).is_none());
 }
@@ -144,4 +151,26 @@ fn test_summary_run_function_no_commits() {
 
     // Test with a time range that should show no commits
     git_x::summary::run("1 minute ago".to_string());
+}
+
+#[test]
+fn test_summary_run_function_git_error() {
+    let temp_dir = tempfile::tempdir().unwrap();
+
+    // Change to non-git directory to trigger error path
+    std::env::set_current_dir(temp_dir.path()).unwrap();
+
+    // Test that the function handles git command failure gracefully
+    git_x::summary::run("1 day ago".to_string());
+}
+
+#[test]
+fn test_summary_run_function_empty_output() {
+    let repo = common::basic_repo();
+
+    // Change to repo directory and run the function directly
+    std::env::set_current_dir(repo.path()).unwrap();
+
+    // Test with a time range that should produce empty output (future date)
+    git_x::summary::run("1 day from now".to_string());
 }

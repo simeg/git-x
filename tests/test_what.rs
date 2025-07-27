@@ -116,3 +116,21 @@ fn test_what_run_function_with_target() {
     // Test with specific target
     git_x::what::run(Some("main".to_string()));
 }
+
+#[test]
+fn test_what_run_function_with_multiple_changes() {
+    let repo = common::basic_repo();
+
+    // Create multiple changes to trigger diff output
+    repo.create_branch("feature/multi-changes");
+
+    // Add multiple files to trigger the diff line printing
+    repo.add_commit("file1.txt", "content1", "Add file1");
+    repo.add_commit("file2.txt", "content2", "Add file2");
+
+    // Change to repo directory and run the function directly
+    std::env::set_current_dir(repo.path()).unwrap();
+
+    // Test that the function prints diff lines
+    git_x::what::run(Some("main".to_string()));
+}

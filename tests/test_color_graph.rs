@@ -83,3 +83,14 @@ fn test_print_git_error() {
     // Test that print_git_error doesn't panic
     git_x::color_graph::print_git_error(test_error);
 }
+
+#[test]
+fn test_color_graph_run_function_in_non_git_directory() {
+    let temp_dir = tempfile::tempdir().unwrap();
+
+    // Change to non-git directory to trigger error path
+    std::env::set_current_dir(temp_dir.path()).unwrap();
+
+    // Test that the function handles git command failure gracefully
+    git_x::color_graph::run();
+}

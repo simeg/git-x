@@ -59,3 +59,14 @@ fn test_graph_run_function() {
     // Test that the function doesn't panic and git commands work
     git_x::graph::run();
 }
+
+#[test]
+fn test_graph_run_function_in_non_git_directory() {
+    let temp_dir = tempfile::tempdir().unwrap();
+
+    // Change to non-git directory to trigger error path
+    std::env::set_current_dir(temp_dir.path()).unwrap();
+
+    // Test that the function handles git command failure gracefully
+    git_x::graph::run();
+}

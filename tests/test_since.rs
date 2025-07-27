@@ -60,3 +60,14 @@ fn test_since_run_function_no_commits() {
     // Test with a reference that should show no commits
     git_x::since::run("HEAD".to_string());
 }
+
+#[test]
+fn test_since_run_function_git_error() {
+    let temp_dir = tempfile::tempdir().unwrap();
+
+    // Change to non-git directory to trigger error path
+    std::env::set_current_dir(temp_dir.path()).unwrap();
+
+    // Test that the function handles git command failure gracefully
+    git_x::since::run("HEAD".to_string());
+}

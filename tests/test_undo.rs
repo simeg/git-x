@@ -61,3 +61,14 @@ fn test_undo_run_function() {
     // Test that the function doesn't panic and git commands work
     git_x::undo::run();
 }
+
+#[test]
+fn test_undo_run_function_git_error() {
+    let temp_dir = tempfile::tempdir().unwrap();
+
+    // Change to non-git directory to trigger error path
+    std::env::set_current_dir(temp_dir.path()).unwrap();
+
+    // Test that the function handles git command failure gracefully
+    git_x::undo::run();
+}
