@@ -67,7 +67,7 @@ pub fn run(merge: bool) {
 }
 
 #[derive(Debug, PartialEq)]
-enum SyncStatus {
+pub enum SyncStatus {
     UpToDate,
     Behind(u32),
     Ahead(u32),
@@ -75,7 +75,7 @@ enum SyncStatus {
 }
 
 // Helper function to get current branch
-fn get_current_branch() -> Result<String, &'static str> {
+pub fn get_current_branch() -> Result<String, &'static str> {
     let output = Command::new("git")
         .args(["rev-parse", "--abbrev-ref", "HEAD"])
         .output()
@@ -89,7 +89,7 @@ fn get_current_branch() -> Result<String, &'static str> {
 }
 
 // Helper function to get upstream branch
-fn get_upstream_branch(branch: &str) -> Result<String, &'static str> {
+pub fn get_upstream_branch(branch: &str) -> Result<String, &'static str> {
     let output = Command::new("git")
         .args(["rev-parse", "--abbrev-ref", &format!("{branch}@{{u}}")])
         .output()
@@ -103,7 +103,7 @@ fn get_upstream_branch(branch: &str) -> Result<String, &'static str> {
 }
 
 // Helper function to fetch from upstream
-fn fetch_upstream(upstream: &str) -> Result<(), &'static str> {
+pub fn fetch_upstream(upstream: &str) -> Result<(), &'static str> {
     let remote = upstream.split('/').next().unwrap_or("origin");
 
     let status = Command::new("git")
@@ -119,7 +119,7 @@ fn fetch_upstream(upstream: &str) -> Result<(), &'static str> {
 }
 
 // Helper function to get sync status
-fn get_sync_status(branch: &str, upstream: &str) -> Result<SyncStatus, &'static str> {
+pub fn get_sync_status(branch: &str, upstream: &str) -> Result<SyncStatus, &'static str> {
     let output = Command::new("git")
         .args([
             "rev-list",
@@ -162,7 +162,7 @@ pub fn parse_sync_counts(output: &str) -> Result<(u32, u32), &'static str> {
 }
 
 // Helper function to sync with upstream
-fn sync_with_upstream(upstream: &str, merge: bool) -> Result<(), &'static str> {
+pub fn sync_with_upstream(upstream: &str, merge: bool) -> Result<(), &'static str> {
     let args = if merge {
         ["merge", upstream]
     } else {

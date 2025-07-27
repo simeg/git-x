@@ -35,7 +35,14 @@ impl std::fmt::Display for GitXError {
     }
 }
 
-impl std::error::Error for GitXError {}
+impl std::error::Error for GitXError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            GitXError::Io(err) => Some(err),
+            GitXError::GitCommand(_) | GitXError::Parse(_) => None,
+        }
+    }
+}
 
 impl From<std::io::Error> for GitXError {
     fn from(err: std::io::Error) -> Self {
