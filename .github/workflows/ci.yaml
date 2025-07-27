@@ -56,8 +56,22 @@ jobs:
       - name: Generate test coverage
         run: cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out xml
 
+      - name: Debug coverage files
+        run: |
+          ls -la
+          if [ -f cobertura.xml ]; then
+            echo "Coverage file found, size:"
+            wc -l cobertura.xml
+            echo "First few lines:"
+            head -20 cobertura.xml
+          else
+            echo "No cobertura.xml file found"
+          fi
+
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: simeg/git-x
+          file: ./cobertura.xml
+          fail_ci_if_error: false

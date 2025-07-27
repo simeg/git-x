@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cargo:*)",
+      "Bash(make test:*)",
+      "Bash(./target/debug/git-x info)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "Bash(make:*)",
+      "Bash(git add:*)",
+      "Bash(git push:*)"
+    ],
+    "deny": []
+  }
+}
