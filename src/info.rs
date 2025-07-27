@@ -8,10 +8,7 @@ pub fn run() {
         .output()
         .expect("Failed to get repo root");
     let repo_path = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    let repo_name = Path::new(&repo_path)
-        .file_name()
-        .map(|s| s.to_string_lossy().into_owned())
-        .unwrap_or_else(|| "unknown".to_string());
+    let repo_name = extract_repo_name(&repo_path);
 
     // Get current branch
     let output = Command::new("git")
@@ -26,11 +23,7 @@ pub fn run() {
         .output()
         .unwrap_or_else(|_| panic!("Failed to get upstream for {branch}"));
     let tracking_raw = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    let tracking = if tracking_raw.is_empty() {
-        "(no upstream)".to_string()
-    } else {
-        tracking_raw
-    };
+    let tracking = format_tracking_branch(&tracking_raw);
 
     // Get ahead/behind counts
     let output = Command::new("git")
@@ -38,9 +31,7 @@ pub fn run() {
         .output()
         .expect("Failed to get ahead/behind count");
     let counts = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    let parts: Vec<&str> = counts.split_whitespace().collect();
-    let ahead = parts.first().unwrap_or(&"0");
-    let behind = parts.get(1).unwrap_or(&"0");
+    let (ahead, behind) = parse_ahead_behind_counts(&counts);
 
     // Get last commit message and relative date
     let output = Command::new("git")
@@ -57,8 +48,76 @@ pub fn run() {
     println!("Tracking: {}", bold.apply_to(tracking));
     println!(
         "Ahead: {} Behind: {}",
-        bold.apply_to(ahead),
-        bold.apply_to(behind)
+        bold.apply_to(&ahead),
+        bold.apply_to(&behind)
     );
     println!("Last Commit: \"{}\"", bold.apply_to(last_commit));
+}
+
+// Helper function to extract repo name from path
+pub fn extract_repo_name(repo_path: &str) -> String {
+    Path::new(repo_path)
+        .file_name()
+        .map(|s| s.to_string_lossy().into_owned())
+        .unwrap_or_else(|| "unknown".to_string())
+}
+
+// Helper function to parse ahead/behind counts
+pub fn parse_ahead_behind_counts(counts_output: &str) -> (String, String) {
+    let parts: Vec<&str> = counts_output.split_whitespace().collect();
+    let ahead = parts.first().unwrap_or(&"0").to_string();
+    let behind = parts.get(1).unwrap_or(&"0").to_string();
+    (ahead, behind)
+}
+
+// Helper function to format tracking branch
+pub fn format_tracking_branch(tracking_raw: &str) -> String {
+    if tracking_raw.is_empty() {
+        "(no upstream)".to_string()
+    } else {
+        tracking_raw.to_string()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_extract_repo_name() {
+        assert_eq!(extract_repo_name("/path/to/my-repo"), "my-repo");
+        assert_eq!(extract_repo_name("/home/user/git-x"), "git-x");
+        assert_eq!(extract_repo_name("relative-path"), "relative-path");
+        assert_eq!(extract_repo_name(""), "unknown");
+    }
+
+    #[test]
+    fn test_parse_ahead_behind_counts() {
+        assert_eq!(
+            parse_ahead_behind_counts("3 2"),
+            ("3".to_string(), "2".to_string())
+        );
+        assert_eq!(
+            parse_ahead_behind_counts("0 0"),
+            ("0".to_string(), "0".to_string())
+        );
+        assert_eq!(
+            parse_ahead_behind_counts("5"),
+            ("5".to_string(), "0".to_string())
+        );
+        assert_eq!(
+            parse_ahead_behind_counts(""),
+            ("0".to_string(), "0".to_string())
+        );
+    }
+
+    #[test]
+    fn test_format_tracking_branch() {
+        assert_eq!(format_tracking_branch("origin/main"), "origin/main");
+        assert_eq!(format_tracking_branch(""), "(no upstream)");
+        assert_eq!(
+            format_tracking_branch("upstream/develop"),
+            "upstream/develop"
+        );
+    }
 }
