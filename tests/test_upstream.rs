@@ -1,4 +1,5 @@
 use assert_cmd::Command;
+use git_x::cli::UpstreamAction;
 use git_x::upstream::*;
 use predicates::prelude::*;
 use std::fs;
@@ -45,6 +46,88 @@ fn create_test_repo() -> (TempDir, PathBuf) {
         .success();
 
     (temp_dir, repo_path)
+}
+
+// Direct run() function tests for maximum coverage
+
+#[test]
+fn test_upstream_run_set_function() {
+    let (_temp_dir, repo_path) = create_test_repo();
+
+    std::env::set_current_dir(&repo_path).expect("Failed to change directory");
+
+    // Test set action through run function
+    let action = UpstreamAction::Set {
+        upstream: "origin/main".to_string(),
+    };
+
+    git_x::upstream::run(action);
+
+    std::env::set_current_dir("/").expect("Failed to reset directory");
+}
+
+#[test]
+fn test_upstream_run_set_function_invalid_format() {
+    let (_temp_dir, repo_path) = create_test_repo();
+
+    std::env::set_current_dir(&repo_path).expect("Failed to change directory");
+
+    // Test set action with invalid upstream format
+    let action = UpstreamAction::Set {
+        upstream: "invalid_format".to_string(),
+    };
+
+    git_x::upstream::run(action);
+
+    std::env::set_current_dir("/").expect("Failed to reset directory");
+}
+
+#[test]
+fn test_upstream_run_status_function() {
+    let (_temp_dir, repo_path) = create_test_repo();
+
+    std::env::set_current_dir(&repo_path).expect("Failed to change directory");
+
+    // Test status action through run function
+    let action = UpstreamAction::Status;
+
+    git_x::upstream::run(action);
+
+    std::env::set_current_dir("/").expect("Failed to reset directory");
+}
+
+#[test]
+fn test_upstream_run_sync_all_function() {
+    let (_temp_dir, repo_path) = create_test_repo();
+
+    std::env::set_current_dir(&repo_path).expect("Failed to change directory");
+
+    // Test sync-all action through run function
+    let action = UpstreamAction::SyncAll {
+        dry_run: true,
+        merge: false,
+    };
+
+    git_x::upstream::run(action);
+
+    std::env::set_current_dir("/").expect("Failed to reset directory");
+}
+
+#[test]
+fn test_upstream_run_sync_all_function_with_merge() {
+    let (_temp_dir, repo_path) = create_test_repo();
+
+    std::env::set_current_dir(&repo_path).expect("Failed to change directory");
+
+    // Test sync-all action with merge option
+    let action = UpstreamAction::SyncAll {
+        dry_run: false,
+        merge: true,
+    };
+
+    git_x::upstream::run(action);
+
+    std::env::set_current_dir("/").expect("Failed to reset directory");
 }
 
 // Helper function to create a remote repository

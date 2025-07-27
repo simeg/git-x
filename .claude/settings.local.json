@@ -13,7 +13,9 @@
       "Bash(mkdir:*)",
       "Bash(timeout 60 cargo bench --bench performance_benchmarks -- --quick)",
       "Bash(find:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(timeout 60 cargo tarpaulin --all-features --workspace --exclude-files=tests/* --timeout 30)",
+      "Bash(pkill:*)"
     ],
     "deny": []
   }

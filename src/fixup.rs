@@ -55,7 +55,7 @@ pub fn run(commit_hash: String, rebase: bool) {
 }
 
 // Helper function to validate commit hash exists
-fn validate_commit_hash(commit_hash: &str) -> Result<(), &'static str> {
+pub fn validate_commit_hash(commit_hash: &str) -> Result<(), &'static str> {
     let output = Command::new("git")
         .args([
             "rev-parse",
@@ -73,7 +73,7 @@ fn validate_commit_hash(commit_hash: &str) -> Result<(), &'static str> {
 }
 
 // Helper function to check for changes to commit
-fn check_for_changes() -> Result<bool, &'static str> {
+pub fn check_for_changes() -> Result<bool, &'static str> {
     let output = Command::new("git")
         .args(["diff", "--cached", "--quiet"])
         .status()
@@ -99,7 +99,7 @@ fn check_for_changes() -> Result<bool, &'static str> {
 }
 
 // Helper function to get short commit hash
-fn get_short_commit_hash(commit_hash: &str) -> Result<String, &'static str> {
+pub fn get_short_commit_hash(commit_hash: &str) -> Result<String, &'static str> {
     let output = Command::new("git")
         .args(["rev-parse", "--short", commit_hash])
         .output()

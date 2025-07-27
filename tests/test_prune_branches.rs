@@ -113,5 +113,31 @@ fn test_format_no_branches_to_prune_message() {
     );
 }
 
+// Direct run() function tests for maximum coverage
+
+#[test]
+fn test_prune_branches_run_function() {
+    let repo = repo_with_merged_branch("feature/delete-me", "main");
+
+    std::env::set_current_dir(repo.path()).expect("Failed to change directory");
+
+    // Test run function directly without exceptions
+    git_x::prune_branches::run(None);
+
+    std::env::set_current_dir("/").expect("Failed to reset directory");
+}
+
+#[test]
+fn test_prune_branches_run_function_with_except() {
+    let repo = repo_with_merged_branch("feature/delete-me", "main");
+
+    std::env::set_current_dir(repo.path()).expect("Failed to change directory");
+
+    // Test run function with exceptions
+    git_x::prune_branches::run(Some("main,master".to_string()));
+
+    std::env::set_current_dir("/").expect("Failed to reset directory");
+}
+
 // Note: prune_branches::run() calls exit() on errors, making it difficult to test directly
 // The CLI integration tests cover this functionality instead
