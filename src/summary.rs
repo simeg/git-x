@@ -68,3 +68,58 @@ fn emoji_for(message: &str) -> &str {
         "🔹"
     }
 }
+
+// Helper function to get emoji for commit message (public version for testing)
+pub fn get_commit_emoji_public(message: &str) -> &'static str {
+    let lower_msg = message.to_lowercase();
+    if lower_msg.contains("fix") || lower_msg.contains("bug") {
+        "🐛"
+    } else if lower_msg.contains("feat") || lower_msg.contains("add") {
+        "✨"
+    } else if lower_msg.contains("remove") || lower_msg.contains("delete") {
+        "🔥"
+    } else if lower_msg.contains("refactor") {
+        "🛠"
+    } else {
+        "🔹"
+    }
+}
+
+// Helper function to format git log args
+pub fn get_git_log_summary_args(since: &str) -> Vec<String> {
+    vec![
+        "log".to_string(),
+        "--since".to_string(),
+        since.to_string(),
+        "--pretty=format:%h|%ad|%s|%an|%cr".to_string(),
+        "--date=short".to_string(),
+    ]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_commit_emoji_public() {
+        assert_eq!(get_commit_emoji_public("fix: bug in parser"), "🐛");
+        assert_eq!(get_commit_emoji_public("BUG: handle null pointer"), "🐛");
+        assert_eq!(get_commit_emoji_public("feat: add new feature"), "✨");
+        assert_eq!(get_commit_emoji_public("add user authentication"), "✨");
+        assert_eq!(get_commit_emoji_public("remove old code"), "🔥");
+        assert_eq!(get_commit_emoji_public("delete unused files"), "🔥");
+        assert_eq!(get_commit_emoji_public("refactor database layer"), "🛠");
+        assert_eq!(get_commit_emoji_public("update documentation"), "🔹");
+        assert_eq!(get_commit_emoji_public("random commit"), "🔹");
+    }
+
+    #[test]
+    fn test_get_git_log_summary_args() {
+        let args = get_git_log_summary_args("3 days ago");
+        assert_eq!(args[0], "log");
+        assert_eq!(args[1], "--since");
+        assert_eq!(args[2], "3 days ago");
+        assert!(args[3].contains("--pretty=format:"));
+        assert_eq!(args[4], "--date=short");
+    }
+}

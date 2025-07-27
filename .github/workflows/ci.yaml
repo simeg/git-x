@@ -54,19 +54,7 @@ jobs:
           fi
 
       - name: Generate test coverage
-        run: cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out xml
-
-      - name: Debug coverage files
-        run: |
-          ls -la
-          if [ -f cobertura.xml ]; then
-            echo "Coverage file found, size:"
-            wc -l cobertura.xml
-            echo "First few lines:"
-            head -20 cobertura.xml
-          else
-            echo "No cobertura.xml file found"
-          fi
+        run: cargo tarpaulin --all-features --workspace --timeout 120 --out xml
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
