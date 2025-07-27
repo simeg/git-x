@@ -3,8 +3,8 @@ mod cli;
 use clap::Parser;
 use git_x::cli::{Cli, Commands};
 use git_x::{
-    clean_branches, color_graph, graph, health, info, large_files, new_branch, prune_branches,
-    rename_branch, since, summary, sync, undo, what,
+    clean_branches, color_graph, fixup, graph, health, info, large_files, new_branch,
+    prune_branches, rename_branch, since, stash_branch, summary, sync, undo, upstream, what,
 };
 
 fn main() {
@@ -25,5 +25,8 @@ fn main() {
         Commands::Sync { merge } => sync::run(merge),
         Commands::New { branch_name, from } => new_branch::run(branch_name, from),
         Commands::LargeFiles { limit, threshold } => large_files::run(limit, threshold),
+        Commands::Fixup { commit_hash, rebase } => fixup::run(commit_hash, rebase),
+        Commands::StashBranch { action } => stash_branch::run(action),
+        Commands::Upstream { action } => upstream::run(action),
     }
 }

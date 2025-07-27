@@ -9,7 +9,11 @@
       "Bash(git add:*)",
       "Bash(git push:*)",
       "Bash(git commit:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(mkdir:*)",
+      "Bash(timeout 60 cargo bench --bench performance_benchmarks -- --quick)",
+      "Bash(find:*)",
+      "Bash(ls:*)"
     ],
     "deny": []
   }

@@ -80,4 +80,64 @@ pub enum Commands {
         )]
         threshold: Option<f64>,
     },
+    #[clap(about = "Create fixup commits for easier interactive rebasing")]
+    Fixup {
+        #[clap(help = "Commit hash to create fixup for")]
+        commit_hash: String,
+        #[clap(long = "rebase", help = "Automatically rebase with autosquash after creating fixup", action = clap::ArgAction::SetTrue)]
+        rebase: bool,
+    },
+    #[clap(about = "Advanced stash management with branch integration")]
+    StashBranch {
+        #[clap(subcommand)]
+        action: StashBranchAction,
+    },
+    #[clap(about = "Manage upstream branch relationships")]
+    Upstream {
+        #[clap(subcommand)]
+        action: UpstreamAction,
+    },
+}
+
+#[derive(clap::Subcommand)]
+pub enum StashBranchAction {
+    #[clap(about = "Create a new branch from a stash")]
+    Create {
+        #[clap(help = "Name for the new branch")]
+        branch_name: String,
+        #[clap(long = "stash", help = "Stash reference (default: latest stash)")]
+        stash_ref: Option<String>,
+    },
+    #[clap(about = "Clean old stashes")]
+    Clean {
+        #[clap(long = "older-than", help = "Remove stashes older than (e.g., '7d', '2w', '1m')")]
+        older_than: Option<String>,
+        #[clap(long = "dry-run", help = "Show what would be cleaned without doing it", action = clap::ArgAction::SetTrue)]
+        dry_run: bool,
+    },
+    #[clap(about = "Apply stashes from a specific branch")]
+    ApplyByBranch {
+        #[clap(help = "Branch name to filter stashes by")]
+        branch_name: String,
+        #[clap(long = "list", help = "List stashes instead of applying", action = clap::ArgAction::SetTrue)]
+        list_only: bool,
+    },
+}
+
+#[derive(clap::Subcommand)]
+pub enum UpstreamAction {
+    #[clap(about = "Set upstream for current branch")]
+    Set {
+        #[clap(help = "Upstream branch reference (e.g., origin/main)")]
+        upstream: String,
+    },
+    #[clap(about = "Show upstream status for all branches")]
+    Status,
+    #[clap(about = "Sync all local branches with their upstreams")]
+    SyncAll {
+        #[clap(long = "dry-run", help = "Show what would be synced without doing it", action = clap::ArgAction::SetTrue)]
+        dry_run: bool,
+        #[clap(long = "merge", help = "Use merge instead of rebase", action = clap::ArgAction::SetTrue)]
+        merge: bool,
+    },
 }

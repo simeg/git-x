@@ -1,6 +1,7 @@
 pub mod clean_branches;
 pub mod cli;
 pub mod color_graph;
+pub mod fixup;
 pub mod graph;
 pub mod health;
 pub mod info;
@@ -9,9 +10,11 @@ pub mod new_branch;
 pub mod prune_branches;
 pub mod rename_branch;
 pub mod since;
+pub mod stash_branch;
 pub mod summary;
 pub mod sync;
 pub mod undo;
+pub mod upstream;
 pub mod what;
 
 /// Common error type for git-x operations
