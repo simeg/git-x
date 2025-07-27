@@ -128,3 +128,112 @@ This document explains how each `git-x` subcommand works under the hood. We aim 
     - fallback → 🔹
 
 ---
+
+## `rename-branch`
+
+### What it does:
+- Renames the current branch locally and updates remote tracking.
+
+### Under the hood:
+- `git rev-parse --abbrev-ref HEAD` → Get current branch name
+- `git branch -m <old-name> <new-name>` → Rename local branch
+- `git push origin :<old-name>` → Delete old remote branch
+- `git push origin -u <new-name>` → Push new branch and set upstream
+
+---
+
+## `sync`
+
+### What it does:
+- Synchronizes current branch with its upstream using fetch + rebase/merge.
+
+### Under the hood:
+- `git rev-parse --abbrev-ref HEAD` → Get current branch
+- `git rev-parse --abbrev-ref HEAD@{upstream}` → Get upstream branch
+- `git fetch <remote>` → Fetch from remote
+- `git rev-list --left-right --count <upstream>...HEAD` → Check sync status
+- `git rebase <upstream>` or `git merge <upstream>` → Integrate changes
+
+---
+
+## `new`
+
+### What it does:
+- Creates and switches to a new branch with validation.
+
+### Under the hood:
+- Validates branch name against Git naming rules
+- `git rev-parse --verify <base-branch>` → Verify base branch exists (if --from specified)
+- `git checkout -b <new-branch> [<base-branch>]` → Create and switch to new branch
+
+---
+
+## `large-files`
+
+### What it does:
+- Identifies the largest files in repository history to help with cleanup.
+
+### Under the hood:
+- `git rev-list --objects --all` → Get all objects in history
+- `git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)'` → Get object sizes
+- Filters for blob objects, sorts by size, formats output
+
+---
+
+## `fixup`
+
+### What it does:
+- Creates a fixup commit for easier interactive rebasing.
+
+### Under the hood:
+- `git rev-parse --verify <commit-hash>` → Validate commit exists
+- `git diff --cached --quiet` → Check for staged changes
+- `git commit --fixup=<commit-hash>` → Create fixup commit
+- Optional: `git rebase -i --autosquash <commit-hash>^` → Auto-rebase if --rebase flag
+
+---
+
+## `stash-branch`
+
+### What it does:
+- Advanced stash management with branch integration.
+
+### Under the hood:
+
+**`create` subcommand:**
+- Validates branch name
+- `git stash branch <branch-name> [<stash-ref>]` → Create branch from stash
+
+**`clean` subcommand:**
+- `git stash list --format="%gd %gt %gs"` → List all stashes
+- Filters by age if --older-than specified
+- `git stash drop <stash-ref>` → Remove old stashes
+
+**`apply-by-branch` subcommand:**
+- `git stash list --format="%gd %gt %gs"` → List all stashes
+- Filters stashes by branch name pattern
+- `git stash apply <stash-ref>` → Apply matching stashes
+
+---
+
+## `upstream`
+
+### What it does:
+- Manages upstream branch relationships across the repository.
+
+### Under the hood:
+
+**`status` subcommand:**
+- `git for-each-ref --format='%(refname:short) %(upstream:short)' refs/heads/` → List branches with upstreams
+- `git rev-parse --abbrev-ref HEAD` → Identify current branch
+
+**`set` subcommand:**
+- `git rev-parse --verify <upstream>` → Validate upstream exists
+- `git branch --set-upstream-to=<upstream>` → Set upstream for current branch
+
+**`sync-all` subcommand:**
+- `git for-each-ref --format='%(refname:short) %(upstream:short)' refs/heads/` → Find branches with upstreams
+- For each branch: `git checkout <branch> && git fetch && git rebase/merge <upstream>`
+- `git checkout <original-branch>` → Return to original branch
+
+---

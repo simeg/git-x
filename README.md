@@ -23,8 +23,16 @@ It wraps common Git actions in muscle-memory-friendly, no-brainer commands — p
     - [`clean-branches`](#clean-branches)
     - [`what [branch]`](#what-branch)
     - [`summary`](#summary)
+    - [`rename-branch`](#rename-branch)
+    - [`sync`](#sync)
+    - [`new`](#new)
+    - [`large-files`](#large-files)
+    - [`fixup`](#fixup)
+    - [`stash-branch`](#stash-branch)
+    - [`upstream`](#upstream)
 - [Git Integration: How `git-x` Just Works™](#git-integration-how-git-x-just-works)
 - [What's Under the Hood?](#whats-under-the-hood)
+- [Command Transparency](#command-transparency)
 - [Roadmap Ideas](#roadmap-ideas)
 - [Tab Completion](#-tab-completion-)
 - [Built With](#built-with)
@@ -302,6 +310,186 @@ git x summary --since "2 days ago"
 
 ---
 
+### `rename-branch`
+
+> Rename the current branch locally and on remote
+
+```shell
+git x rename-branch new-feature-name
+```
+
+#### Output:
+
+```shell
+🔄 Renaming branch 'old-name' to 'new-feature-name'...
+✅ Branch renamed successfully
+```
+
+Safely renames your current branch by:
+- Renaming the local branch
+- Updating the remote tracking branch
+- Cleaning up old remote references
+
+---
+
+### `sync`
+
+> Sync current branch with upstream (fetch + rebase/merge)
+
+```shell
+git x sync
+git x sync --merge
+```
+
+#### Output:
+
+```shell
+🔄 Syncing branch 'feature' with 'origin/feature'...
+⬇️ Branch is 2 commit(s) behind upstream
+✅ Successfully rebased onto upstream
+```
+
+**Flags:**
+- `--merge` — Use merge instead of rebase for integration
+
+Automatically fetches from remote and integrates upstream changes into your current branch.
+
+---
+
+### `new`
+
+> Create and switch to a new branch
+
+```shell
+git x new feature-branch
+git x new hotfix --from main
+```
+
+#### Output:
+
+```shell
+🌿 Creating branch 'feature-branch' from 'current-branch'...
+✅ Created and switched to branch 'feature-branch'
+```
+
+**Flags:**
+- `--from <branch>` — Base the new branch off a specific branch instead of current
+
+Validates branch names and prevents common Git naming issues.
+
+---
+
+### `large-files`
+
+> Find largest files in repository history
+
+```shell
+git x large-files
+git x large-files --limit 20 --threshold 5
+```
+
+#### Output:
+
+```shell
+🔍 Scanning repository for large files...
+
+📁 Largest files in repository history:
+  15.2 MB  assets/video.mp4
+   8.7 MB  docs/presentation.pdf
+   3.1 MB  images/hero-banner.png
+
+💡 Found 3 files larger than 1.0 MB
+```
+
+**Flags:**
+- `--limit <number>` — Number of files to show (default: 10)
+- `--threshold <MB>` — Minimum file size in MB to include
+
+Useful for identifying large files that may be slowing down your repository.
+
+---
+
+### `fixup`
+
+> Create fixup commits for easier interactive rebasing
+
+```shell
+git x fixup abc123
+git x fixup abc123 --rebase
+```
+
+#### Output:
+
+```shell
+🔧 Creating fixup commit for abc123...
+✅ Fixup commit created for abc123
+💡 To squash the fixup commit, run: git rebase -i --autosquash abc123^
+```
+
+**Flags:**
+- `--rebase` — Automatically start interactive rebase with autosquash after creating fixup
+
+Creates a fixup commit that can be automatically squashed during interactive rebase. Requires staged changes.
+
+---
+
+### `stash-branch`
+
+> Advanced stash management with branch integration
+
+```shell
+git x stash-branch create new-feature
+git x stash-branch clean --older-than 7d
+git x stash-branch apply-by-branch feature-work
+```
+
+#### Subcommands:
+
+**`create <branch-name>`** — Create a new branch from a stash
+- `--stash <ref>` — Use specific stash (default: latest)
+
+**`clean`** — Clean up old stashes
+- `--older-than <time>` — Remove stashes older than specified time
+- `--dry-run` — Show what would be cleaned without doing it
+
+**`apply-by-branch <branch-name>`** — Apply stashes from a specific branch
+- `--list` — List matching stashes instead of applying
+
+Helps manage stashes more effectively by associating them with branches.
+
+---
+
+### `upstream`
+
+> Manage upstream branch relationships
+
+```shell
+git x upstream status
+git x upstream set origin/main
+git x upstream sync-all --dry-run
+```
+
+#### Subcommands:
+
+**`status`** — Show upstream status for all branches
+
+```shell
+🔗 Upstream status for all branches:
+* main -> origin/main
+  feature -> (no upstream)
+  hotfix -> origin/hotfix
+```
+
+**`set <upstream>`** — Set upstream for current branch
+
+**`sync-all`** — Sync all local branches with their upstreams
+- `--dry-run` — Show what would be synced without doing it
+- `--merge` — Use merge instead of rebase
+
+Streamlines upstream branch management across your entire repository.
+
+---
+
 ## Git Integration: How `git-x` Just Works™
 
 Since `git-x` is installed as a standalone binary, Git automatically recognizes it as a subcommand when you type `git x [command]`.
@@ -341,6 +529,27 @@ git log --oneline --graph --decorate --all
 - **Zero dependencies** — Single binary, no runtime requirements
 - **Cross-platform** — Works on macOS, Linux, Windows
 - **Memory safe** — No crashes, no memory leaks
+
+---
+
+## Command Transparency
+
+`git-x` believes in **complete transparency** — there's no magic, no hidden behavior, and no surprise side effects.
+
+Every `git-x` command is a **thin wrapper** around standard Git operations that you could run yourself. Want to know exactly what's happening under the hood? Check out our [**Command Internals Documentation**](docs/command-internals.md).
+
+**Why this matters:**
+- **Trust** — You can verify every operation before and after
+- **Learning** — Understand the Git commands you're actually running  
+- **Debugging** — When something goes wrong, you know exactly what to investigate
+- **Portability** — You can replicate any `git-x` workflow with plain Git
+
+**Example:** When you run `git x graph`, it literally executes:
+```shell
+git log --oneline --graph --decorate --all
+```
+
+No database calls, no hidden state, no magic — just Git doing Git things, with better UX.
 
 ---
 
