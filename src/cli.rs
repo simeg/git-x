@@ -110,7 +110,10 @@ pub enum StashBranchAction {
     },
     #[clap(about = "Clean old stashes")]
     Clean {
-        #[clap(long = "older-than", help = "Remove stashes older than (e.g., '7d', '2w', '1m')")]
+        #[clap(
+            long = "older-than",
+            help = "Remove stashes older than (e.g., '7d', '2w', '1m')"
+        )]
         older_than: Option<String>,
         #[clap(long = "dry-run", help = "Show what would be cleaned without doing it", action = clap::ArgAction::SetTrue)]
         dry_run: bool,

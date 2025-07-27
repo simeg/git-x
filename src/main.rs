@@ -25,7 +25,10 @@ fn main() {
         Commands::Sync { merge } => sync::run(merge),
         Commands::New { branch_name, from } => new_branch::run(branch_name, from),
         Commands::LargeFiles { limit, threshold } => large_files::run(limit, threshold),
-        Commands::Fixup { commit_hash, rebase } => fixup::run(commit_hash, rebase),
+        Commands::Fixup {
+            commit_hash,
+            rebase,
+        } => fixup::run(commit_hash, rebase),
         Commands::StashBranch { action } => stash_branch::run(action),
         Commands::Upstream { action } => upstream::run(action),
     }

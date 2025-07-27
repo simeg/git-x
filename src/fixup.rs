@@ -57,7 +57,11 @@ pub fn run(commit_hash: String, rebase: bool) {
 // Helper function to validate commit hash exists
 fn validate_commit_hash(commit_hash: &str) -> Result<(), &'static str> {
     let output = Command::new("git")
-        .args(["rev-parse", "--verify", &format!("{commit_hash}^{{commit}}")])
+        .args([
+            "rev-parse",
+            "--verify",
+            &format!("{commit_hash}^{{commit}}"),
+        ])
         .output()
         .map_err(|_| "Failed to validate commit hash")?;
 

@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use tempfile::TempDir;
 
 // Helper function to create a test git repository
-fn create_test_repo() -> (TempDir, PathBuf) {
+fn create_test_repo() -> (TempDir, PathBuf, String) {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
     let repo_path = temp_dir.path().to_path_buf();
 
@@ -44,7 +44,17 @@ fn create_test_repo() -> (TempDir, PathBuf) {
         .assert()
         .success();
 
-    (temp_dir, repo_path)
+    // Get the actual default branch name
+    let branch_output = Command::new("git")
+        .args(["branch", "--show-current"])
+        .current_dir(&repo_path)
+        .output()
+        .expect("Failed to get current branch");
+    let default_branch = String::from_utf8_lossy(&branch_output.stdout)
+        .trim()
+        .to_string();
+
+    (temp_dir, repo_path, default_branch)
 }
 
 // Helper function to create a stash
@@ -125,7 +135,10 @@ fn test_format_no_stashes_message() {
 
 #[test]
 fn test_format_no_old_stashes_message() {
-    assert_eq!(format_no_old_stashes_message(), "✅ No old stashes to clean");
+    assert_eq!(
+        format_no_old_stashes_message(),
+        "✅ No old stashes to clean"
+    );
 }
 
 #[test]
@@ -142,14 +155,8 @@ fn test_format_stashes_to_clean_message() {
 
 #[test]
 fn test_format_cleanup_complete_message() {
-    assert_eq!(
-        format_cleanup_complete_message(5),
-        "✅ Cleaned 5 stash(es)"
-    );
-    assert_eq!(
-        format_cleanup_complete_message(1),
-        "✅ Cleaned 1 stash(es)"
-    );
+    assert_eq!(format_cleanup_complete_message(5), "✅ Cleaned 5 stash(es)");
+    assert_eq!(format_cleanup_complete_message(1), "✅ Cleaned 1 stash(es)");
 }
 
 #[test]
@@ -208,12 +215,14 @@ fn test_stash_branch_apply_command_help() {
     cmd.args(["stash-branch", "apply-by-branch", "--help"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("Apply stashes from a specific branch"));
+        .stdout(predicate::str::contains(
+            "Apply stashes from a specific branch",
+        ));
 }
 
 #[test]
 fn test_stash_branch_create_invalid_branch_name() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let (_temp_dir, repo_path, _default_branch) = create_test_repo();
     create_stash(&repo_path, "test.txt", "test content", "Test stash");
 
     // Test empty branch name
@@ -230,7 +239,9 @@ fn test_stash_branch_create_invalid_branch_name() {
         .current_dir(&repo_path)
         .assert()
         .success()
-        .stderr(predicate::str::contains("Branch name cannot start with a dash"));
+        .stderr(predicate::str::contains(
+            "Branch name cannot start with a dash",
+        ));
 
     // Test branch name with spaces
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
@@ -238,7 +249,9 @@ fn test_stash_branch_create_invalid_branch_name() {
         .current_dir(&repo_path)
         .assert()
         .success()
-        .stderr(predicate::str::contains("Branch name cannot contain spaces"));
+        .stderr(predicate::str::contains(
+            "Branch name cannot contain spaces",
+        ));
 
     // Test branch name with double dots
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
@@ -252,7 +265,7 @@ fn test_stash_branch_create_invalid_branch_name() {
 
 #[test]
 fn test_stash_branch_create_existing_branch() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let (_temp_dir, repo_path, default_branch) = create_test_repo();
     create_stash(&repo_path, "test.txt", "test content", "Test stash");
 
     // Create a branch first
@@ -263,7 +276,7 @@ fn test_stash_branch_create_existing_branch() {
         .success();
 
     Command::new("git")
-        .args(["checkout", "main"])
+        .args(["checkout", &default_branch])
         .current_dir(&repo_path)
         .assert()
         .success();
@@ -274,12 +287,14 @@ fn test_stash_branch_create_existing_branch() {
         .current_dir(&repo_path)
         .assert()
         .success()
-        .stderr(predicate::str::contains("Branch 'existing-branch' already exists"));
+        .stderr(predicate::str::contains(
+            "Branch 'existing-branch' already exists",
+        ));
 }
 
 #[test]
 fn test_stash_branch_create_no_stash() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let (_temp_dir, repo_path, _default_branch) = create_test_repo();
 
     // Try to create branch from non-existent stash
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
@@ -292,7 +307,7 @@ fn test_stash_branch_create_no_stash() {
 
 #[test]
 fn test_stash_branch_create_success() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let (_temp_dir, repo_path, _default_branch) = create_test_repo();
     create_stash(&repo_path, "test.txt", "test content", "Test stash");
 
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
@@ -306,21 +321,29 @@ fn test_stash_branch_create_success() {
 
 #[test]
 fn test_stash_branch_create_with_stash_ref() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let (_temp_dir, repo_path, _default_branch) = create_test_repo();
     create_stash(&repo_path, "test1.txt", "test content 1", "Test stash 1");
     create_stash(&repo_path, "test2.txt", "test content 2", "Test stash 2");
 
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.args(["stash-branch", "create", "from-specific-stash", "--stash", "stash@{1}"])
-        .current_dir(&repo_path)
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("Creating branch 'from-specific-stash' from stash@{1}"));
+    cmd.args([
+        "stash-branch",
+        "create",
+        "from-specific-stash",
+        "--stash",
+        "stash@{1}",
+    ])
+    .current_dir(&repo_path)
+    .assert()
+    .success()
+    .stdout(predicate::str::contains(
+        "Creating branch 'from-specific-stash' from stash@{1}",
+    ));
 }
 
 #[test]
 fn test_stash_branch_clean_no_stashes() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let (_temp_dir, repo_path, _default_branch) = create_test_repo();
 
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["stash-branch", "clean"])
@@ -332,7 +355,7 @@ fn test_stash_branch_clean_no_stashes() {
 
 #[test]
 fn test_stash_branch_clean_dry_run() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let (_temp_dir, repo_path, _default_branch) = create_test_repo();
     create_stash(&repo_path, "test1.txt", "test content 1", "Test stash 1");
     create_stash(&repo_path, "test2.txt", "test content 2", "Test stash 2");
 
@@ -346,7 +369,7 @@ fn test_stash_branch_clean_dry_run() {
 
 #[test]
 fn test_stash_branch_clean_with_age_filter() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let (_temp_dir, repo_path, _default_branch) = create_test_repo();
     create_stash(&repo_path, "test.txt", "test content", "Test stash");
 
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
@@ -372,20 +395,22 @@ fn test_stash_branch_clean_with_age_filter() {
 
 #[test]
 fn test_stash_branch_apply_by_branch_no_stashes() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let (_temp_dir, repo_path, _default_branch) = create_test_repo();
 
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["stash-branch", "apply-by-branch", "feature"])
         .current_dir(&repo_path)
         .assert()
         .success()
-        .stdout(predicate::str::contains("No stashes found for branch 'feature'"));
+        .stdout(predicate::str::contains(
+            "No stashes found for branch 'feature'",
+        ));
 }
 
 #[test]
 fn test_stash_branch_apply_by_branch_list_only() {
-    let (_temp_dir, repo_path) = create_test_repo();
-    
+    let (_temp_dir, repo_path, _default_branch) = create_test_repo();
+
     // Create a feature branch and stash from it
     Command::new("git")
         .args(["checkout", "-b", "feature"])
@@ -393,7 +418,12 @@ fn test_stash_branch_apply_by_branch_list_only() {
         .assert()
         .success();
 
-    create_stash(&repo_path, "feature.txt", "feature content", "WIP on feature: add feature");
+    create_stash(
+        &repo_path,
+        "feature.txt",
+        "feature content",
+        "WIP on feature: add feature",
+    );
 
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["stash-branch", "apply-by-branch", "feature", "--list"])
@@ -421,5 +451,7 @@ fn test_stash_branch_main_command_help() {
     cmd.args(["stash-branch", "--help"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("Advanced stash management with branch integration"));
+        .stdout(predicate::str::contains(
+            "Advanced stash management with branch integration",
+        ));
 }

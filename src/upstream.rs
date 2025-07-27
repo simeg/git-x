@@ -32,7 +32,10 @@ fn set_upstream(upstream: String) {
         }
     };
 
-    println!("{}", format_setting_upstream_message(&current_branch, &upstream));
+    println!(
+        "{}",
+        format_setting_upstream_message(&current_branch, &upstream)
+    );
 
     // Set upstream
     if let Err(msg) = set_branch_upstream(&current_branch, &upstream) {
@@ -40,7 +43,10 @@ fn set_upstream(upstream: String) {
         return;
     }
 
-    println!("{}", format_upstream_set_message(&current_branch, &upstream));
+    println!(
+        "{}",
+        format_upstream_set_message(&current_branch, &upstream)
+    );
 }
 
 fn show_upstream_status() {
@@ -72,18 +78,21 @@ fn show_upstream_status() {
     let current_branch = get_current_branch().unwrap_or_default();
 
     println!("{}", format_upstream_status_header());
-    
+
     for branch in &branches {
         let is_current = branch == &current_branch;
         let upstream = branch_upstreams.get(branch).unwrap();
-        
+
         match upstream {
             Some(upstream_ref) => {
                 // Check sync status
-                let sync_status = get_branch_sync_status(branch, upstream_ref)
-                    .unwrap_or_else(|_| SyncStatus::Unknown);
-                
-                println!("{}", format_branch_with_upstream(branch, upstream_ref, &sync_status, is_current));
+                let sync_status =
+                    get_branch_sync_status(branch, upstream_ref).unwrap_or(SyncStatus::Unknown);
+
+                println!(
+                    "{}",
+                    format_branch_with_upstream(branch, upstream_ref, &sync_status, is_current)
+                );
             }
             None => {
                 println!("{}", format_branch_without_upstream(branch, is_current));
@@ -107,7 +116,10 @@ fn sync_all_branches(dry_run: bool, merge: bool) {
         return;
     }
 
-    println!("{}", format_sync_all_start_message(branches.len(), dry_run, merge));
+    println!(
+        "{}",
+        format_sync_all_start_message(branches.len(), dry_run, merge)
+    );
 
     let mut sync_results = Vec::new();
 
@@ -115,7 +127,10 @@ fn sync_all_branches(dry_run: bool, merge: bool) {
         let sync_status = match get_branch_sync_status(branch, upstream) {
             Ok(status) => status,
             Err(_) => {
-                sync_results.push((branch.clone(), SyncResult::Error("Failed to get sync status".to_string())));
+                sync_results.push((
+                    branch.clone(),
+                    SyncResult::Error("Failed to get sync status".to_string()),
+                ));
                 continue;
             }
         };
@@ -130,7 +145,9 @@ fn sync_all_branches(dry_run: bool, merge: bool) {
                 } else {
                     match sync_branch_with_upstream(branch, upstream, merge) {
                         Ok(()) => sync_results.push((branch.clone(), SyncResult::Synced)),
-                        Err(msg) => sync_results.push((branch.clone(), SyncResult::Error(msg.to_string()))),
+                        Err(msg) => {
+                            sync_results.push((branch.clone(), SyncResult::Error(msg.to_string())))
+                        }
                     }
                 }
             }
@@ -138,7 +155,10 @@ fn sync_all_branches(dry_run: bool, merge: bool) {
                 sync_results.push((branch.clone(), SyncResult::Ahead));
             }
             SyncStatus::Unknown => {
-                sync_results.push((branch.clone(), SyncResult::Error("Unknown sync status".to_string())));
+                sync_results.push((
+                    branch.clone(),
+                    SyncResult::Error("Unknown sync status".to_string()),
+                ));
             }
         }
     }
@@ -150,7 +170,10 @@ fn sync_all_branches(dry_run: bool, merge: bool) {
     }
 
     // Print summary
-    let synced_count = sync_results.iter().filter(|(_, r)| matches!(r, SyncResult::Synced | SyncResult::WouldSync)).count();
+    let synced_count = sync_results
+        .iter()
+        .filter(|(_, r)| matches!(r, SyncResult::Synced | SyncResult::WouldSync))
+        .count();
     println!("{}", format_sync_summary(synced_count, dry_run));
 }
 
@@ -270,7 +293,12 @@ fn get_branch_upstream(branch: &str) -> Result<String, &'static str> {
 // Helper function to get branch sync status
 fn get_branch_sync_status(branch: &str, upstream: &str) -> Result<SyncStatus, &'static str> {
     let output = Command::new("git")
-        .args(["rev-list", "--left-right", "--count", &format!("{upstream}...{branch}")])
+        .args([
+            "rev-list",
+            "--left-right",
+            "--count",
+            &format!("{upstream}...{branch}"),
+        ])
         .output()
         .map_err(|_| "Failed to get sync status")?;
 
@@ -279,13 +307,13 @@ fn get_branch_sync_status(branch: &str, upstream: &str) -> Result<SyncStatus, &'
     }
 
     let counts = String::from_utf8_lossy(&output.stdout);
-    let mut parts = counts.trim().split_whitespace();
-    
+    let mut parts = counts.split_whitespace();
+
     let behind: u32 = parts
         .next()
         .and_then(|s| s.parse().ok())
         .ok_or("Invalid sync count format")?;
-    
+
     let ahead: u32 = parts
         .next()
         .and_then(|s| s.parse().ok())
@@ -315,7 +343,11 @@ fn get_branches_with_upstreams() -> Result<Vec<(String, String)>, &'static str> 
 }
 
 // Helper function to sync branch with upstream
-fn sync_branch_with_upstream(branch: &str, upstream: &str, merge: bool) -> Result<(), &'static str> {
+fn sync_branch_with_upstream(
+    branch: &str,
+    upstream: &str,
+    merge: bool,
+) -> Result<(), &'static str> {
     // Switch to the branch first
     let status = Command::new("git")
         .args(["checkout", branch])
@@ -339,7 +371,11 @@ fn sync_branch_with_upstream(branch: &str, upstream: &str, merge: bool) -> Resul
         .map_err(|_| "Failed to sync with upstream")?;
 
     if !status.success() {
-        return Err(if merge { "Merge failed" } else { "Rebase failed" });
+        return Err(if merge {
+            "Merge failed"
+        } else {
+            "Rebase failed"
+        });
     }
 
     Ok(())
@@ -371,7 +407,12 @@ pub fn format_upstream_status_header() -> &'static str {
     "🔗 Upstream status for all branches:\n"
 }
 
-pub fn format_branch_with_upstream(branch: &str, upstream: &str, sync_status: &SyncStatus, is_current: bool) -> String {
+pub fn format_branch_with_upstream(
+    branch: &str,
+    upstream: &str,
+    sync_status: &SyncStatus,
+    is_current: bool,
+) -> String {
     let current_indicator = if is_current { "* " } else { "  " };
     let status_text = match sync_status {
         SyncStatus::UpToDate => "✅ up-to-date",
@@ -380,7 +421,7 @@ pub fn format_branch_with_upstream(branch: &str, upstream: &str, sync_status: &S
         SyncStatus::Diverged(b, a) => &format!("🔀 {b} behind, {a} ahead"),
         SyncStatus::Unknown => "❓ unknown",
     };
-    
+
     format!("{current_indicator}{branch} -> {upstream} ({status_text})")
 }
 
@@ -418,7 +459,9 @@ pub fn format_sync_result_line(branch: &str, result: &SyncResult) -> String {
 
 pub fn format_sync_summary(synced_count: usize, dry_run: bool) -> String {
     if dry_run {
-        format!("\n💡 Would sync {synced_count} branch(es). Run without --dry-run to apply changes.")
+        format!(
+            "\n💡 Would sync {synced_count} branch(es). Run without --dry-run to apply changes."
+        )
     } else {
         format!("\n✅ Synced {synced_count} branch(es) successfully.")
     }

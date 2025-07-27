@@ -3,15 +3,18 @@ use std::process::Command;
 
 pub fn run(action: StashBranchAction) {
     match action {
-        StashBranchAction::Create { branch_name, stash_ref } => {
-            create_branch_from_stash(branch_name, stash_ref)
-        }
-        StashBranchAction::Clean { older_than, dry_run } => {
-            clean_old_stashes(older_than, dry_run)
-        }
-        StashBranchAction::ApplyByBranch { branch_name, list_only } => {
-            apply_stashes_by_branch(branch_name, list_only)
-        }
+        StashBranchAction::Create {
+            branch_name,
+            stash_ref,
+        } => create_branch_from_stash(branch_name, stash_ref),
+        StashBranchAction::Clean {
+            older_than,
+            dry_run,
+        } => clean_old_stashes(older_than, dry_run),
+        StashBranchAction::ApplyByBranch {
+            branch_name,
+            list_only,
+        } => apply_stashes_by_branch(branch_name, list_only),
     }
 }
 
@@ -81,7 +84,10 @@ fn clean_old_stashes(older_than: Option<String>, dry_run: bool) {
         return;
     }
 
-    println!("{}", format_stashes_to_clean_message(stashes_to_clean.len(), dry_run));
+    println!(
+        "{}",
+        format_stashes_to_clean_message(stashes_to_clean.len(), dry_run)
+    );
 
     for stash in &stashes_to_clean {
         println!("  {}", format_stash_entry(&stash.name, &stash.message));
@@ -90,10 +96,16 @@ fn clean_old_stashes(older_than: Option<String>, dry_run: bool) {
     if !dry_run {
         for stash in &stashes_to_clean {
             if let Err(msg) = delete_stash(&stash.name) {
-                eprintln!("{}", format_error_message(&format!("Failed to delete {}: {}", stash.name, msg)));
+                eprintln!(
+                    "{}",
+                    format_error_message(&format!("Failed to delete {}: {}", stash.name, msg))
+                );
             }
         }
-        println!("{}", format_cleanup_complete_message(stashes_to_clean.len()));
+        println!(
+            "{}",
+            format_cleanup_complete_message(stashes_to_clean.len())
+        );
     }
 }
 
@@ -119,13 +131,19 @@ fn apply_stashes_by_branch(branch_name: String, list_only: bool) {
     }
 
     if list_only {
-        println!("{}", format_stashes_for_branch_header(&branch_name, branch_stashes.len()));
+        println!(
+            "{}",
+            format_stashes_for_branch_header(&branch_name, branch_stashes.len())
+        );
         for stash in &branch_stashes {
             println!("  {}", format_stash_entry(&stash.name, &stash.message));
         }
     } else {
-        println!("{}", format_applying_stashes_message(&branch_name, branch_stashes.len()));
-        
+        println!(
+            "{}",
+            format_applying_stashes_message(&branch_name, branch_stashes.len())
+        );
+
         for stash in &branch_stashes {
             match apply_stash(&stash.name) {
                 Ok(()) => println!("  ✅ Applied {}", stash.name),
@@ -168,7 +186,12 @@ fn validate_branch_name(name: &str) -> Result<(), &'static str> {
 // Helper function to check if branch exists
 fn branch_exists(branch_name: &str) -> bool {
     Command::new("git")
-        .args(["show-ref", "--verify", "--quiet", &format!("refs/heads/{branch_name}")])
+        .args([
+            "show-ref",
+            "--verify",
+            "--quiet",
+            &format!("refs/heads/{branch_name}"),
+        ])
         .status()
         .map(|status| status.success())
         .unwrap_or(false)
@@ -287,7 +310,7 @@ fn extract_branch_from_message(message: &str) -> String {
             return rest[..end].to_string();
         }
     }
-    
+
     if let Some(start) = message.find("WIP on ") {
         let rest = &message[start + 7..];
         if let Some(end) = rest.find(':') {

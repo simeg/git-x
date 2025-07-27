@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use tempfile::TempDir;
 
 // Helper function to create a test git repository
-fn create_test_repo() -> (TempDir, PathBuf) {
+fn create_test_repo() -> (TempDir, PathBuf, String) {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
     let repo_path = temp_dir.path().to_path_buf();
 
@@ -44,7 +44,17 @@ fn create_test_repo() -> (TempDir, PathBuf) {
         .assert()
         .success();
 
-    (temp_dir, repo_path)
+    // Get the actual default branch name
+    let branch_output = Command::new("git")
+        .args(["branch", "--show-current"])
+        .current_dir(&repo_path)
+        .output()
+        .expect("Failed to get current branch");
+    let default_branch = String::from_utf8_lossy(&branch_output.stdout)
+        .trim()
+        .to_string();
+
+    (temp_dir, repo_path, default_branch)
 }
 
 #[test]
@@ -139,7 +149,7 @@ fn test_new_branch_run_function_outside_git_repo() {
 
 #[test]
 fn test_new_branch_creates_and_switches() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let (_temp_dir, repo_path, _default_branch) = create_test_repo();
 
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["new", "feature-branch"])
@@ -160,7 +170,7 @@ fn test_new_branch_creates_and_switches() {
 
 #[test]
 fn test_new_branch_with_from_option() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let (_temp_dir, repo_path, default_branch) = create_test_repo();
 
     // Create another branch first
     Command::new("git")
@@ -182,9 +192,9 @@ fn test_new_branch_with_from_option() {
         .assert()
         .success();
 
-    // Go back to main
+    // Go back to default branch (main or master)
     Command::new("git")
-        .args(["checkout", "main"])
+        .args(["checkout", &default_branch])
         .current_dir(&repo_path)
         .assert()
         .success();
@@ -212,7 +222,7 @@ fn test_new_branch_with_from_option() {
 
 #[test]
 fn test_new_branch_invalid_name_empty() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let (_temp_dir, repo_path, _default_branch) = create_test_repo();
 
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["new", ""])
@@ -224,7 +234,7 @@ fn test_new_branch_invalid_name_empty() {
 
 #[test]
 fn test_new_branch_invalid_name_dash() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let (_temp_dir, repo_path, _default_branch) = create_test_repo();
 
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["new", "--", "-invalid"])
@@ -236,7 +246,7 @@ fn test_new_branch_invalid_name_dash() {
 
 #[test]
 fn test_new_branch_invalid_name_double_dot() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let (_temp_dir, repo_path, _default_branch) = create_test_repo();
 
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["new", "feature..branch"])
@@ -248,7 +258,7 @@ fn test_new_branch_invalid_name_double_dot() {
 
 #[test]
 fn test_new_branch_invalid_name_spaces() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let (_temp_dir, repo_path, _default_branch) = create_test_repo();
 
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["new", "feature branch"])
@@ -260,11 +270,11 @@ fn test_new_branch_invalid_name_spaces() {
 
 #[test]
 fn test_new_branch_existing_branch() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let (_temp_dir, repo_path, default_branch) = create_test_repo();
 
-    // Try to create a branch that already exists (main)
+    // Try to create a branch that already exists (using the actual default branch)
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.args(["new", "main"])
+    cmd.args(["new", &default_branch])
         .current_dir(&repo_path)
         .assert()
         .success() // The command succeeds but shows error
@@ -273,7 +283,7 @@ fn test_new_branch_existing_branch() {
 
 #[test]
 fn test_new_branch_invalid_base() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let (_temp_dir, repo_path, _default_branch) = create_test_repo();
 
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["new", "feature", "--from", "nonexistent"])
