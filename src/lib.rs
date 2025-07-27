@@ -4,10 +4,13 @@ pub mod color_graph;
 pub mod graph;
 pub mod health;
 pub mod info;
+pub mod large_files;
+pub mod new_branch;
 pub mod prune_branches;
 pub mod rename_branch;
 pub mod since;
 pub mod summary;
+pub mod sync;
 pub mod undo;
 pub mod what;
 

@@ -55,4 +55,29 @@ pub enum Commands {
         )]
         since: String,
     },
+    #[clap(about = "Sync current branch with upstream (fetch + rebase)")]
+    Sync {
+        #[clap(long = "merge", help = "Use merge instead of rebase", action = clap::ArgAction::SetTrue)]
+        merge: bool,
+    },
+    #[clap(about = "Create and switch to a new branch")]
+    New {
+        #[clap(help = "Name of the new branch")]
+        branch_name: String,
+        #[clap(
+            long = "from",
+            help = "Base branch to create from (default: current branch)"
+        )]
+        from: Option<String>,
+    },
+    #[clap(about = "Find largest files in repository history")]
+    LargeFiles {
+        #[clap(long = "limit", default_value = "10", help = "Number of files to show")]
+        limit: usize,
+        #[clap(
+            long = "threshold",
+            help = "Minimum file size in MB (default: show all)"
+        )]
+        threshold: Option<f64>,
+    },
 }
