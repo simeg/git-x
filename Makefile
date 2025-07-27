@@ -1,15 +1,16 @@
 # Makefile for git-x CLI tool
 
 BINARY_NAME = git-x
+CARGO = cargo
 
-.PHONY: all build ci run test install uninstall fmt fmt-check lint lint-check clean help
+.PHONY: all build ci run test install uninstall fmt fmt-check lint lint-check clean publish help
 
 ## Build and run the project (default)
 all: run
 
 ## Build the release binary
 build:
-	cargo build --release
+	$(CARGO) build --release
 
 ## Run all CI checks: formatting, linting, and tests
 ci: fmt-check lint-check test
@@ -20,35 +21,39 @@ run: build
 
 ## Run unit and integration tests
 test:
-	cargo test
+	$(CARGO) test
 
 ## Format all source files
 fmt:
-	cargo fmt --all
+	$(CARGO) fmt --all && $(CARGO) clippy --fix --allow-dirty
 
 ## Check formatting without modifying files
 fmt-check:
-	cargo fmt --all -- --check
+	$(CARGO) fmt --all -- --check
 
 ## Lint the code using Clippy
 lint:
-	cargo clippy --all-targets -- -D warnings
+	$(CARGO) clippy --all-targets -- -D warnings
 
 ## Check for linting issues without modifying code
 lint-check:
-	cargo clippy --all-targets --all-features -- -D warnings
+	$(CARGO) clippy --all-targets --all-features -- -D warnings
 
 ## Install the binary to ~/.cargo/bin (for git plugin use)
 install: build
-	cargo install --path .
+	$(CARGO) install --path .
 
 ## Uninstall the binary
 uninstall:
-	cargo uninstall $(BINARY_NAME)
+	$(CARGO) uninstall $(BINARY_NAME)
 
 ## Clean all build artifacts
 clean:
-	cargo clean
+	$(CARGO) clean
+
+## Publish to crates.io
+publish:
+	$(CARGO) publish
 
 ## Show this help message
 help:
@@ -65,6 +70,7 @@ help:
 	@echo "  make install   Install to ~/.cargo/bin as 'git-x'"
 	@echo "  make uninstall Uninstall binary"
 	@echo "  make clean     Remove build artifacts"
+	@echo "  make publish   Publish to crates.io"
 	@echo "  make help      Show this help message"
 	@echo "  make ci        Run CI checks (formatting, linting, tests)"
 	@echo ""
