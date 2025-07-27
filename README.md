@@ -1,4 +1,4 @@
-# 🚀 git-x – Superpowers for Git [![CI](https://github.com/simeg/git-x/actions/workflows/ci.yaml/badge.svg)](https://github.com/simeg/git-x/actions/workflows/ci.yaml) [![codecov](https://codecov.io/github/simeg/git-x/graph/badge.svg?token=A661U2R66C)](https://codecov.io/github/simeg/git-x)
+# 🚀 git-x – Superpowers for Git [![CI](https://github.com/simeg/git-x/actions/workflows/ci.yaml/badge.svg)](https://github.com/simeg/git-x/actions/workflows/ci.yaml) [![codecov](https://codecov.io/github/simeg/git-x/branch/master/graph/badge.svg?token=A661U2R66C)](https://codecov.io/github/simeg/git-x)
 
 **`git-x`** is a collection of smarter, faster, and more intuitive Git subcommands built to make your daily workflow suck less.
 
