@@ -101,6 +101,8 @@ pub enum Commands {
     SwitchRecent,
     #[clap(about = "Show contributor statistics for the repository")]
     Contributors,
+    #[clap(about = "Analyze code complexity and technical debt metrics")]
+    TechnicalDebt,
 }
 
 #[derive(clap::Subcommand)]

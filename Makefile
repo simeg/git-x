@@ -23,10 +23,6 @@ run: build
 test:
 	$(CARGO) test -- --test-threads=1
 
-## Run tests serially (useful for debugging test interference)
-test-serial:
-	$(CARGO) test -- --test-threads=1
-
 ## Run test coverage analysis using tarpaulin
 coverage:
 	$(CARGO) tarpaulin --workspace --timeout 120 --out Stdout
@@ -71,7 +67,6 @@ help:
 	@echo "  make build     Build release binary"
 	@echo "  make run       Run binary with ARGS=\"xinfo\""
 	@echo "  make test      Run tests"
-	@echo "  make test-serial Run tests serially (for debugging)"
 	@echo "  make coverage  Generate test coverage report"
 	@echo "  make fmt       Format code"
 	@echo "  make fmt-check  Check formatting"

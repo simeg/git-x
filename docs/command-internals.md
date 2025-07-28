@@ -83,6 +83,61 @@ This document explains how each `git-x` subcommand works under the hood. We aim 
 
 ---
 
+## `technical-debt`
+
+### What it does:
+- Analyzes repository for technical debt indicators including large commits, file hotspots, long-lived branches, code churn, and binary files.
+
+### Under the hood:
+- **Large Commits Analysis:**
+  ```shell
+  git log --all --pretty=format:%h|%s|%an|%ad --date=short --numstat --since=6 months ago
+  ```
+  - Parses commit history with file change statistics
+  - Identifies commits with >20 file changes
+  - Sorts by number of files changed
+
+- **File Hotspots Analysis:**
+  ```shell
+  git log --all --pretty=format: --name-only --since=6 months ago
+  ```
+  - Counts modification frequency per file
+  - Categorizes risk levels: HIGH (>50), MED (>20), LOW (>5)
+  - Excludes dotfiles and shows top modified files
+
+- **Long-lived Branches Analysis:**
+  ```shell
+  git for-each-ref --format=%(refname:short)|%(committerdate:relative)|%(authorname) refs/heads/
+  ```
+  - Identifies branches older than 30 days
+  - Excludes main/master/develop branches
+  - Estimates days from relative date strings
+
+- **Code Churn Analysis:**
+  ```shell
+  git log --all --pretty=format: --numstat --since=3 months ago
+  ```
+  - Aggregates additions/deletions per file
+  - Calculates churn ratio (total changes / line changes)
+  - Highlights files with high modification-to-content ratios
+
+- **Binary Files Detection:**
+  ```shell
+  git ls-files
+  ```
+  - Scans tracked files for binary extensions
+  - Checks common binary types: images, videos, audio, archives, executables, documents
+  - Reports count and sample file paths
+
+### Key metrics:
+- Large commits indicate lack of atomic changes and potential review complexity
+- File hotspots suggest architectural issues or missing abstractions
+- Long-lived branches indicate potential merge conflicts and outdated code
+- High churn files may need refactoring or better change management
+- Binary files affect repository size and diff readability
+
+---
+
 ## `prune-branches`
 
 ### What it does:

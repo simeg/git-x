@@ -15,6 +15,7 @@ pub mod stash_branch;
 pub mod summary;
 pub mod switch_recent;
 pub mod sync;
+pub mod technical_debt;
 pub mod undo;
 pub mod upstream;
 pub mod what;

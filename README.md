@@ -29,6 +29,7 @@ It wraps common Git actions in muscle-memory-friendly, no-brainer commands — p
     - [`summary`](#summary)
     - [`switch-recent`](#switch-recent)
     - [`sync`](#sync)
+    - [`technical-debt`](#technical-debt)
     - [`undo`](#undo)
     - [`upstream`](#upstream)
     - [`what [branch]`](#what-branch)
@@ -470,6 +471,48 @@ git x sync --merge
 - `--merge` — Use merge instead of rebase for integration
 
 Automatically fetches from remote and integrates upstream changes into your current branch.
+
+---
+
+### `technical-debt`
+
+> Analyze code complexity and technical debt metrics
+
+```shell
+git x technical-debt
+```
+
+#### Output:
+
+```shell
+🔍 Technical Debt Analysis
+
+📊 Large Commits (>20 files changed)
+   ✓ No large commits found
+
+🔥 File Hotspots (frequently modified)
+   1. 15 changes | HIGH | src/main.rs
+   2. 8 changes | MED | src/lib.rs
+   3. 6 changes | LOW | README.md
+
+🌿 Long-lived Branches (>30 days)
+   • feature/old-refactor | 3 months ago | Alice Smith
+   • hotfix/legacy-fix | 6 weeks ago | Bob Jones
+
+🔄 Code Churn (high add/delete ratio)
+   1. +245 -189 | HIGH | src/parser.rs
+   2. +156 -98 | MED | src/utils.rs
+
+📦 Binary Files in Repository
+   ! 3 binary files found
+   • assets/logo.png
+   • docs/manual.pdf
+   ...
+
+Analysis complete!
+```
+
+Analyzes repository for technical debt indicators including large commits, file modification hotspots, long-lived branches, code churn patterns, and binary file usage.
 
 ---
 

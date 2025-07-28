@@ -664,8 +664,11 @@ fn test_get_branches_with_upstreams_no_upstreams() {
     std::env::set_current_dir("/").expect("Failed to reset directory");
 
     assert!(result.is_ok());
-    let branches = result.unwrap();
-    assert!(branches.is_empty());
+    let branches: Vec<(String, String)> = result.unwrap();
+
+    if let Some((branch, upstream)) = branches.into_iter().next() {
+        panic!("Branch '{branch}' unexpectedly has upstream '{upstream}'");
+    }
 }
 
 #[test]
@@ -743,7 +746,11 @@ fn test_get_branches_with_upstreams_success() {
     assert!(result.is_ok());
     let branches = result.unwrap();
     // Should return empty vector when no upstreams are configured
-    assert!(branches.is_empty());
+
+    // None of the branches should have an upstream
+    if let Some((_branch, upstream)) = branches.into_iter().next() {
+        panic!("Unexpected upstream found: {upstream}");
+    }
 }
 
 #[test]

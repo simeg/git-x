@@ -4,8 +4,8 @@ use clap::Parser;
 use git_x::cli::{Cli, Commands};
 use git_x::{
     clean_branches, color_graph, contributors, fixup, graph, health, info, large_files, new_branch,
-    prune_branches, rename_branch, since, stash_branch, summary, switch_recent, sync, undo,
-    upstream, what,
+    prune_branches, rename_branch, since, stash_branch, summary, switch_recent, sync,
+    technical_debt, undo, upstream, what,
 };
 
 fn main() {
@@ -46,6 +46,10 @@ fn main() {
             Err(e) => eprintln!("❌ {e}"),
         },
         Commands::Contributors => match contributors::run() {
+            Ok(output) => println!("{output}"),
+            Err(e) => eprintln!("❌ {e}"),
+        },
+        Commands::TechnicalDebt => match technical_debt::run() {
             Ok(output) => println!("{output}"),
             Err(e) => eprintln!("❌ {e}"),
         },
