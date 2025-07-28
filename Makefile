@@ -25,7 +25,7 @@ test:
 
 ## Run test coverage analysis using tarpaulin
 coverage:
-	$(CARGO) tarpaulin --workspace --timeout 120 --out Stdout
+	$(CARGO) tarpaulin --workspace --timeout 120 --out Stdout --jobs 1
 
 ## Format all source files
 fmt:
