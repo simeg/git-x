@@ -1,51 +1,10 @@
+mod common;
+
 use assert_cmd::Command;
+use common::basic_repo;
 use git_x::sync::*;
 use predicates::prelude::*;
-use std::fs;
-use std::path::PathBuf;
 use tempfile::TempDir;
-
-// Helper function to create a test git repository
-fn create_test_repo() -> (TempDir, PathBuf) {
-    let temp_dir = TempDir::new().expect("Failed to create temp directory");
-    let repo_path = temp_dir.path().to_path_buf();
-
-    // Initialize git repo
-    Command::new("git")
-        .args(["init"])
-        .current_dir(&repo_path)
-        .assert()
-        .success();
-
-    // Configure git
-    Command::new("git")
-        .args(["config", "user.name", "Test User"])
-        .current_dir(&repo_path)
-        .assert()
-        .success();
-
-    Command::new("git")
-        .args(["config", "user.email", "test@example.com"])
-        .current_dir(&repo_path)
-        .assert()
-        .success();
-
-    // Create initial commit
-    fs::write(repo_path.join("README.md"), "Initial commit").expect("Failed to write file");
-    Command::new("git")
-        .args(["add", "README.md"])
-        .current_dir(&repo_path)
-        .assert()
-        .success();
-
-    Command::new("git")
-        .args(["commit", "-m", "Initial commit"])
-        .current_dir(&repo_path)
-        .assert()
-        .success();
-
-    (temp_dir, repo_path)
-}
 
 #[test]
 fn test_parse_sync_counts() {
@@ -163,11 +122,11 @@ fn test_sync_run_function_outside_git_repo() {
 
 #[test]
 fn test_sync_run_function_no_upstream() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let repo = basic_repo();
 
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.arg("sync")
-        .current_dir(&repo_path)
+        .current_dir(repo.path())
         .assert()
         .success()
         .stderr(predicate::str::contains("No upstream branch configured"));
@@ -195,7 +154,7 @@ fn test_sync_merge_flag() {
 
 #[test]
 fn test_get_current_branch_success() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let repo = basic_repo();
 
     // Get original directory and handle potential failures
     let original_dir = match std::env::current_dir() {
@@ -204,7 +163,7 @@ fn test_get_current_branch_success() {
     };
 
     // Change to the repo directory and call get_current_branch
-    if std::env::set_current_dir(&repo_path).is_err() {
+    if std::env::set_current_dir(repo.path()).is_err() {
         return; // Skip test if directory change fails
     }
 
@@ -218,14 +177,14 @@ fn test_get_current_branch_success() {
 
 #[test]
 fn test_get_upstream_branch_no_upstream() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let repo = basic_repo();
 
     let original_dir = match std::env::current_dir() {
         Ok(dir) => dir,
         Err(_) => return, // Skip test if current directory is invalid
     };
 
-    if std::env::set_current_dir(&repo_path).is_err() {
+    if std::env::set_current_dir(repo.path()).is_err() {
         return; // Skip test if directory change fails
     }
 
@@ -259,7 +218,7 @@ fn test_sync_status_debug() {
 
 #[test]
 fn test_fetch_upstream_success() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let repo = basic_repo();
 
     // Add a remote
     Command::new("git")
@@ -269,7 +228,7 @@ fn test_fetch_upstream_success() {
             "origin",
             "https://github.com/test/repo.git",
         ])
-        .current_dir(&repo_path)
+        .current_dir(repo.path())
         .assert()
         .success();
 
@@ -278,7 +237,7 @@ fn test_fetch_upstream_success() {
         Err(_) => return, // Skip test if current directory is invalid
     };
 
-    if std::env::set_current_dir(&repo_path).is_err() {
+    if std::env::set_current_dir(repo.path()).is_err() {
         return; // Skip test if directory change fails
     }
 
@@ -292,14 +251,14 @@ fn test_fetch_upstream_success() {
 
 #[test]
 fn test_get_sync_status_patterns() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let repo = basic_repo();
 
     let original_dir = match std::env::current_dir() {
         Ok(dir) => dir,
         Err(_) => return, // Skip test if current directory is invalid
     };
 
-    if std::env::set_current_dir(&repo_path).is_err() {
+    if std::env::set_current_dir(repo.path()).is_err() {
         return; // Skip test if directory change fails
     }
 
@@ -312,14 +271,14 @@ fn test_get_sync_status_patterns() {
 
 #[test]
 fn test_sync_with_upstream_merge() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let repo = basic_repo();
 
     let original_dir = match std::env::current_dir() {
         Ok(dir) => dir,
         Err(_) => return, // Skip test if current directory is invalid
     };
 
-    if std::env::set_current_dir(&repo_path).is_err() {
+    if std::env::set_current_dir(repo.path()).is_err() {
         return; // Skip test if directory change fails
     }
 
@@ -332,14 +291,14 @@ fn test_sync_with_upstream_merge() {
 
 #[test]
 fn test_sync_with_upstream_rebase() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let repo = basic_repo();
 
     let original_dir = match std::env::current_dir() {
         Ok(dir) => dir,
         Err(_) => return, // Skip test if current directory is invalid
     };
 
-    if std::env::set_current_dir(&repo_path).is_err() {
+    if std::env::set_current_dir(repo.path()).is_err() {
         return; // Skip test if directory change fails
     }
 
@@ -395,14 +354,14 @@ fn test_parse_sync_counts_edge_cases() {
 
 #[test]
 fn test_fetch_upstream_remote_parsing() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let repo = basic_repo();
 
     let original_dir = match std::env::current_dir() {
         Ok(dir) => dir,
         Err(_) => return, // Skip test if current directory is invalid
     };
 
-    if std::env::set_current_dir(&repo_path).is_err() {
+    if std::env::set_current_dir(repo.path()).is_err() {
         return; // Skip test if directory change fails
     }
 
@@ -421,14 +380,14 @@ fn test_fetch_upstream_remote_parsing() {
 
 #[test]
 fn test_get_sync_status_error_scenarios() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let repo = basic_repo();
 
     let original_dir = match std::env::current_dir() {
         Ok(dir) => dir,
         Err(_) => return, // Skip test if current directory is invalid
     };
 
-    if std::env::set_current_dir(&repo_path).is_err() {
+    if std::env::set_current_dir(repo.path()).is_err() {
         return; // Skip test if directory change fails
     }
 
@@ -441,14 +400,14 @@ fn test_get_sync_status_error_scenarios() {
 
 #[test]
 fn test_sync_with_upstream_merge_error() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let repo = basic_repo();
 
     let original_dir = match std::env::current_dir() {
         Ok(dir) => dir,
         Err(_) => return, // Skip test if current directory is invalid
     };
 
-    if std::env::set_current_dir(&repo_path).is_err() {
+    if std::env::set_current_dir(repo.path()).is_err() {
         return; // Skip test if directory change fails
     }
 
@@ -462,14 +421,14 @@ fn test_sync_with_upstream_merge_error() {
 
 #[test]
 fn test_sync_with_upstream_rebase_error() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let repo = basic_repo();
 
     let original_dir = match std::env::current_dir() {
         Ok(dir) => dir,
         Err(_) => return, // Skip test if current directory is invalid
     };
 
-    if std::env::set_current_dir(&repo_path).is_err() {
+    if std::env::set_current_dir(repo.path()).is_err() {
         return; // Skip test if directory change fails
     }
 
@@ -559,14 +518,14 @@ fn test_comprehensive_formatting_functions() {
 
 #[test]
 fn test_fetch_upstream_edge_cases() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let repo = basic_repo();
 
     let original_dir = match std::env::current_dir() {
         Ok(dir) => dir,
         Err(_) => return, // Skip test if current directory is invalid
     };
 
-    if std::env::set_current_dir(&repo_path).is_err() {
+    if std::env::set_current_dir(repo.path()).is_err() {
         return; // Skip test if directory change fails
     }
 
@@ -605,14 +564,14 @@ fn test_get_upstream_branch_error_path() {
 #[test]
 fn test_get_current_branch_comprehensive() {
     // Test successful case
-    let (_temp_dir, repo_path) = create_test_repo();
+    let repo = basic_repo();
 
     let original_dir = match std::env::current_dir() {
         Ok(dir) => dir,
         Err(_) => return, // Skip test if current directory is invalid
     };
 
-    if std::env::set_current_dir(&repo_path).is_err() {
+    if std::env::set_current_dir(repo.path()).is_err() {
         return; // Skip test if directory change fails
     }
 
@@ -807,8 +766,6 @@ fn test_error_message_format_coverage() {
 }
 
 // Integration tests for sync.rs run() function testing all code paths
-
-mod common;
 
 #[test]
 fn test_sync_run_outside_git_repo() {

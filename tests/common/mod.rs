@@ -436,3 +436,197 @@ pub fn repo_with_remote_ahead(branch_name: &str) -> (TestRepo, TestRepo) {
 
     (repo, remote)
 }
+
+/// Test utilities for common testing patterns
+pub struct TestUtils;
+
+impl TestUtils {
+    /// Run a test function in a specific directory, automatically restoring the original directory
+    pub fn with_current_dir<F, R>(dir: &Path, test_fn: F) -> R
+    where
+        F: FnOnce() -> R,
+    {
+        let original_dir = std::env::current_dir().expect("Failed to get current directory");
+        std::env::set_current_dir(dir).expect("Failed to change directory");
+
+        let result = test_fn();
+
+        // Always restore directory, even if the test panics
+        let _ = std::env::set_current_dir(&original_dir);
+        result
+    }
+
+    /// Run a git-x command and return the Command for assertions
+    pub fn run_git_x_cmd(_args: &[&str]) -> Command {
+        Command::cargo_bin("git-x").expect("Failed to find git-x binary")
+    }
+
+    /// Create a git-x command with args for testing
+    pub fn git_x_with_args(args: &[&str]) -> Command {
+        let mut cmd = Self::run_git_x_cmd(args);
+        cmd.args(args);
+        cmd
+    }
+
+    /// Test that a command runs without panicking in a repo directory
+    pub fn test_command_in_repo<F>(repo: &TestRepo, test_fn: F)
+    where
+        F: FnOnce(),
+    {
+        Self::with_current_dir(repo.path(), test_fn)
+    }
+
+    /// Test that a command handles non-git directories gracefully
+    pub fn test_command_outside_repo<F>(test_fn: F)
+    where
+        F: FnOnce(),
+    {
+        let temp_dir = tempdir().expect("Failed to create temp directory");
+        Self::with_current_dir(temp_dir.path(), test_fn)
+    }
+}
+
+/// Enhanced test repository creation with more options
+pub struct TestRepoBuilder {
+    branch_name: Option<String>,
+    commit_count: usize,
+    with_remote: bool,
+    conventional_commits: bool,
+}
+
+impl TestRepoBuilder {
+    pub fn new() -> Self {
+        Self {
+            branch_name: None,
+            commit_count: 1,
+            with_remote: false,
+            conventional_commits: false,
+        }
+    }
+
+    pub fn with_branch(mut self, branch_name: &str) -> Self {
+        self.branch_name = Some(branch_name.to_string());
+        self
+    }
+
+    pub fn with_commits(mut self, count: usize) -> Self {
+        self.commit_count = count;
+        self
+    }
+
+    pub fn with_remote(mut self) -> Self {
+        self.with_remote = true;
+        self
+    }
+
+    pub fn with_conventional_commits(mut self) -> Self {
+        self.conventional_commits = true;
+        self
+    }
+
+    pub fn build(self) -> TestRepo {
+        if self.conventional_commits {
+            return repo_with_conventional_commits();
+        }
+
+        let repo = if let Some(branch_name) = &self.branch_name {
+            repo_with_branch(branch_name)
+        } else {
+            basic_repo()
+        };
+
+        // Add additional commits if requested
+        for i in 1..self.commit_count {
+            repo.add_commit(
+                &format!("file{}.txt", i + 1),
+                &format!("content {}", i + 1),
+                &format!("commit {}", i + 1),
+            );
+        }
+
+        if self.with_remote {
+            let branch = self.branch_name.as_deref().unwrap_or("main");
+            repo.setup_remote(branch);
+        }
+
+        repo
+    }
+}
+
+impl Default for TestRepoBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Assertion helpers for common test patterns
+pub struct TestAssertions;
+
+impl TestAssertions {
+    /// Assert that output contains expected success indicators
+    pub fn assert_success_output(output: &str) {
+        assert!(
+            output.contains("✅") || output.contains("success"),
+            "Expected success indicators in output: {output}"
+        );
+    }
+
+    /// Assert that output contains expected error indicators
+    pub fn assert_error_output(output: &str) {
+        assert!(
+            output.contains("❌") || output.contains("error") || output.contains("failed"),
+            "Expected error indicators in output: {output}"
+        );
+    }
+
+    /// Assert that a git command was successful in a repo
+    pub fn assert_git_command_success(repo: &TestRepo, args: &[&str]) {
+        StdCommand::new("git")
+            .args(args)
+            .current_dir(repo.path())
+            .assert()
+            .success();
+    }
+
+    /// Get git command output as string
+    pub fn get_git_output(repo: &TestRepo, args: &[&str]) -> String {
+        let output = StdCommand::new("git")
+            .args(args)
+            .current_dir(repo.path())
+            .output()
+            .expect("Failed to run git command");
+
+        String::from_utf8_lossy(&output.stdout).trim().to_string()
+    }
+}
+
+/// Additional repository helper functions
+impl TestRepo {
+    /// Create a commit and return its hash
+    pub fn create_commit_with_hash(&self, filename: &str, content: &str, message: &str) -> String {
+        self.add_commit(filename, content, message);
+        TestAssertions::get_git_output(self, &["rev-parse", "HEAD"])
+    }
+
+    /// Stage specific files (as opposed to add_commit which stages all files)
+    pub fn stage_files(&self, files: &[&str]) {
+        for file in files {
+            StdCommand::new("git")
+                .args(["add", file])
+                .current_dir(&self.path)
+                .assert()
+                .success();
+        }
+    }
+
+    /// Get current commit hash
+    pub fn get_current_commit_hash(&self) -> String {
+        TestAssertions::get_git_output(self, &["rev-parse", "HEAD"])
+    }
+
+    /// Check if there are staged changes
+    pub fn has_staged_changes(&self) -> bool {
+        let output = TestAssertions::get_git_output(self, &["diff", "--cached", "--name-only"]);
+        !output.is_empty()
+    }
+}

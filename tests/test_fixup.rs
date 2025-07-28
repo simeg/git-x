@@ -1,76 +1,11 @@
+mod common;
+
 use assert_cmd::Command;
+use common::basic_repo;
 use git_x::fixup::*;
 use predicates::prelude::*;
 use std::fs;
-use std::path::PathBuf;
 use tempfile::TempDir;
-
-// Helper function to create a test git repository
-fn create_test_repo() -> (TempDir, PathBuf) {
-    let temp_dir = TempDir::new().expect("Failed to create temp directory");
-    let repo_path = temp_dir.path().to_path_buf();
-
-    // Initialize git repo
-    Command::new("git")
-        .args(["init"])
-        .current_dir(&repo_path)
-        .assert()
-        .success();
-
-    // Configure git
-    Command::new("git")
-        .args(["config", "user.name", "Test User"])
-        .current_dir(&repo_path)
-        .assert()
-        .success();
-
-    Command::new("git")
-        .args(["config", "user.email", "test@example.com"])
-        .current_dir(&repo_path)
-        .assert()
-        .success();
-
-    // Create initial commit
-    fs::write(repo_path.join("README.md"), "Initial commit").expect("Failed to write file");
-    Command::new("git")
-        .args(["add", "README.md"])
-        .current_dir(&repo_path)
-        .assert()
-        .success();
-
-    Command::new("git")
-        .args(["commit", "-m", "Initial commit"])
-        .current_dir(&repo_path)
-        .assert()
-        .success();
-
-    (temp_dir, repo_path)
-}
-
-// Helper function to create a commit and return its hash
-fn create_commit(repo_path: &PathBuf, filename: &str, content: &str, message: &str) -> String {
-    fs::write(repo_path.join(filename), content).expect("Failed to write file");
-    Command::new("git")
-        .args(["add", filename])
-        .current_dir(repo_path)
-        .assert()
-        .success();
-
-    Command::new("git")
-        .args(["commit", "-m", message])
-        .current_dir(repo_path)
-        .assert()
-        .success();
-
-    // Get the commit hash
-    let output = Command::new("git")
-        .args(["rev-parse", "HEAD"])
-        .current_dir(repo_path)
-        .output()
-        .expect("Failed to get commit hash");
-
-    String::from_utf8_lossy(&output.stdout).trim().to_string()
-}
 
 #[test]
 fn test_is_valid_commit_hash_format() {
@@ -193,46 +128,33 @@ fn test_fixup_run_function_outside_git_repo() {
 
 #[test]
 fn test_fixup_invalid_commit_hash() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let repo = basic_repo();
 
-    let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.args(["fixup", "nonexistent123"])
-        .current_dir(&repo_path)
-        .assert()
+    repo.run_git_x(&["fixup", "nonexistent123"])
         .success() // The command succeeds but shows an error message
         .stderr(predicate::str::contains("Commit hash does not exist"));
 }
 
 #[test]
 fn test_fixup_no_staged_changes() {
-    let (_temp_dir, repo_path) = create_test_repo();
-    let commit_hash = create_commit(&repo_path, "test.txt", "test content", "Test commit");
+    let repo = basic_repo();
+    let commit_hash = repo.create_commit_with_hash("test.txt", "test content", "Test commit");
 
-    let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.args(["fixup", &commit_hash[0..7]]) // Use short hash
-        .current_dir(&repo_path)
-        .assert()
+    repo.run_git_x(&["fixup", &commit_hash[0..7]]) // Use short hash
         .success() // The command succeeds but shows an error message
         .stderr(predicate::str::contains("No staged changes found"));
 }
 
 #[test]
 fn test_fixup_with_staged_changes() {
-    let (_temp_dir, repo_path) = create_test_repo();
-    let commit_hash = create_commit(&repo_path, "test.txt", "test content", "Test commit");
+    let repo = basic_repo();
+    let commit_hash = repo.create_commit_with_hash("test.txt", "test content", "Test commit");
 
     // Create and stage some changes
-    fs::write(repo_path.join("test.txt"), "modified content").expect("Failed to write file");
-    Command::new("git")
-        .args(["add", "test.txt"])
-        .current_dir(&repo_path)
-        .assert()
-        .success();
+    fs::write(repo.path().join("test.txt"), "modified content").expect("Failed to write file");
+    repo.stage_files(&["test.txt"]);
 
-    let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.args(["fixup", &commit_hash[0..7]]) // Use short hash
-        .current_dir(&repo_path)
-        .assert()
+    repo.run_git_x(&["fixup", &commit_hash[0..7]]) // Use short hash
         .success()
         .stdout(predicate::str::contains("Fixup commit created"))
         .stdout(predicate::str::contains("To squash the fixup commit"));
@@ -240,21 +162,17 @@ fn test_fixup_with_staged_changes() {
 
 #[test]
 fn test_fixup_with_rebase_flag() {
-    let (_temp_dir, repo_path) = create_test_repo();
-    let commit_hash = create_commit(&repo_path, "test.txt", "test content", "Test commit");
+    let repo = basic_repo();
+    let commit_hash = repo.create_commit_with_hash("test.txt", "test content", "Test commit");
 
     // Create and stage some changes
-    fs::write(repo_path.join("test.txt"), "modified content").expect("Failed to write file");
-    Command::new("git")
-        .args(["add", "test.txt"])
-        .current_dir(&repo_path)
-        .assert()
-        .success();
+    fs::write(repo.path().join("test.txt"), "modified content").expect("Failed to write file");
+    repo.stage_files(&["test.txt"]);
 
     // Set environment to make interactive rebase work in tests
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["fixup", &commit_hash[0..7], "--rebase"])
-        .current_dir(&repo_path)
+        .current_dir(repo.path())
         .env("GIT_SEQUENCE_EDITOR", "true") // Auto-accept rebase plan
         .assert()
         .success()

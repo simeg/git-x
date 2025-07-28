@@ -1,60 +1,20 @@
+mod common;
+
 use assert_cmd::Command;
+use common::basic_repo;
 use git_x::cli::UpstreamAction;
 use git_x::upstream::*;
 use predicates::prelude::*;
-use std::fs;
 use std::path::PathBuf;
 use tempfile::TempDir;
-
-// Helper function to create a test git repository
-fn create_test_repo() -> (TempDir, PathBuf) {
-    let temp_dir = TempDir::new().expect("Failed to create temp directory");
-    let repo_path = temp_dir.path().to_path_buf();
-
-    // Initialize git repo
-    Command::new("git")
-        .args(["init"])
-        .current_dir(&repo_path)
-        .assert()
-        .success();
-
-    // Configure git
-    Command::new("git")
-        .args(["config", "user.name", "Test User"])
-        .current_dir(&repo_path)
-        .assert()
-        .success();
-
-    Command::new("git")
-        .args(["config", "user.email", "test@example.com"])
-        .current_dir(&repo_path)
-        .assert()
-        .success();
-
-    // Create initial commit
-    fs::write(repo_path.join("README.md"), "Initial commit").expect("Failed to write file");
-    Command::new("git")
-        .args(["add", "README.md"])
-        .current_dir(&repo_path)
-        .assert()
-        .success();
-
-    Command::new("git")
-        .args(["commit", "-m", "Initial commit"])
-        .current_dir(&repo_path)
-        .assert()
-        .success();
-
-    (temp_dir, repo_path)
-}
 
 // Direct run() function tests for maximum coverage
 
 #[test]
 fn test_upstream_run_set_function() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let repo = basic_repo();
 
-    std::env::set_current_dir(&repo_path).expect("Failed to change directory");
+    std::env::set_current_dir(repo.path()).expect("Failed to change directory");
 
     // Test set action through run function
     let action = UpstreamAction::Set {
@@ -68,9 +28,9 @@ fn test_upstream_run_set_function() {
 
 #[test]
 fn test_upstream_run_set_function_invalid_format() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let repo = basic_repo();
 
-    std::env::set_current_dir(&repo_path).expect("Failed to change directory");
+    std::env::set_current_dir(repo.path()).expect("Failed to change directory");
 
     // Test set action with invalid upstream format
     let action = UpstreamAction::Set {
@@ -84,9 +44,9 @@ fn test_upstream_run_set_function_invalid_format() {
 
 #[test]
 fn test_upstream_run_status_function() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let repo = basic_repo();
 
-    std::env::set_current_dir(&repo_path).expect("Failed to change directory");
+    std::env::set_current_dir(repo.path()).expect("Failed to change directory");
 
     // Test status action through run function
     let action = UpstreamAction::Status;
@@ -98,9 +58,9 @@ fn test_upstream_run_status_function() {
 
 #[test]
 fn test_upstream_run_sync_all_function() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let repo = basic_repo();
 
-    std::env::set_current_dir(&repo_path).expect("Failed to change directory");
+    std::env::set_current_dir(repo.path()).expect("Failed to change directory");
 
     // Test sync-all action through run function
     let action = UpstreamAction::SyncAll {
@@ -115,9 +75,9 @@ fn test_upstream_run_sync_all_function() {
 
 #[test]
 fn test_upstream_run_sync_all_function_with_merge() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let repo = basic_repo();
 
-    std::env::set_current_dir(&repo_path).expect("Failed to change directory");
+    std::env::set_current_dir(repo.path()).expect("Failed to change directory");
 
     // Test sync-all action with merge option
     let action = UpstreamAction::SyncAll {
@@ -131,7 +91,7 @@ fn test_upstream_run_sync_all_function_with_merge() {
 }
 
 // Helper function to create a remote repository
-fn create_remote_repo(name: &str, repo_path: &PathBuf) -> (PathBuf, String) {
+fn create_remote_repo(name: &str, repo_path: &std::path::Path) -> (PathBuf, String) {
     use std::time::{SystemTime, UNIX_EPOCH};
     let timestamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -318,63 +278,45 @@ fn test_upstream_sync_all_command_help() {
 
 #[test]
 fn test_upstream_set_invalid_format() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let repo = basic_repo();
 
     // Test empty upstream
-    let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.args(["upstream", "set", ""])
-        .current_dir(&repo_path)
-        .assert()
+    repo.run_git_x(&["upstream", "set", ""])
         .success()
         .stderr(predicate::str::contains("Upstream cannot be empty"));
 
     // Test upstream without slash
-    let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.args(["upstream", "set", "origin"])
-        .current_dir(&repo_path)
-        .assert()
+    repo.run_git_x(&["upstream", "set", "origin"])
         .success()
         .stderr(predicate::str::contains(
             "must be in format 'remote/branch'",
         ));
 
     // Test upstream with empty parts
-    let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.args(["upstream", "set", "/main"])
-        .current_dir(&repo_path)
-        .assert()
+    repo.run_git_x(&["upstream", "set", "/main"])
         .success()
         .stderr(predicate::str::contains("Invalid upstream format"));
 
-    let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.args(["upstream", "set", "origin/"])
-        .current_dir(&repo_path)
-        .assert()
+    repo.run_git_x(&["upstream", "set", "origin/"])
         .success()
         .stderr(predicate::str::contains("Invalid upstream format"));
 }
 
 #[test]
 fn test_upstream_set_nonexistent_upstream() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let repo = basic_repo();
 
-    let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.args(["upstream", "set", "nonexistent/main"])
-        .current_dir(&repo_path)
-        .assert()
+    repo.run_git_x(&["upstream", "set", "nonexistent/main"])
         .success()
         .stderr(predicate::str::contains("Upstream branch does not exist"));
 }
 
 #[test]
 fn test_upstream_set_success() {
-    let (_temp_dir, repo_path) = create_test_repo();
-    let (_remote_dir, branch_name) = create_remote_repo("origin", &repo_path);
+    let repo = basic_repo();
+    let (_remote_dir, branch_name) = create_remote_repo("origin", repo.path());
 
-    let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.args(["upstream", "set", &format!("origin/{branch_name}")])
-        .current_dir(&repo_path)
-        .assert()
+    repo.run_git_x(&["upstream", "set", &format!("origin/{branch_name}")])
         .success()
         .stdout(predicate::str::contains(format!(
             "Setting upstream for '{branch_name}' to 'origin/{branch_name}'"
@@ -418,20 +360,20 @@ fn test_upstream_status_no_branches() {
 
 #[test]
 fn test_upstream_status_with_branches() {
-    let (_temp_dir, repo_path) = create_test_repo();
-    let (_remote_dir, branch_name) = create_remote_repo("origin", &repo_path);
+    let repo = basic_repo();
+    let (_remote_dir, branch_name) = create_remote_repo("origin", repo.path());
 
     // Create a feature branch
     Command::new("git")
         .args(["checkout", "-b", "feature"])
-        .current_dir(&repo_path)
+        .current_dir(repo.path())
         .assert()
         .success();
 
     // Set upstream for the main branch
     Command::new("git")
         .args(["checkout", &branch_name])
-        .current_dir(&repo_path)
+        .current_dir(repo.path())
         .assert()
         .success();
 
@@ -441,13 +383,13 @@ fn test_upstream_status_with_branches() {
             "--set-upstream-to",
             &format!("origin/{branch_name}"),
         ])
-        .current_dir(&repo_path)
+        .current_dir(repo.path())
         .assert()
         .success();
 
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["upstream", "status"])
-        .current_dir(&repo_path)
+        .current_dir(repo.path())
         .assert()
         .success()
         .stdout(predicate::str::contains("Upstream status for all branches"))
@@ -459,11 +401,11 @@ fn test_upstream_status_with_branches() {
 
 #[test]
 fn test_upstream_sync_all_no_upstreams() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let repo = basic_repo();
 
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["upstream", "sync-all"])
-        .current_dir(&repo_path)
+        .current_dir(repo.path())
         .assert()
         .success()
         .stdout(predicate::str::contains(
@@ -473,8 +415,8 @@ fn test_upstream_sync_all_no_upstreams() {
 
 #[test]
 fn test_upstream_sync_all_dry_run() {
-    let (_temp_dir, repo_path) = create_test_repo();
-    let (_remote_dir, branch_name) = create_remote_repo("origin", &repo_path);
+    let repo = basic_repo();
+    let (_remote_dir, branch_name) = create_remote_repo("origin", repo.path());
 
     // Set upstream for master
     Command::new("git")
@@ -483,13 +425,13 @@ fn test_upstream_sync_all_dry_run() {
             "--set-upstream-to",
             &format!("origin/{branch_name}"),
         ])
-        .current_dir(&repo_path)
+        .current_dir(repo.path())
         .assert()
         .success();
 
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["upstream", "sync-all", "--dry-run"])
-        .current_dir(&repo_path)
+        .current_dir(repo.path())
         .assert()
         .success()
         .stdout(predicate::str::contains("(dry run) Would sync"))
@@ -498,8 +440,8 @@ fn test_upstream_sync_all_dry_run() {
 
 #[test]
 fn test_upstream_sync_all_with_merge() {
-    let (_temp_dir, repo_path) = create_test_repo();
-    let (_remote_dir, branch_name) = create_remote_repo("origin", &repo_path);
+    let repo = basic_repo();
+    let (_remote_dir, branch_name) = create_remote_repo("origin", repo.path());
 
     // Set upstream for master
     Command::new("git")
@@ -508,13 +450,13 @@ fn test_upstream_sync_all_with_merge() {
             "--set-upstream-to",
             &format!("origin/{branch_name}"),
         ])
-        .current_dir(&repo_path)
+        .current_dir(repo.path())
         .assert()
         .success();
 
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["upstream", "sync-all", "--merge", "--dry-run"])
-        .current_dir(&repo_path)
+        .current_dir(repo.path())
         .assert()
         .success()
         .stdout(predicate::str::contains("using merge"));
@@ -577,9 +519,9 @@ fn test_validate_upstream_format_invalid() {
 
 #[test]
 fn test_get_current_branch_success() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let repo = basic_repo();
 
-    std::env::set_current_dir(&repo_path).expect("Failed to change directory");
+    std::env::set_current_dir(repo.path()).expect("Failed to change directory");
 
     let result = get_current_branch();
     std::env::set_current_dir("/").expect("Failed to reset directory");
@@ -591,22 +533,22 @@ fn test_get_current_branch_success() {
 
 #[test]
 fn test_get_all_local_branches_success() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let repo = basic_repo();
 
     // Create additional branches
     Command::new("git")
         .args(["checkout", "-b", "feature-branch"])
-        .current_dir(&repo_path)
+        .current_dir(repo.path())
         .assert()
         .success();
 
     Command::new("git")
         .args(["checkout", "-b", "another-branch"])
-        .current_dir(&repo_path)
+        .current_dir(repo.path())
         .assert()
         .success();
 
-    std::env::set_current_dir(&repo_path).expect("Failed to change directory");
+    std::env::set_current_dir(repo.path()).expect("Failed to change directory");
 
     let result = get_all_local_branches();
     std::env::set_current_dir("/").expect("Failed to reset directory");
@@ -632,9 +574,9 @@ fn test_get_all_local_branches_not_git_repo() {
 
 #[test]
 fn test_get_branch_upstream_no_upstream() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let repo = basic_repo();
 
-    std::env::set_current_dir(&repo_path).expect("Failed to change directory");
+    std::env::set_current_dir(repo.path()).expect("Failed to change directory");
 
     let result = get_branch_upstream("main");
     std::env::set_current_dir("/").expect("Failed to reset directory");
@@ -644,9 +586,9 @@ fn test_get_branch_upstream_no_upstream() {
 
 #[test]
 fn test_get_branch_sync_status_no_upstream() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let repo = basic_repo();
 
-    std::env::set_current_dir(&repo_path).expect("Failed to change directory");
+    std::env::set_current_dir(repo.path()).expect("Failed to change directory");
 
     let result = get_branch_sync_status("main", "origin/main");
     std::env::set_current_dir("/").expect("Failed to reset directory");
@@ -656,9 +598,9 @@ fn test_get_branch_sync_status_no_upstream() {
 
 #[test]
 fn test_get_branches_with_upstreams_no_upstreams() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let repo = basic_repo();
 
-    std::env::set_current_dir(&repo_path).expect("Failed to change directory");
+    std::env::set_current_dir(repo.path()).expect("Failed to change directory");
 
     let result = get_branches_with_upstreams();
     std::env::set_current_dir("/").expect("Failed to reset directory");
@@ -673,9 +615,9 @@ fn test_get_branches_with_upstreams_no_upstreams() {
 
 #[test]
 fn test_validate_upstream_exists_invalid() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let repo = basic_repo();
 
-    std::env::set_current_dir(&repo_path).expect("Failed to change directory");
+    std::env::set_current_dir(repo.path()).expect("Failed to change directory");
 
     let result = validate_upstream_exists("nonexistent/branch");
     std::env::set_current_dir("/").expect("Failed to reset directory");
@@ -735,9 +677,9 @@ fn test_format_branch_with_upstream_all_statuses() {
 
 #[test]
 fn test_get_branches_with_upstreams_success() {
-    let (_temp_dir, repo_path) = create_test_repo();
+    let repo = basic_repo();
 
-    std::env::set_current_dir(&repo_path).expect("Failed to change directory");
+    std::env::set_current_dir(repo.path()).expect("Failed to change directory");
 
     // Test the function works even when no upstreams are configured
     let result = get_branches_with_upstreams();
@@ -755,10 +697,10 @@ fn test_get_branches_with_upstreams_success() {
 
 #[test]
 fn test_validate_upstream_exists_valid() {
-    let (_temp_dir, repo_path) = create_test_repo();
-    let (_remote_dir, branch_name) = create_remote_repo("origin", &repo_path);
+    let repo = basic_repo();
+    let (_remote_dir, branch_name) = create_remote_repo("origin", repo.path());
 
-    std::env::set_current_dir(&repo_path).expect("Failed to change directory");
+    std::env::set_current_dir(repo.path()).expect("Failed to change directory");
 
     let result = validate_upstream_exists(&format!("origin/{branch_name}"));
     std::env::set_current_dir("/").expect("Failed to reset directory");
@@ -768,8 +710,8 @@ fn test_validate_upstream_exists_valid() {
 
 #[test]
 fn test_get_branch_upstream_with_upstream() {
-    let (_temp_dir, repo_path) = create_test_repo();
-    let (_remote_dir, branch_name) = create_remote_repo("origin", &repo_path);
+    let repo = basic_repo();
+    let (_remote_dir, branch_name) = create_remote_repo("origin", repo.path());
 
     // Set upstream for the main branch
     Command::new("git")
@@ -778,11 +720,11 @@ fn test_get_branch_upstream_with_upstream() {
             "--set-upstream-to",
             &format!("origin/{branch_name}"),
         ])
-        .current_dir(&repo_path)
+        .current_dir(repo.path())
         .assert()
         .success();
 
-    std::env::set_current_dir(&repo_path).expect("Failed to change directory");
+    std::env::set_current_dir(repo.path()).expect("Failed to change directory");
 
     let result = get_branch_upstream(&branch_name);
     std::env::set_current_dir("/").expect("Failed to reset directory");
@@ -794,8 +736,8 @@ fn test_get_branch_upstream_with_upstream() {
 
 #[test]
 fn test_get_branch_sync_status_up_to_date() {
-    let (_temp_dir, repo_path) = create_test_repo();
-    let (_remote_dir, branch_name) = create_remote_repo("origin", &repo_path);
+    let repo = basic_repo();
+    let (_remote_dir, branch_name) = create_remote_repo("origin", repo.path());
 
     // Set upstream for the main branch
     Command::new("git")
@@ -804,11 +746,11 @@ fn test_get_branch_sync_status_up_to_date() {
             "--set-upstream-to",
             &format!("origin/{branch_name}"),
         ])
-        .current_dir(&repo_path)
+        .current_dir(repo.path())
         .assert()
         .success();
 
-    std::env::set_current_dir(&repo_path).expect("Failed to change directory");
+    std::env::set_current_dir(repo.path()).expect("Failed to change directory");
 
     let result = get_branch_sync_status(&branch_name, &format!("origin/{branch_name}"));
     std::env::set_current_dir("/").expect("Failed to reset directory");
@@ -884,40 +826,40 @@ fn test_format_sync_result_line_all_variants() {
 
 #[test]
 fn test_upstream_set_with_different_branches() {
-    let (_temp_dir, repo_path) = create_test_repo();
-    let (_remote_dir, _branch_name) = create_remote_repo("origin", &repo_path);
+    let repo = basic_repo();
+    let (_remote_dir, _branch_name) = create_remote_repo("origin", repo.path());
 
     // Create a feature branch
     Command::new("git")
         .args(["checkout", "-b", "feature-test"])
-        .current_dir(&repo_path)
+        .current_dir(repo.path())
         .assert()
         .success();
 
     // Create a commit in feature branch
-    std::fs::write(repo_path.join("feature.txt"), "feature content").expect("Failed to write");
+    std::fs::write(repo.path().join("feature.txt"), "feature content").expect("Failed to write");
     Command::new("git")
         .args(["add", "feature.txt"])
-        .current_dir(&repo_path)
+        .current_dir(repo.path())
         .assert()
         .success();
     Command::new("git")
         .args(["commit", "-m", "Add feature"])
-        .current_dir(&repo_path)
+        .current_dir(repo.path())
         .assert()
         .success();
 
     // Push feature branch to origin
     Command::new("git")
         .args(["push", "-u", "origin", "feature-test", "--force"])
-        .current_dir(&repo_path)
+        .current_dir(repo.path())
         .assert()
         .success();
 
     // Test setting upstream for feature branch
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["upstream", "set", "origin/feature-test"])
-        .current_dir(&repo_path)
+        .current_dir(repo.path())
         .assert()
         .success()
         .stdout(predicate::str::contains(
@@ -928,26 +870,26 @@ fn test_upstream_set_with_different_branches() {
 
 #[test]
 fn test_upstream_status_multiple_branches_with_mixed_upstreams() {
-    let (_temp_dir, repo_path) = create_test_repo();
-    let (_remote_dir, branch_name) = create_remote_repo("origin", &repo_path);
+    let repo = basic_repo();
+    let (_remote_dir, branch_name) = create_remote_repo("origin", repo.path());
 
     // Create multiple branches
     Command::new("git")
         .args(["checkout", "-b", "feature-1"])
-        .current_dir(&repo_path)
+        .current_dir(repo.path())
         .assert()
         .success();
 
     Command::new("git")
         .args(["checkout", "-b", "feature-2"])
-        .current_dir(&repo_path)
+        .current_dir(repo.path())
         .assert()
         .success();
 
     // Go back to main and set upstream
     Command::new("git")
         .args(["checkout", &branch_name])
-        .current_dir(&repo_path)
+        .current_dir(repo.path())
         .assert()
         .success();
 
@@ -957,14 +899,14 @@ fn test_upstream_status_multiple_branches_with_mixed_upstreams() {
             "--set-upstream-to",
             &format!("origin/{branch_name}"),
         ])
-        .current_dir(&repo_path)
+        .current_dir(repo.path())
         .assert()
         .success();
 
     // Test upstream status with mixed scenarios
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["upstream", "status"])
-        .current_dir(&repo_path)
+        .current_dir(repo.path())
         .assert()
         .success()
         .stdout(predicate::str::contains("Upstream status for all branches"))
@@ -977,7 +919,7 @@ fn test_upstream_status_multiple_branches_with_mixed_upstreams() {
 
 #[test]
 fn test_upstream_sync_all_error_scenarios() {
-    let (_temp_dir, _repo_path) = create_test_repo();
+    let _repo = basic_repo();
 
     // Test sync-all when not in git repo (move to non-git directory)
     let temp_dir2 = TempDir::new().expect("Failed to create temp directory");
