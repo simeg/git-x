@@ -4,6 +4,47 @@ This document explains how each `git-x` subcommand works under the hood. We aim 
 
 ---
 
+## `bisect`
+
+### What it does:
+- Provides a simplified interface for Git's bisect functionality to find the commit that introduced a bug.
+
+### Under the hood:
+- **Start bisect session:**
+  ```shell
+  git bisect start <bad-commit> <good-commit>
+  ```
+  - Validates commit references exist using `git rev-parse --verify`
+  - Checks if already in bisect mode by checking for `.git/BISECT_START` file existence
+  - Displays current commit info and remaining steps estimate
+
+- **Mark commits:**
+  ```shell
+  git bisect good  # Mark current commit as good
+  git bisect bad   # Mark current commit as bad  
+  git bisect skip  # Skip current commit (untestable)
+  ```
+  - Each command updates bisect state and checks out next commit
+  - Parses output to detect when first bad commit is found
+  - Shows remaining steps using logarithmic calculation
+
+- **Show status:**
+  ```shell
+  git bisect log     # Show bisect history
+  git bisect view    # Count remaining commits
+  ```
+  - Displays current commit, remaining steps, and recent bisect actions
+  - Provides guidance on next steps
+
+- **Reset bisect:**
+  ```shell
+  git bisect reset
+  ```
+  - Returns to original branch and cleans up bisect state
+  - Safe to run even when not in bisect mode
+
+---
+
 ## `info`
 
 ### What it does:

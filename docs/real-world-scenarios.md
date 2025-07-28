@@ -446,6 +446,135 @@ git x upstream sync-all
 
 ---
 
+## 🔍 `bisect` - Find the Bug-Introducing Commit
+
+### Scenario 1: Regression Hunt
+**The Problem:**
+Your team noticed that user authentication broke sometime in the last 2 weeks. You have 47 commits since the last known-good release, and you need to find exactly which commit introduced the bug.
+
+Manually checking each commit would take hours, and you're not sure which changes might be related to auth.
+
+**Traditional Git Approach:**
+```shell
+# Start bisect manually
+git bisect start
+git bisect bad HEAD
+git bisect good v2.1.0
+
+# For each commit Git checks out:
+# 1. Build and test the application
+# 2. Figure out if the bug exists
+# 3. Remember the right git bisect command
+git bisect bad   # or good, or skip
+# Repeat until found...
+
+# Don't forget to clean up
+git bisect reset
+```
+
+**With git-x:**
+```shell
+# Start with clear guidance
+git x bisect start v2.1.0 HEAD
+
+# Git-x guides you through each step
+git x bisect bad     # Bug exists in this commit
+git x bisect good    # Bug doesn't exist in this commit  
+git x bisect skip    # Can't test this commit (build broken)
+
+# Check progress anytime
+git x bisect status
+
+# Clean finish
+git x bisect reset
+```
+
+✅ **Result:** Found the exact commit that broke auth in just 6 steps instead of checking 47 commits manually.
+
+---
+
+### Scenario 2: Performance Regression
+**The Problem:**
+Your app's dashboard page used to load in 200ms, but now it takes 3 seconds. The performance regression happened sometime in the past month (about 80 commits), but you're not sure which feature or optimization attempt caused it.
+
+**Traditional Git Approach:**
+```shell
+# Start bisect
+git bisect start HEAD HEAD~80
+
+# For each commit:
+# 1. Build the app
+# 2. Run performance tests or manual testing
+# 3. Decide if performance is acceptable
+# 4. Remember the right bisect command
+git bisect good  # or bad
+
+# Easy to lose track of progress
+# Hard to remember which commits you've tested
+git bisect reset
+```
+
+**With git-x:**
+```shell
+# Clear workflow with progress tracking
+git x bisect start HEAD~80 HEAD
+
+# Test each commit with clear feedback
+git x bisect bad     # Slow (3s load time)
+git x bisect good    # Fast (200ms load time)
+
+# See your progress at any time
+git x bisect status
+# Shows: Current commit, ~3 steps remaining, previous decisions
+
+# Finish cleanly
+git x bisect reset
+```
+
+✅ **Result:** Identified that commit `a7b8c9d` introducing async data fetching optimization actually caused the slowdown due to a race condition.
+
+---
+
+### Scenario 3: Flaky Test Investigation
+**The Problem:**
+A critical test started failing intermittently. It passes most of the time but fails about 30% of test runs. You need to find when this instability was introduced, but testing requires multiple runs per commit to be confident.
+
+**Traditional Git Approach:**
+```shell
+git bisect start
+git bisect bad HEAD
+git bisect good v3.2.0
+
+# For each commit, you need to:
+# 1. Run the test multiple times
+# 2. Keep track of results manually
+# 3. Decide if the flakiness exists
+# 4. Hope you don't lose track of where you are
+
+git bisect skip  # When unsure due to randomness
+git bisect reset
+```
+
+**With git-x:**
+```shell
+git x bisect start v3.2.0 HEAD
+
+# Clear workflow for each commit
+# Run: npm test -- --repeat=10
+git x bisect bad     # Test failed 3/10 times (flaky)
+git x bisect good    # Test passed 10/10 times (stable)
+git x bisect skip    # Test infrastructure was broken
+
+# Always know where you stand
+git x bisect status
+
+git x bisect reset
+```
+
+✅ **Result:** Discovered that commit `f4e5d6c` adding parallel test execution introduced a race condition in the test setup.
+
+---
+
 ## 🎯 Summary
 
 These scenarios show how `git-x` commands solve real problems that developers face daily:
@@ -455,5 +584,6 @@ These scenarios show how `git-x` commands solve real problems that developers fa
 - **`stash-branch`**: Manages context switching and experimental work effectively
 - **`undo`**: Provides safe commit corrections without losing work
 - **`upstream`**: Simplifies complex multi-remote workflows and team collaboration
+- **`bisect`**: Efficiently finds bug-introducing commits through guided binary search
 
 Each command reduces cognitive load and prevents the kind of Git mistakes that can derail productivity or damage repository history.

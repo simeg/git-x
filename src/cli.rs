@@ -103,6 +103,11 @@ pub enum Commands {
     Contributors,
     #[clap(about = "Analyze code complexity and technical debt metrics")]
     TechnicalDebt,
+    #[clap(about = "Simplified bisect workflow")]
+    Bisect {
+        #[clap(subcommand)]
+        action: BisectAction,
+    },
 }
 
 #[derive(clap::Subcommand)]
@@ -151,4 +156,25 @@ pub enum UpstreamAction {
         )]
         merge: bool,
     },
+}
+
+#[derive(clap::Subcommand)]
+pub enum BisectAction {
+    #[clap(about = "Start bisect session")]
+    Start {
+        #[clap(help = "Good commit reference")]
+        good: String,
+        #[clap(help = "Bad commit reference")]
+        bad: String,
+    },
+    #[clap(about = "Mark current commit as good")]
+    Good,
+    #[clap(about = "Mark current commit as bad")]
+    Bad,
+    #[clap(about = "Skip current commit (untestable)")]
+    Skip,
+    #[clap(about = "End bisect session")]
+    Reset,
+    #[clap(about = "Show bisect status")]
+    Status,
 }

@@ -13,6 +13,7 @@ It wraps common Git actions in muscle-memory-friendly, no-brainer commands — p
 - [Why Does This Exist?](#why-does-this-exist)
 - [Installation](#installation)
 - [Example Commands](#example-commands)
+    - [`bisect`](#bisect)
     - [`clean-branches`](#clean-branches)
     - [`color-graph`](#color-graph)
     - [`contributors`](#contributors)
@@ -83,6 +84,57 @@ cargo install --path .
 ---
 
 ## Example Commands
+
+---
+
+### `bisect`
+
+> Simplified bisect workflow
+
+```shell
+# Start bisect session
+git x bisect start <good-commit> <bad-commit>
+
+# Mark current commit as good/bad/untestable
+git x bisect good
+git x bisect bad
+git x bisect skip
+
+# Show bisect status
+git x bisect status
+
+# End bisect session
+git x bisect reset
+```
+
+#### Example workflow:
+
+```shell
+# Start bisecting between a known good commit and HEAD
+git x bisect start HEAD~10 HEAD
+
+# Git checks out a commit for testing
+# Test your code, then mark the commit:
+git x bisect bad    # if bug is present
+git x bisect good   # if bug is not present
+git x bisect skip   # if commit is untestable
+
+# Repeat until git finds the first bad commit
+git x bisect reset  # return to original branch
+```
+
+#### Output:
+
+```shell
+🔍 Starting bisect between abc123 (good) and def456 (bad)
+📍 Checked out commit: 789abc Fix user authentication
+⏳ Approximately 3 steps remaining
+
+💡 Test this commit and run:
+  git x bisect good if commit is good
+  git x bisect bad if commit is bad
+  git x bisect skip if commit is untestable
+```
 
 ---
 

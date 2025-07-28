@@ -18,7 +18,13 @@
       "Bash(pkill:*)",
       "Bash(rg:*)",
       "Bash(timeout 300 cargo tarpaulin --workspace --timeout 120 --out Stdout)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(git bisect:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git-x bisect:*)",
+      "Bash(git x bisect good)",
+      "Bash(git x bisect reset)",
+      "Bash(git x bisect:*)"
     ],
     "deny": []
   }

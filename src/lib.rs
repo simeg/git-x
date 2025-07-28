@@ -1,3 +1,4 @@
+pub mod bisect;
 pub mod clean_branches;
 pub mod cli;
 pub mod color_graph;
