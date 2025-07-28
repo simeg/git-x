@@ -134,43 +134,59 @@ fn test_parse_git_log_output() {
 #[test]
 fn test_summary_run_function() {
     let repo = common::repo_with_conventional_commits();
+    let original_dir = std::env::current_dir().unwrap();
 
     // Change to repo directory and run the function directly
     std::env::set_current_dir(repo.path()).unwrap();
 
     // Test that the function doesn't panic and git commands work
     git_x::summary::run("1 day ago".to_string());
+
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
 }
 
 #[test]
 fn test_summary_run_function_no_commits() {
     let repo = common::basic_repo();
+    let original_dir = std::env::current_dir().unwrap();
 
     // Change to repo directory and run the function directly
     std::env::set_current_dir(repo.path()).unwrap();
 
     // Test with a time range that should show no commits
     git_x::summary::run("1 minute ago".to_string());
+
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
 }
 
 #[test]
 fn test_summary_run_function_git_error() {
     let temp_dir = tempfile::tempdir().unwrap();
+    let original_dir = std::env::current_dir().unwrap();
 
     // Change to non-git directory to trigger error path
     std::env::set_current_dir(temp_dir.path()).unwrap();
 
     // Test that the function handles git command failure gracefully
     git_x::summary::run("1 day ago".to_string());
+
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
 }
 
 #[test]
 fn test_summary_run_function_empty_output() {
     let repo = common::basic_repo();
+    let original_dir = std::env::current_dir().unwrap();
 
     // Change to repo directory and run the function directly
     std::env::set_current_dir(repo.path()).unwrap();
 
     // Test with a time range that should produce empty output (future date)
     git_x::summary::run("1 day from now".to_string());
+
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
 }

@@ -15,7 +15,8 @@
       "Bash(find:*)",
       "Bash(ls:*)",
       "Bash(timeout 60 cargo tarpaulin --all-features --workspace --exclude-files=tests/* --timeout 30)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(rg:*)"
     ],
     "deny": []
   }

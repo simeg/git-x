@@ -17,28 +17,37 @@ fn test_clean_branches_dry_run_outputs_expected() {
 #[test]
 fn test_clean_branches_run_function_dry_run() {
     let repo = repo_with_merged_branch("feature/test", "master");
+    let original_dir = std::env::current_dir().unwrap();
 
     // Change to repo directory and run the function directly
     std::env::set_current_dir(repo.path()).unwrap();
 
     // Test that the function doesn't panic and git commands work
     git_x::clean_branches::run(true);
+
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
 }
 
 #[test]
 fn test_clean_branches_run_function_actual_delete() {
     let repo = repo_with_merged_branch("feature/delete-me", "master");
+    let original_dir = std::env::current_dir().unwrap();
 
     // Change to repo directory and run the function directly
     std::env::set_current_dir(repo.path()).unwrap();
 
     // Test that the function doesn't panic and actually deletes branches
     git_x::clean_branches::run(false);
+
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
 }
 
 #[test]
 fn test_clean_branches_run_function_with_branches_to_delete() {
     let repo = repo_with_merged_branch("test-branch", "master");
+    let original_dir = std::env::current_dir().unwrap();
 
     // Switch back to master to ensure the test branch is merged
     repo.checkout_branch("master");
@@ -48,11 +57,15 @@ fn test_clean_branches_run_function_with_branches_to_delete() {
 
     // Test with dry run to ensure it finds branches and prints them
     git_x::clean_branches::run(true);
+
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
 }
 
 #[test]
 fn test_clean_branches_run_function_non_dry_run_with_branches() {
     let repo = repo_with_merged_branch("test-non-dry", "master");
+    let original_dir = std::env::current_dir().unwrap();
 
     // Switch back to master to ensure the test branch is merged
     repo.checkout_branch("master");
@@ -62,17 +75,24 @@ fn test_clean_branches_run_function_non_dry_run_with_branches() {
 
     // Test non-dry run to actually trigger deletion path
     git_x::clean_branches::run(false);
+
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
 }
 
 #[test]
 fn test_clean_branches_run_function_no_branches() {
     let repo = common::basic_repo();
+    let original_dir = std::env::current_dir().unwrap();
 
     // Change to repo directory - this repo has no merged branches to delete
     std::env::set_current_dir(repo.path()).unwrap();
 
     // Test the no branches case
     git_x::clean_branches::run(true);
+
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
 }
 
 #[test]

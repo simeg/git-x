@@ -593,10 +593,33 @@ fn test_get_current_branch_success() {
 fn test_get_current_branch_not_git_repo() {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
 
-    std::env::set_current_dir(temp_dir.path()).expect("Failed to change directory");
+    // Create a completely isolated directory that definitely isn't a git repo
+    let isolated_dir = temp_dir.path().join("isolated");
+    std::fs::create_dir(&isolated_dir).expect("Failed to create isolated directory");
+
+    // Unset GIT_DIR and GIT_WORK_TREE to ensure git doesn't find parent repos
+    let original_git_dir = std::env::var("GIT_DIR").ok();
+    let original_git_work_tree = std::env::var("GIT_WORK_TREE").ok();
+    unsafe {
+        std::env::remove_var("GIT_DIR");
+        std::env::remove_var("GIT_WORK_TREE");
+    }
+
+    let original_dir = std::env::current_dir().expect("Failed to get current directory");
+    std::env::set_current_dir(&isolated_dir).expect("Failed to change directory");
 
     let result = get_current_branch();
-    std::env::set_current_dir("/").expect("Failed to reset directory");
+
+    // Restore original directory and environment
+    std::env::set_current_dir(&original_dir).expect("Failed to reset directory");
+    unsafe {
+        if let Some(git_dir) = original_git_dir {
+            std::env::set_var("GIT_DIR", git_dir);
+        }
+        if let Some(git_work_tree) = original_git_work_tree {
+            std::env::set_var("GIT_WORK_TREE", git_work_tree);
+        }
+    }
 
     assert!(result.is_err());
 }

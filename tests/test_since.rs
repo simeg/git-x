@@ -42,32 +42,44 @@ fn test_is_log_empty() {
 #[test]
 fn test_since_run_function() {
     let repo = repo_with_commits(3);
+    let original_dir = std::env::current_dir().unwrap();
 
     // Change to repo directory and run the function directly
     std::env::set_current_dir(repo.path()).unwrap();
 
     // Test that the function doesn't panic and git commands work
     git_x::since::run("HEAD~1".to_string());
+
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
 }
 
 #[test]
 fn test_since_run_function_no_commits() {
     let repo = common::basic_repo();
+    let original_dir = std::env::current_dir().unwrap();
 
     // Change to repo directory and run the function directly
     std::env::set_current_dir(repo.path()).unwrap();
 
     // Test with a reference that should show no commits
     git_x::since::run("HEAD".to_string());
+
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
 }
 
 #[test]
 fn test_since_run_function_git_error() {
     let temp_dir = tempfile::tempdir().unwrap();
+    let original_dir = std::env::current_dir().unwrap();
 
     // Change to non-git directory to trigger error path
     std::env::set_current_dir(temp_dir.path()).unwrap();
 
     // Test that the function handles git command failure gracefully
     git_x::since::run("HEAD".to_string());
+
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
 }

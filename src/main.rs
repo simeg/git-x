@@ -16,14 +16,23 @@ fn main() {
         Commands::Info => info::run(),
         Commands::Graph => graph::run(),
         Commands::ColorGraph => color_graph::run(),
-        Commands::Health => health::run(),
+        Commands::Health => match health::run() {
+            Ok(output) => println!("{output}"),
+            Err(e) => eprintln!("Error: {e}"),
+        },
         Commands::Since { reference } => since::run(reference),
         Commands::Undo => undo::run(),
         Commands::CleanBranches { dry_run } => clean_branches::run(dry_run),
-        Commands::What { target } => what::run(target),
+        Commands::What { target } => match what::run(target) {
+            Ok(output) => println!("{output}"),
+            Err(e) => eprintln!("Error: {e}"),
+        },
         Commands::Summary { since } => summary::run(since),
         Commands::Sync { merge } => sync::run(merge),
-        Commands::New { branch_name, from } => new_branch::run(branch_name, from),
+        Commands::New { branch_name, from } => match new_branch::run(branch_name, from) {
+            Ok(output) => println!("{output}"),
+            Err(e) => eprintln!("Error: {e}"),
+        },
         Commands::LargeFiles { limit, threshold } => large_files::run(limit, threshold),
         Commands::Fixup {
             commit_hash,
