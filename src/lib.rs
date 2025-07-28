@@ -2,6 +2,7 @@ pub mod bisect;
 pub mod clean_branches;
 pub mod cli;
 pub mod color_graph;
+pub mod common;
 pub mod contributors;
 pub mod fixup;
 pub mod graph;

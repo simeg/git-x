@@ -24,7 +24,8 @@
       "Bash(git-x bisect:*)",
       "Bash(git x bisect good)",
       "Bash(git x bisect reset)",
-      "Bash(git x bisect:*)"
+      "Bash(git x bisect:*)",
+      "Bash(git-x:*)"
     ],
     "deny": []
   }

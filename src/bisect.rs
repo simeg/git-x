@@ -331,56 +331,26 @@ fn ensure_bisecting() -> Result<()> {
 }
 
 fn validate_commit_exists(commit: &str) -> Result<()> {
-    let output = Command::new("git")
-        .args(["rev-parse", "--verify", &format!("{commit}^{{commit}}")])
-        .output()?;
-
-    if !output.status.success() {
-        return Err(GitXError::GitCommand(format!(
-            "Commit '{commit}' does not exist"
-        )));
-    }
-    Ok(())
+    crate::common::Validate::commit_exists(commit)
 }
 
 fn get_current_commit_info() -> Result<String> {
-    let output = Command::new("git")
-        .args(["log", "-1", "--pretty=format:%h %s"])
-        .output()?;
-
-    if !output.status.success() {
-        return Err(GitXError::GitCommand(
-            "Failed to get current commit info".to_string(),
-        ));
-    }
-
-    Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+    crate::common::GitCommand::run(&["log", "-1", "--pretty=format:%h %s"])
 }
 
 fn get_remaining_steps() -> Result<String> {
-    let output = Command::new("git")
-        .args(["bisect", "view", "--pretty=oneline"])
-        .output()?;
-
-    if output.status.success() {
-        let count = String::from_utf8_lossy(&output.stdout).lines().count();
-        let steps = (count as f64).log2().ceil() as usize;
-        Ok(steps.to_string())
-    } else {
-        Ok("unknown".to_string())
+    match crate::common::GitCommand::run(&["bisect", "view", "--pretty=oneline"]) {
+        Ok(output) => {
+            let count = output.lines().count();
+            let steps = (count as f64).log2().ceil() as usize;
+            Ok(steps.to_string())
+        }
+        Err(_) => Ok("unknown".to_string()),
     }
 }
 
 fn get_bisect_log() -> Result<String> {
-    let output = Command::new("git").args(["bisect", "log"]).output()?;
-
-    if !output.status.success() {
-        return Err(GitXError::GitCommand(
-            "Failed to get bisect log".to_string(),
-        ));
-    }
-
-    Ok(String::from_utf8_lossy(&output.stdout).to_string())
+    crate::common::GitCommand::run(&["bisect", "log"])
 }
 
 pub fn parse_bisect_result(output: &str) -> String {
