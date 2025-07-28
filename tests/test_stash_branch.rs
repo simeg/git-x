@@ -231,7 +231,7 @@ fn test_stash_branch_create_invalid_branch_name() {
     cmd.args(["stash-branch", "create", ""])
         .current_dir(&repo_path)
         .assert()
-        .success() // Command succeeds but shows validation error
+        .failure() // Command fails with validation error
         .stderr(predicate::str::contains("Branch name cannot be empty"));
 
     // Test branch name starting with dash (use -- to escape)
@@ -239,7 +239,7 @@ fn test_stash_branch_create_invalid_branch_name() {
     cmd.args(["stash-branch", "create", "--", "-feature"])
         .current_dir(&repo_path)
         .assert()
-        .success()
+        .failure()
         .stderr(predicate::str::contains(
             "Branch name cannot start with a dash",
         ));
@@ -249,7 +249,7 @@ fn test_stash_branch_create_invalid_branch_name() {
     cmd.args(["stash-branch", "create", "feature branch"])
         .current_dir(&repo_path)
         .assert()
-        .success()
+        .failure()
         .stderr(predicate::str::contains(
             "Branch name cannot contain spaces",
         ));
@@ -259,8 +259,7 @@ fn test_stash_branch_create_invalid_branch_name() {
     cmd.args(["stash-branch", "create", "feature..test"])
         .current_dir(&repo_path)
         .assert()
-        .success()
-        .success() // This should pass clap parsing and hit our validation
+        .failure() // This should pass clap parsing and hit our validation
         .stderr(predicate::str::contains("Branch name cannot contain '..'"));
 }
 
@@ -287,7 +286,7 @@ fn test_stash_branch_create_existing_branch() {
     cmd.args(["stash-branch", "create", "existing-branch"])
         .current_dir(&repo_path)
         .assert()
-        .success()
+        .failure()
         .stderr(predicate::str::contains(
             "Branch 'existing-branch' already exists",
         ));
@@ -302,7 +301,7 @@ fn test_stash_branch_create_no_stash() {
     cmd.args(["stash-branch", "create", "new-branch"])
         .current_dir(&repo_path)
         .assert()
-        .success()
+        .failure()
         .stderr(predicate::str::contains("Stash reference does not exist"));
 }
 
@@ -442,7 +441,7 @@ fn test_stash_branch_command_outside_git_repo() {
     cmd.args(["stash-branch", "create", "test-branch"])
         .current_dir(temp_dir.path())
         .assert()
-        .success()
+        .failure()
         .stderr(predicate::str::contains("Stash reference does not exist"));
 }
 
@@ -688,7 +687,7 @@ fn test_stash_branch_run_create_function() {
         stash_ref: None,
     };
 
-    git_x::stash_branch::run(action);
+    let _ = git_x::stash_branch::run(action);
 
     std::env::set_current_dir("/").expect("Failed to reset directory");
 }
@@ -706,7 +705,7 @@ fn test_stash_branch_run_create_function_invalid_branch() {
         stash_ref: None,
     };
 
-    git_x::stash_branch::run(action);
+    let _ = git_x::stash_branch::run(action);
 
     std::env::set_current_dir("/").expect("Failed to reset directory");
 }
@@ -723,7 +722,7 @@ fn test_stash_branch_run_create_function_no_stash() {
         stash_ref: None,
     };
 
-    git_x::stash_branch::run(action);
+    let _ = git_x::stash_branch::run(action);
 
     std::env::set_current_dir("/").expect("Failed to reset directory");
 }
@@ -740,7 +739,7 @@ fn test_stash_branch_run_clean_function() {
         dry_run: true,
     };
 
-    git_x::stash_branch::run(action);
+    let _ = git_x::stash_branch::run(action);
 
     std::env::set_current_dir("/").expect("Failed to reset directory");
 }
@@ -758,7 +757,7 @@ fn test_stash_branch_run_clean_function_with_age() {
         dry_run: false,
     };
 
-    git_x::stash_branch::run(action);
+    let _ = git_x::stash_branch::run(action);
 
     std::env::set_current_dir("/").expect("Failed to reset directory");
 }
@@ -775,7 +774,7 @@ fn test_stash_branch_run_apply_function() {
         list_only: true,
     };
 
-    git_x::stash_branch::run(action);
+    let _ = git_x::stash_branch::run(action);
 
     std::env::set_current_dir("/").expect("Failed to reset directory");
 }
@@ -792,7 +791,7 @@ fn test_stash_branch_run_apply_function_no_list() {
         list_only: false,
     };
 
-    git_x::stash_branch::run(action);
+    let _ = git_x::stash_branch::run(action);
 
     std::env::set_current_dir("/").expect("Failed to reset directory");
 }

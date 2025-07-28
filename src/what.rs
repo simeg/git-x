@@ -1,21 +1,25 @@
+use crate::{GitXError, Result};
 use std::process::Command;
 
-pub fn run(target: Option<String>) {
+pub fn run(target: Option<String>) -> Result<String> {
     let target_branch = target.unwrap_or_else(get_default_target);
 
     // Get current branch name
     let current_branch_output = Command::new("git")
         .args(["rev-parse", "--abbrev-ref", "HEAD"])
         .output()
-        .expect("Failed to get current branch");
+        .map_err(|_| GitXError::GitCommand("Failed to get current branch".to_string()))?;
+
+    if !current_branch_output.status.success() {
+        return Err(GitXError::GitCommand("Not in a git repository".to_string()));
+    }
+
     let current_branch = String::from_utf8_lossy(&current_branch_output.stdout)
         .trim()
         .to_string();
 
-    println!(
-        "{}",
-        format_branch_comparison(&current_branch, &target_branch)
-    );
+    let mut output = Vec::new();
+    output.push(format_branch_comparison(&current_branch, &target_branch));
 
     // Get ahead/behind commit counts
     let rev_list_output = Command::new("git")
@@ -26,13 +30,20 @@ pub fn run(target: Option<String>) {
             &format_rev_list_range(&target_branch, &current_branch),
         ])
         .output()
-        .expect("Failed to get ahead/behind count");
+        .map_err(|_| GitXError::GitCommand("Failed to get ahead/behind count".to_string()))?;
+
+    if !rev_list_output.status.success() {
+        return Err(GitXError::GitCommand(
+            "Failed to compare branches".to_string(),
+        ));
+    }
+
     let output_str = String::from_utf8_lossy(&rev_list_output.stdout);
     let (ahead, behind) = parse_commit_counts(&output_str);
 
     let (ahead_msg, behind_msg) = format_commit_counts(&ahead, &behind);
-    println!("{ahead_msg}");
-    println!("{behind_msg}");
+    output.push(ahead_msg);
+    output.push(behind_msg);
 
     // Get diff summary
     let diff_output = Command::new("git")
@@ -42,15 +53,24 @@ pub fn run(target: Option<String>) {
             &format_rev_list_range(&target_branch, &current_branch),
         ])
         .output()
-        .expect("Failed to get diff");
+        .map_err(|_| GitXError::GitCommand("Failed to get diff".to_string()))?;
+
+    if !diff_output.status.success() {
+        return Err(GitXError::GitCommand(
+            "Failed to get file changes".to_string(),
+        ));
+    }
+
     let diff = String::from_utf8_lossy(&diff_output.stdout);
 
-    println!("Changes:");
+    output.push("Changes:".to_string());
     for line in diff.lines() {
         if let Some(formatted_line) = format_diff_line(line) {
-            println!("{formatted_line}");
+            output.push(formatted_line);
         }
     }
+
+    Ok(output.join("\n"))
 }
 
 // Helper function to get default target branch

@@ -1,27 +1,28 @@
+use crate::{GitXError, Result};
 use std::collections::BTreeMap;
 use std::process::Command;
 
 use chrono::{NaiveDate, Utc};
 
-pub fn run(since: String) {
+pub fn run(since: String) -> Result<String> {
     let git_log = Command::new("git")
         .args(get_git_log_summary_args(&since))
         .output()
-        .expect("Failed to run git log");
+        .map_err(|_| GitXError::GitCommand("Failed to run git log".to_string()))?;
 
     if !git_log.status.success() {
-        eprintln!("{}", format_git_error_message());
-        return;
+        return Err(GitXError::GitCommand(
+            "Failed to retrieve commits".to_string(),
+        ));
     }
 
     let stdout = String::from_utf8_lossy(&git_log.stdout);
     if is_stdout_empty(&stdout) {
-        println!("{}", format_no_commits_message(&since));
-        return;
+        return Ok(format_no_commits_message(&since));
     }
 
     let grouped = parse_git_log_output(&stdout);
-    print_commit_summary(&since, &grouped);
+    Ok(format_commit_summary(&since, &grouped))
 }
 
 // Helper function to get git log summary args
@@ -93,17 +94,24 @@ pub fn format_commit_meta(author: &str, time: &str) -> String {
     format!("(by {author}, {time})")
 }
 
-// Helper function to print commit summary
-pub fn print_commit_summary(since: &str, grouped: &BTreeMap<NaiveDate, Vec<String>>) {
-    println!("{}", format_summary_header(since));
+// Helper function to format commit summary
+pub fn format_commit_summary(since: &str, grouped: &BTreeMap<NaiveDate, Vec<String>>) -> String {
+    let mut output = Vec::new();
+    output.push(format_summary_header(since));
 
     for (date, commits) in grouped.iter().rev() {
-        println!("{}", format_date_header(date));
+        output.push(format_date_header(date));
         for commit in commits {
-            println!("{commit}");
+            output.push(commit.clone());
         }
-        println!();
+        output.push(String::new()); // Empty line
     }
+    output.join("\n")
+}
+
+// Helper function to print commit summary (kept for backward compatibility)
+pub fn print_commit_summary(since: &str, grouped: &BTreeMap<NaiveDate, Vec<String>>) {
+    println!("{}", format_commit_summary(since, grouped));
 }
 
 // Helper function to format summary header

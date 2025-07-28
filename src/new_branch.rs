@@ -1,78 +1,75 @@
+use crate::{GitXError, Result};
 use std::process::Command;
 
-pub fn run(branch_name: String, from: Option<String>) {
+pub fn run(branch_name: String, from: Option<String>) -> Result<String> {
     // Validate branch name
-    if let Err(msg) = validate_branch_name(&branch_name) {
-        eprintln!("{}", format_error_message(msg));
-        return;
-    }
+    validate_branch_name_result(&branch_name)?;
 
     // Check if branch already exists
     if branch_exists(&branch_name) {
-        eprintln!("{}", format_branch_exists_message(&branch_name));
-        return;
+        return Err(GitXError::GitCommand(format!(
+            "Branch '{branch_name}' already exists"
+        )));
     }
 
     // Determine base branch
     let base_branch = match from {
         Some(ref branch) => {
             if !branch_exists(branch) && !is_valid_ref(branch) {
-                eprintln!("{}", format_invalid_base_message(branch));
-                return;
+                return Err(GitXError::GitCommand(format!(
+                    "Base branch or ref '{branch}' does not exist"
+                )));
             }
             branch.clone()
         }
-        None => match get_current_branch() {
-            Ok(branch) => branch,
-            Err(msg) => {
-                eprintln!("{}", format_error_message(msg));
-                return;
-            }
-        },
+        None => get_current_branch_result()?,
     };
 
-    println!(
-        "{}",
-        format_creating_branch_message(&branch_name, &base_branch)
-    );
+    let mut output = Vec::new();
+    output.push(format_creating_branch_message(&branch_name, &base_branch));
 
     // Create the new branch
-    if let Err(msg) = create_branch(&branch_name, &base_branch) {
-        eprintln!("{}", format_error_message(msg));
-        return;
-    }
+    create_branch_result(&branch_name, &base_branch)?;
 
     // Switch to the new branch
-    if let Err(msg) = switch_to_branch(&branch_name) {
-        eprintln!("{}", format_error_message(msg));
-        return;
-    }
+    switch_to_branch_result(&branch_name)?;
 
-    println!("{}", format_success_message(&branch_name));
+    output.push(format_success_message(&branch_name));
+    Ok(output.join("\n"))
 }
 
-// Helper function to validate branch name
-fn validate_branch_name(name: &str) -> Result<(), &'static str> {
+// Helper function to validate branch name (new version)
+fn validate_branch_name_result(name: &str) -> Result<()> {
     if name.is_empty() {
-        return Err("Branch name cannot be empty");
+        return Err(GitXError::GitCommand(
+            "Branch name cannot be empty".to_string(),
+        ));
     }
 
     if name.starts_with('-') {
-        return Err("Branch name cannot start with a dash");
+        return Err(GitXError::GitCommand(
+            "Branch name cannot start with a dash".to_string(),
+        ));
     }
 
     if name.contains("..") {
-        return Err("Branch name cannot contain '..'");
+        return Err(GitXError::GitCommand(
+            "Branch name cannot contain '..'".to_string(),
+        ));
     }
 
     if name.contains(' ') {
-        return Err("Branch name cannot contain spaces");
+        return Err(GitXError::GitCommand(
+            "Branch name cannot contain spaces".to_string(),
+        ));
     }
 
     // Check for invalid characters
     const INVALID_CHARS: &[char] = &['~', '^', ':', '?', '*', '[', '\\'];
     if name.chars().any(|c| INVALID_CHARS.contains(&c)) {
-        return Err("Branch name contains invalid characters");
+        return Err(GitXError::GitCommand(
+            "Branch name contains invalid characters".to_string(),
+        ));
     }
 
     Ok(())
@@ -101,43 +98,51 @@ fn is_valid_ref(ref_name: &str) -> bool {
         .unwrap_or(false)
 }
 
-// Helper function to get current branch
-fn get_current_branch() -> Result<String, &'static str> {
+// Helper function to get current branch (new version)
+fn get_current_branch_result() -> Result<String> {
     let output = Command::new("git")
         .args(["rev-parse", "--abbrev-ref", "HEAD"])
         .output()
-        .map_err(|_| "Failed to get current branch")?;
+        .map_err(|_| GitXError::GitCommand("Failed to get current branch".to_string()))?;
 
     if !output.status.success() {
-        return Err("Not in a git repository");
+        return Err(GitXError::GitCommand("Not in a git repository".to_string()));
     }
 
     Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
 }
 
-// Helper function to create branch
-fn create_branch(branch_name: &str, base_branch: &str) -> Result<(), &'static str> {
-    let status = Command::new("git")
+// Helper function to create branch (new version)
+fn create_branch_result(branch_name: &str, base_branch: &str) -> Result<()> {
+    let output = Command::new("git")
         .args(["branch", branch_name, base_branch])
-        .status()
-        .map_err(|_| "Failed to execute git branch command")?;
+        .output()
+        .map_err(|_| GitXError::GitCommand("Failed to execute git branch command".to_string()))?;
 
-    if !status.success() {
-        return Err("Failed to create branch");
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(GitXError::GitCommand(format!(
+            "Failed to create branch: {}",
+            stderr.trim()
+        )));
     }
 
     Ok(())
 }
 
-// Helper function to switch to branch
-fn switch_to_branch(branch_name: &str) -> Result<(), &'static str> {
-    let status = Command::new("git")
+// Helper function to switch to branch (new version)
+fn switch_to_branch_result(branch_name: &str) -> Result<()> {
+    let output = Command::new("git")
         .args(["switch", branch_name])
-        .status()
-        .map_err(|_| "Failed to execute git switch command")?;
+        .output()
+        .map_err(|_| GitXError::GitCommand("Failed to execute git switch command".to_string()))?;
 
-    if !status.success() {
-        return Err("Failed to switch to new branch");
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(GitXError::GitCommand(format!(
+            "Failed to switch to new branch: {}",
+            stderr.trim()
+        )));
     }
 
     Ok(())

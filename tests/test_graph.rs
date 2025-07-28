@@ -56,8 +56,16 @@ fn test_graph_run_function() {
     // Change to repo directory and run the function directly
     std::env::set_current_dir(repo.path()).unwrap();
 
-    // Test that the function doesn't panic and git commands work
-    git_x::graph::run();
+    // Test that the function returns Ok and contains git graph output
+    let result = git_x::graph::run();
+    assert!(result.is_ok());
+
+    let output = result.unwrap();
+    // Should contain git log output with graph symbols
+    assert!(
+        output.contains("*") || output.contains("|") || output.contains("initial commit"),
+        "Expected git graph output"
+    );
 }
 
 #[test]
@@ -67,6 +75,11 @@ fn test_graph_run_function_in_non_git_directory() {
     // Change to non-git directory to trigger error path
     std::env::set_current_dir(temp_dir.path()).unwrap();
 
-    // Test that the function handles git command failure gracefully
-    git_x::graph::run();
+    // Test that the function returns an error when not in a git repository
+    let result = git_x::graph::run();
+    assert!(result.is_err());
+
+    let error = result.unwrap_err();
+    let error_msg = format!("{error}");
+    assert!(error_msg.contains("git log failed"));
 }

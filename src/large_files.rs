@@ -1,3 +1,4 @@
+use crate::{GitXError, Result};
 use std::collections::HashMap;
 use std::process::Command;
 
@@ -19,21 +20,15 @@ impl FileInfo {
     }
 }
 
-pub fn run(limit: usize, threshold: Option<f64>) {
-    println!("{}", format_scan_start_message());
+pub fn run(limit: usize, threshold: Option<f64>) -> Result<String> {
+    let mut output = Vec::new();
+    output.push(format_scan_start_message().to_string());
 
     // Get all file objects and their sizes
-    let file_objects = match get_file_objects() {
-        Ok(objects) => objects,
-        Err(msg) => {
-            eprintln!("{}", format_error_message(msg));
-            return;
-        }
-    };
+    let file_objects = get_file_objects_result()?;
 
     if file_objects.is_empty() {
-        println!("{}", format_no_files_message());
-        return;
+        return Ok(format_no_files_message().to_string());
     }
 
     // Find the largest files by path
@@ -46,36 +41,39 @@ pub fn run(limit: usize, threshold: Option<f64>) {
     large_files.truncate(limit);
 
     if large_files.is_empty() {
-        println!("{}", format_no_large_files_message(threshold));
-        return;
+        return Ok(format_no_large_files_message(threshold));
     }
 
-    println!("{}", format_results_header(large_files.len(), threshold));
+    output.push(format_results_header(large_files.len(), threshold));
 
-    // Print results
+    // Add results
     for (i, file) in large_files.iter().enumerate() {
-        println!("{}", format_file_line(i + 1, file));
+        output.push(format_file_line(i + 1, file));
     }
 
     // Show summary
     let total_size: u64 = large_files.iter().map(|f| f.size_bytes).sum();
     let total_mb = total_size as f64 / (1024.0 * 1024.0);
-    println!("{}", format_summary_message(large_files.len(), total_mb));
+    output.push(format_summary_message(large_files.len(), total_mb));
+
+    Ok(output.join("\n"))
 }
 
-// Helper function to get file objects from git
-fn get_file_objects() -> Result<Vec<(String, String, u64)>, &'static str> {
+// Helper function to get file objects from git (new version)
+fn get_file_objects_result() -> Result<Vec<(String, String, u64)>> {
     let output = Command::new("git")
         .args(get_rev_list_args())
         .output()
-        .map_err(|_| "Failed to execute git rev-list")?;
+        .map_err(|_| GitXError::GitCommand("Failed to execute git rev-list".to_string()))?;
 
     if !output.status.success() {
-        return Err("Failed to get file objects from git history");
+        return Err(GitXError::GitCommand(
+            "Failed to get file objects from git history".to_string(),
+        ));
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    parse_git_objects(&stdout)
+    parse_git_objects_result(&stdout)
 }
 
 // Helper function to get git rev-list args
@@ -90,8 +88,8 @@ pub fn get_rev_list_args() -> [&'static str; 6] {
     ]
 }
 
-// Helper function to parse git objects output
-fn parse_git_objects(output: &str) -> Result<Vec<(String, String, u64)>, &'static str> {
+// Helper function to parse git objects output (new version)
+fn parse_git_objects_result(output: &str) -> Result<Vec<(String, String, u64)>> {
     let mut objects = Vec::new();
 
     for line in output.lines() {
@@ -101,10 +99,10 @@ fn parse_git_objects(output: &str) -> Result<Vec<(String, String, u64)>, &'stati
         }
 
         // Get object size
-        if let Ok(size) = get_object_size(hash) {
+        if let Ok(size) = get_object_size_result(hash) {
             if size > 0 {
                 // Get file paths for this object
-                if let Ok(paths) = get_object_paths(hash) {
+                if let Ok(paths) = get_object_paths_result(hash) {
                     for path in paths {
                         objects.push((hash.to_string(), path, size));
                     }
@@ -116,23 +114,28 @@ fn parse_git_objects(output: &str) -> Result<Vec<(String, String, u64)>, &'stati
     Ok(objects)
 }
 
-// Helper function to get object size
-fn get_object_size(hash: &str) -> Result<u64, &'static str> {
+// Helper function to get object size (new version)
+fn get_object_size_result(hash: &str) -> Result<u64> {
     let output = Command::new("git")
         .args(["cat-file", "-s", hash])
         .output()
-        .map_err(|_| "Failed to get object size")?;
+        .map_err(|_| GitXError::GitCommand("Failed to get object size".to_string()))?;
 
     if !output.status.success() {
-        return Err("Failed to get object size");
+        return Err(GitXError::GitCommand(
+            "Failed to get object size".to_string(),
+        ));
     }
 
     let size_str = String::from_utf8_lossy(&output.stdout);
-    size_str.trim().parse().map_err(|_| "Invalid size format")
+    size_str
+        .trim()
+        .parse()
+        .map_err(|_| GitXError::GitCommand("Invalid size format".to_string()))
 }
 
-// Helper function to get object paths
-fn get_object_paths(hash: &str) -> Result<Vec<String>, &'static str> {
+// Helper function to get object paths (new version)
+fn get_object_paths_result(hash: &str) -> Result<Vec<String>> {
     let output = Command::new("git")
         .args([
             "log",
@@ -144,11 +147,11 @@ fn get_object_paths(hash: &str) -> Result<Vec<String>, &'static str> {
             hash,
         ])
         .output()
-        .map_err(|_| "Failed to get object paths")?;
+        .map_err(|_| GitXError::GitCommand("Failed to get object paths".to_string()))?;
 
     if !output.status.success() {
         // Fallback: try to find the path using rev-list with object names
-        return get_object_paths_fallback(hash);
+        return get_object_paths_fallback_result(hash);
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -159,18 +162,18 @@ fn get_object_paths(hash: &str) -> Result<Vec<String>, &'static str> {
         .collect();
 
     if paths.is_empty() {
-        get_object_paths_fallback(hash)
+        get_object_paths_fallback_result(hash)
     } else {
         Ok(paths)
     }
 }
 
-// Fallback method to get object paths
-fn get_object_paths_fallback(hash: &str) -> Result<Vec<String>, &'static str> {
+// Fallback method to get object paths (new version)
+fn get_object_paths_fallback_result(hash: &str) -> Result<Vec<String>> {
     let output = Command::new("git")
         .args(["rev-list", "--objects", "--all"])
         .output()
-        .map_err(|_| "Failed to get object paths")?;
+        .map_err(|_| GitXError::GitCommand("Failed to get object paths".to_string()))?;
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let paths: Vec<String> = stdout

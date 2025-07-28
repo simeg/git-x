@@ -1,61 +1,66 @@
-use std::process::{Command, exit};
+use crate::{GitXError, Result};
+use std::process::Command;
 
-pub fn run(new_name: &str) {
+pub fn run(new_name: &str) -> Result<String> {
     // Step 1: Get current branch name
     let output = Command::new("git")
         .args(get_current_branch_args())
         .output()
-        .expect("Failed to execute git");
+        .map_err(|_| GitXError::GitCommand("Failed to execute git".to_string()))?;
 
     if !output.status.success() {
-        eprintln!("Error: Failed to get current branch name.");
-        exit(1);
+        return Err(GitXError::GitCommand(
+            "Failed to get current branch name".to_string(),
+        ));
     }
 
     let current_branch = String::from_utf8_lossy(&output.stdout).trim().to_string();
 
     if is_branch_already_named(&current_branch, new_name) {
-        println!("{}", format_already_named_message(new_name));
-        return;
+        return Ok(format_already_named_message(new_name));
     }
 
-    println!("{}", format_rename_start_message(&current_branch, new_name));
+    let mut output = Vec::new();
+    output.push(format_rename_start_message(&current_branch, new_name));
 
     // Step 2: Rename branch locally
     let status = Command::new("git")
         .args(get_local_rename_args(new_name))
         .status()
-        .expect("Failed to rename branch");
+        .map_err(|_| GitXError::GitCommand("Failed to rename branch".to_string()))?;
 
     if !status.success() {
-        eprintln!("Error: Failed to rename local branch.");
-        exit(1);
+        return Err(GitXError::GitCommand(
+            "Failed to rename local branch".to_string(),
+        ));
     }
 
     // Step 3: Push the new branch to origin
     let status = Command::new("git")
         .args(get_push_new_branch_args(new_name))
         .status()
-        .expect("Failed to push new branch");
+        .map_err(|_| GitXError::GitCommand("Failed to push new branch".to_string()))?;
 
     if !status.success() {
-        eprintln!("Error: Failed to push new branch to origin.");
-        exit(1);
+        return Err(GitXError::GitCommand(
+            "Failed to push new branch to origin".to_string(),
+        ));
     }
 
     // Step 4: Delete the old branch from origin
     let status = Command::new("git")
         .args(get_delete_old_branch_args(&current_branch))
         .status()
-        .expect("Failed to delete old branch");
+        .map_err(|_| GitXError::GitCommand("Failed to delete old branch".to_string()))?;
 
     if !status.success() {
-        eprintln!("{}", format_delete_failed_message(&current_branch));
+        output.push(format_delete_failed_message(&current_branch));
     } else {
-        println!("{}", format_delete_success_message(&current_branch));
+        output.push(format_delete_success_message(&current_branch));
     }
 
-    println!("{}", format_rename_success_message());
+    output.push(format_rename_success_message().to_string());
+    Ok(output.join("\n"))
 }
 
 // Helper function to get current branch args

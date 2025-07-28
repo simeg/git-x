@@ -3,6 +3,7 @@ mod common;
 use common::{repo_with_branch, repo_with_remote_ahead};
 use git_x::info::*;
 use predicates::str::contains;
+use tempfile::TempDir;
 
 #[test]
 fn test_info_output_contains_expected_lines() {
@@ -87,7 +88,56 @@ fn test_info_run_function() {
     // Change to repo directory and run the function directly
     std::env::set_current_dir(repo.path()).unwrap();
 
-    // Test that the function doesn't panic and git commands work
-    // This repo has a remote upstream so it should work
-    git_x::info::run();
+    // Test that the function returns Ok and contains expected content
+    let result = git_x::info::run();
+    assert!(result.is_ok());
+
+    let output = result.unwrap();
+    assert!(output.contains("Repo:"));
+    assert!(output.contains("Branch:"));
+    assert!(output.contains("Tracking:"));
+    assert!(output.contains("Ahead:"));
+    assert!(output.contains("Behind:"));
+    assert!(output.contains("Last Commit:"));
+}
+
+#[test]
+fn test_info_run_function_error_case() {
+    let temp_dir = TempDir::new().expect("Failed to create temp directory");
+
+    // Create a completely isolated directory that definitely isn't a git repo
+    let isolated_dir = temp_dir.path().join("isolated");
+    std::fs::create_dir(&isolated_dir).expect("Failed to create isolated directory");
+
+    // Unset GIT_DIR and GIT_WORK_TREE to ensure git doesn't find parent repos
+    let original_git_dir = std::env::var("GIT_DIR").ok();
+    let original_git_work_tree = std::env::var("GIT_WORK_TREE").ok();
+    unsafe {
+        std::env::remove_var("GIT_DIR");
+        std::env::remove_var("GIT_WORK_TREE");
+    }
+
+    let original_dir = std::env::current_dir().expect("Failed to get current directory");
+    std::env::set_current_dir(&isolated_dir).expect("Failed to change directory");
+
+    // Test that the function returns an error when not in a git repo
+    let result = git_x::info::run();
+
+    // Restore original directory and environment BEFORE temp_dir is dropped
+    std::env::set_current_dir(original_dir).expect("Failed to reset directory");
+    unsafe {
+        if let Some(git_dir) = original_git_dir {
+            std::env::set_var("GIT_DIR", git_dir);
+        }
+        if let Some(git_work_tree) = original_git_work_tree {
+            std::env::set_var("GIT_WORK_TREE", git_work_tree);
+        }
+    }
+
+    assert!(result.is_err());
+    let error = result.unwrap_err();
+    assert_eq!(
+        format!("{error}"),
+        "Git command failed: Not in a git repository"
+    );
 }

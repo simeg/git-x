@@ -122,7 +122,7 @@ fn test_prune_branches_run_function() {
     std::env::set_current_dir(repo.path()).expect("Failed to change directory");
 
     // Test run function directly without exceptions
-    git_x::prune_branches::run(None);
+    let _ = git_x::prune_branches::run(None);
 
     std::env::set_current_dir("/").expect("Failed to reset directory");
 }
@@ -134,7 +134,7 @@ fn test_prune_branches_run_function_with_except() {
     std::env::set_current_dir(repo.path()).expect("Failed to change directory");
 
     // Test run function with exceptions
-    git_x::prune_branches::run(Some("main,master".to_string()));
+    let _ = git_x::prune_branches::run(Some("main,master".to_string()));
 
     std::env::set_current_dir("/").expect("Failed to reset directory");
 }

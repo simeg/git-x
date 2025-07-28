@@ -64,8 +64,9 @@ fn test_color_graph_run_function() {
     // Change to repo directory and run the function directly
     std::env::set_current_dir(repo.path()).unwrap();
 
-    // Test that the function doesn't panic and git commands work
-    git_x::color_graph::run();
+    // Test that the function returns Ok and git commands work
+    let result = git_x::color_graph::run();
+    assert!(result.is_ok());
 }
 
 #[test]
@@ -91,6 +92,7 @@ fn test_color_graph_run_function_in_non_git_directory() {
     // Change to non-git directory to trigger error path
     std::env::set_current_dir(temp_dir.path()).unwrap();
 
-    // Test that the function handles git command failure gracefully
-    git_x::color_graph::run();
+    // Test that the function returns an error for non-git directory
+    let result = git_x::color_graph::run();
+    assert!(result.is_err());
 }

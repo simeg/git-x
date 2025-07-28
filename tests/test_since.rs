@@ -46,8 +46,10 @@ fn test_since_run_function() {
     // Change to repo directory and run the function directly
     std::env::set_current_dir(repo.path()).unwrap();
 
-    // Test that the function doesn't panic and git commands work
-    git_x::since::run("HEAD~1".to_string());
+    // Test that the function returns Ok and git commands work
+    let result = git_x::since::run("HEAD~1".to_string());
+    assert!(result.is_ok());
+    assert!(result.unwrap().contains("🔍 Commits since HEAD~1:"));
 }
 
 #[test]
@@ -58,7 +60,9 @@ fn test_since_run_function_no_commits() {
     std::env::set_current_dir(repo.path()).unwrap();
 
     // Test with a reference that should show no commits
-    git_x::since::run("HEAD".to_string());
+    let result = git_x::since::run("HEAD".to_string());
+    assert!(result.is_ok());
+    assert!(result.unwrap().contains("✅ No new commits since HEAD"));
 }
 
 #[test]
@@ -68,6 +72,7 @@ fn test_since_run_function_git_error() {
     // Change to non-git directory to trigger error path
     std::env::set_current_dir(temp_dir.path()).unwrap();
 
-    // Test that the function handles git command failure gracefully
-    git_x::since::run("HEAD".to_string());
+    // Test that the function returns an error for non-git directory
+    let result = git_x::since::run("HEAD".to_string());
+    assert!(result.is_err());
 }

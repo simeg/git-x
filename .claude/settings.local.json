@@ -15,7 +15,20 @@
       "Bash(find:*)",
       "Bash(ls:*)",
       "Bash(timeout 60 cargo tarpaulin --all-features --workspace --exclude-files=tests/* --timeout 30)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(RUST_BACKTRACE=1 cargo test --test test_what test_what_run_function -- --nocapture)",
+      "Bash(# Remove old helper functions from large_files.rs\nsed -i '''' ''/\\/\\/ Helper function to get file objects from git (original version)/,/^}$/d'' src/large_files.rs\nsed -i '''' ''/\\/\\/ Helper function to parse git objects output (original version)/,/^}$/d'' src/large_files.rs\nsed -i '''' ''/\\/\\/ Helper function to get object size (original version)/,/^}$/d'' src/large_files.rs\nsed -i '''' ''/\\/\\/ Helper function to get object paths (original version)/,/^}$/d'' src/large_files.rs\nsed -i '''' ''/\\/\\/ Fallback method to get object paths (original version)/,/^}$/d'' src/large_files.rs)",
+      "Bash(# Remove old helper functions from new_branch.rs\nsed -i '''' ''/\\/\\/ Helper function to get current branch (original version)/,/^}$/d'' src/new_branch.rs\nsed -i '''' ''/\\/\\/ Helper function to create branch (original version)/,/^}$/d'' src/new_branch.rs  \nsed -i '''' ''/\\/\\/ Helper function to switch to branch (original version)/,/^}$/d'' src/new_branch.rs)",
+      "Bash(# Remove old helper functions from sync.rs\nsed -i '''' ''/\\/\\/ Helper function to get current branch (original version)/,/^}$/d'' src/sync.rs\nsed -i '''' ''/\\/\\/ Helper function to get upstream branch (original version)/,/^}$/d'' src/sync.rs\nsed -i '''' ''/\\/\\/ Helper function to fetch from upstream (original version)/,/^}$/d'' src/sync.rs\nsed -i '''' ''/\\/\\/ Helper function to get sync status (original version)/,/^}$/d'' src/sync.rs\nsed -i '''' ''/\\/\\/ Helper function to sync with upstream (original version)/,/^}$/d'' src/sync.rs)",
+      "Bash(sed:*)",
+      "Bash(RUST_BACKTRACE=1 cargo test test_what_run_function_with_target -- --exact)",
+      "Bash(RUST_BACKTRACE=1 cargo test test_what_run_function -- --exact --nocapture)",
+      "Bash(RUST_BACKTRACE=1 cargo test test_fixup_run_successful_fixup -- --nocapture)",
+      "Bash(timeout 60 cargo test --quiet)",
+      "Bash(RUST_BACKTRACE=1 cargo test test_new_branch_run_existing_branch -- --nocapture)",
+      "Bash(RUST_BACKTRACE=1 cargo test test_sync_run_merge_vs_rebase -- --nocapture)",
+      "Bash(rustc:*)",
+      "Bash(time cargo test --quiet)"
     ],
     "deny": []
   }

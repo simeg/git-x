@@ -50,4 +50,10 @@ impl From<std::io::Error> for GitXError {
     }
 }
 
+impl From<&str> for GitXError {
+    fn from(msg: &str) -> Self {
+        GitXError::GitCommand(msg.to_string())
+    }
+}
+
 pub type Result<T> = std::result::Result<T, GitXError>;

@@ -1,15 +1,16 @@
+use crate::{GitXError, Result};
 use std::process::Command;
 
-pub fn run() {
+pub fn run() -> Result<String> {
     let status = Command::new("git")
         .args(get_git_reset_args())
         .status()
-        .expect("Failed to execute git reset");
+        .map_err(|_| GitXError::GitCommand("Failed to execute git reset".to_string()))?;
 
     if status.success() {
-        println!("{}", format_success_message());
+        Ok(format_success_message().to_string())
     } else {
-        eprintln!("{}", format_error_message());
+        Err(GitXError::GitCommand(format_error_message().to_string()))
     }
 }
 

@@ -164,7 +164,7 @@ fn test_large_files_run_function_outside_git_repo() {
     cmd.args(["large-files"])
         .current_dir(temp_dir.path())
         .assert()
-        .success() // The command succeeds but shows an error message
+        .failure() // The command fails with an error message
         .stderr(predicate::str::contains("Failed to get file objects"));
 }
 
@@ -233,4 +233,119 @@ fn test_large_files_default_limit() {
         .assert()
         .success()
         .stdout(predicate::str::contains("Scanning repository"));
+}
+
+// Direct run() function tests
+
+#[test]
+fn test_large_files_run_outside_git_repo() {
+    let temp_dir = TempDir::new().expect("Failed to create temp directory");
+
+    // Change to non-git directory
+    let original_dir = std::env::current_dir().unwrap();
+    std::env::set_current_dir(temp_dir.path()).unwrap();
+
+    // Test large files outside git repo
+    let result = git_x::large_files::run(10, None);
+
+    // Restore directory before temp_dir is dropped
+    std::env::set_current_dir(&original_dir).unwrap();
+
+    assert!(result.is_err());
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("Failed to get file objects")
+    );
+}
+
+#[test]
+fn test_large_files_run_successful_scan() {
+    let (_temp_dir, repo_path) = create_test_repo_with_files();
+
+    // Change to repo directory
+    let original_dir = std::env::current_dir().unwrap();
+    if std::env::set_current_dir(&repo_path).is_err() {
+        return; // Skip test if directory change fails
+    }
+
+    // Test successful scan
+    let result = git_x::large_files::run(10, None);
+
+    // Restore directory
+    let _ = std::env::set_current_dir(&original_dir);
+
+    assert!(result.is_ok());
+    let output = result.unwrap();
+    assert!(output.contains("Scanning repository for large files"));
+    assert!(output.contains("Top 10 largest files:") || output.contains("Total:"));
+}
+
+#[test]
+fn test_large_files_run_with_threshold() {
+    let (_temp_dir, repo_path) = create_test_repo_with_files();
+
+    // Change to repo directory
+    let original_dir = std::env::current_dir().unwrap();
+    if std::env::set_current_dir(&repo_path).is_err() {
+        return; // Skip test if directory change fails
+    }
+
+    // Test with high threshold (should find no files)
+    let result = git_x::large_files::run(10, Some(100.0));
+
+    // Restore directory
+    let _ = std::env::set_current_dir(&original_dir);
+
+    assert!(result.is_ok());
+    let output = result.unwrap();
+    assert!(
+        output.contains("No files found larger than 100")
+            || output.contains("No large files found")
+    );
+}
+
+#[test]
+fn test_large_files_run_with_limit() {
+    let (_temp_dir, repo_path) = create_test_repo_with_files();
+
+    // Change to repo directory
+    let original_dir = std::env::current_dir().unwrap();
+    if std::env::set_current_dir(&repo_path).is_err() {
+        return; // Skip test if directory change fails
+    }
+
+    // Test with small limit
+    let result = git_x::large_files::run(2, None);
+
+    // Restore directory
+    let _ = std::env::set_current_dir(&original_dir);
+
+    assert!(result.is_ok());
+    let output = result.unwrap();
+    assert!(output.contains("Scanning repository for large files"));
+    // Should limit to 2 files max
+}
+
+#[test]
+fn test_large_files_run_low_threshold() {
+    let (_temp_dir, repo_path) = create_test_repo_with_files();
+
+    // Change to repo directory
+    let original_dir = std::env::current_dir().unwrap();
+    if std::env::set_current_dir(&repo_path).is_err() {
+        return; // Skip test if directory change fails
+    }
+
+    // Test with very low threshold (should find files)
+    let result = git_x::large_files::run(5, Some(0.0001));
+
+    // Restore directory
+    let _ = std::env::set_current_dir(&original_dir);
+
+    assert!(result.is_ok());
+    let output = result.unwrap();
+    assert!(output.contains("Scanning repository for large files"));
+    assert!(output.contains("larger than 0.0001 MB") || output.contains("Total:"));
 }

@@ -342,7 +342,7 @@ fn test_rename_branch_run_function_successful_case() {
     std::env::set_current_dir(repo.path()).expect("Failed to change directory");
 
     // Test the case where branch already has the desired name (returns early, no exit)
-    git_x::rename_branch::run("test-branch");
+    let _ = git_x::rename_branch::run("test-branch");
 
     std::env::set_current_dir("/").expect("Failed to reset directory");
 }
@@ -354,7 +354,7 @@ fn test_rename_branch_run_function_same_name() {
     std::env::set_current_dir(repo.path()).expect("Failed to change directory");
 
     // Test run function with same name (should return early)
-    git_x::rename_branch::run("test-branch");
+    let _ = git_x::rename_branch::run("test-branch");
 
     std::env::set_current_dir("/").expect("Failed to reset directory");
 }

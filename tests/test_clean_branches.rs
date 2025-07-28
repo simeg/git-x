@@ -22,7 +22,7 @@ fn test_clean_branches_run_function_dry_run() {
     std::env::set_current_dir(repo.path()).unwrap();
 
     // Test that the function doesn't panic and git commands work
-    git_x::clean_branches::run(true);
+    let _ = git_x::clean_branches::run(true);
 }
 
 #[test]
@@ -33,7 +33,7 @@ fn test_clean_branches_run_function_actual_delete() {
     std::env::set_current_dir(repo.path()).unwrap();
 
     // Test that the function doesn't panic and actually deletes branches
-    git_x::clean_branches::run(false);
+    let _ = git_x::clean_branches::run(false);
 }
 
 #[test]
@@ -47,7 +47,7 @@ fn test_clean_branches_run_function_with_branches_to_delete() {
     std::env::set_current_dir(repo.path()).unwrap();
 
     // Test with dry run to ensure it finds branches and prints them
-    git_x::clean_branches::run(true);
+    let _ = git_x::clean_branches::run(true);
 }
 
 #[test]
@@ -61,7 +61,7 @@ fn test_clean_branches_run_function_non_dry_run_with_branches() {
     std::env::set_current_dir(repo.path()).unwrap();
 
     // Test non-dry run to actually trigger deletion path
-    git_x::clean_branches::run(false);
+    let _ = git_x::clean_branches::run(false);
 }
 
 #[test]
@@ -72,7 +72,7 @@ fn test_clean_branches_run_function_no_branches() {
     std::env::set_current_dir(repo.path()).unwrap();
 
     // Test the no branches case
-    git_x::clean_branches::run(true);
+    let _ = git_x::clean_branches::run(true);
 }
 
 #[test]

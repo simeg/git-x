@@ -1,6 +1,7 @@
+use crate::{GitXError, Result};
 use std::process::Command;
 
-pub fn run(reference: String) {
+pub fn run(reference: String) -> Result<String> {
     let output = Command::new("git")
         .args([
             "log",
@@ -8,19 +9,19 @@ pub fn run(reference: String) {
             "--pretty=format:- %h %s",
         ])
         .output()
-        .expect("Failed to run git log");
+        .map_err(|_| GitXError::GitCommand("Failed to run git log".to_string()))?;
 
     if !output.status.success() {
-        eprintln!("❌ Failed to retrieve commits since '{reference}'");
-        return;
+        return Err(GitXError::GitCommand(format!(
+            "Failed to retrieve commits since '{reference}'"
+        )));
     }
 
     let log = String::from_utf8_lossy(&output.stdout);
     if is_log_empty(&log) {
-        println!("✅ No new commits since {reference}");
+        Ok(format!("✅ No new commits since {reference}"))
     } else {
-        println!("🔍 Commits since {reference}:");
-        println!("{log}");
+        Ok(format!("🔍 Commits since {reference}:\n{log}"))
     }
 }
 

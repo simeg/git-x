@@ -1,61 +1,50 @@
+use crate::{GitXError, Result};
 use std::process::Command;
 
-pub fn run(commit_hash: String, rebase: bool) {
+pub fn run(commit_hash: String, rebase: bool) -> Result<String> {
     // Validate the commit hash exists
-    if let Err(msg) = validate_commit_hash(&commit_hash) {
-        eprintln!("{}", format_error_message(msg));
-        return;
-    }
+    validate_commit_hash_result(&commit_hash)?;
 
     // Get current staged and unstaged changes
-    let has_changes = match check_for_changes() {
-        Ok(has_changes) => has_changes,
-        Err(msg) => {
-            eprintln!("{}", format_error_message(msg));
-            return;
-        }
-    };
+    let has_changes = check_for_changes_result()?;
 
     if !has_changes {
-        eprintln!("{}", format_no_changes_message());
-        return;
+        return Err(GitXError::GitCommand(
+            "No staged changes found. Please stage your changes first with 'git add'".to_string(),
+        ));
     }
 
     // Get the short commit hash for better UX
-    let short_hash = match get_short_commit_hash(&commit_hash) {
-        Ok(hash) => hash,
-        Err(msg) => {
-            eprintln!("{}", format_error_message(msg));
-            return;
-        }
-    };
+    let short_hash = get_short_commit_hash_result(&commit_hash)?;
 
-    println!("{}", format_creating_fixup_message(&short_hash));
+    let mut output = Vec::new();
+    output.push(format_creating_fixup_message(&short_hash));
 
     // Create the fixup commit
-    if let Err(msg) = create_fixup_commit(&commit_hash) {
-        eprintln!("{}", format_error_message(msg));
-        return;
-    }
+    create_fixup_commit_result(&commit_hash)?;
 
-    println!("{}", format_fixup_created_message(&short_hash));
+    output.push(format_fixup_created_message(&short_hash));
 
     // Optionally run interactive rebase with autosquash
     if rebase {
-        println!("{}", format_starting_rebase_message());
-        if let Err(msg) = run_autosquash_rebase(&commit_hash) {
-            eprintln!("{}", format_error_message(msg));
-            eprintln!("{}", format_manual_rebase_hint(&commit_hash));
-            return;
+        output.push(format_starting_rebase_message().to_string());
+        match run_autosquash_rebase_result(&commit_hash) {
+            Ok(_) => output.push(format_rebase_success_message().to_string()),
+            Err(_) => {
+                output
+                    .push("Rebase failed. You may need to handle conflicts manually.".to_string());
+                output.push(format_manual_rebase_hint(&commit_hash));
+            }
         }
-        println!("{}", format_rebase_success_message());
     } else {
-        println!("{}", format_manual_rebase_hint(&commit_hash));
+        output.push(format_manual_rebase_hint(&commit_hash));
     }
+
+    Ok(output.join("\n"))
 }
 
-// Helper function to validate commit hash exists
-pub fn validate_commit_hash(commit_hash: &str) -> Result<(), &'static str> {
+// Helper function to validate commit hash exists (new version)
+pub fn validate_commit_hash_result(commit_hash: &str) -> Result<()> {
     let output = Command::new("git")
         .args([
             "rev-parse",
@@ -63,21 +52,23 @@ pub fn validate_commit_hash(commit_hash: &str) -> Result<(), &'static str> {
             &format!("{commit_hash}^{{commit}}"),
         ])
         .output()
-        .map_err(|_| "Failed to validate commit hash")?;
+        .map_err(|_| GitXError::GitCommand("Failed to validate commit hash".to_string()))?;
 
     if !output.status.success() {
-        return Err("Commit hash does not exist");
+        return Err(GitXError::GitCommand(
+            "Commit hash does not exist".to_string(),
+        ));
     }
 
     Ok(())
 }
 
-// Helper function to check for changes to commit
-pub fn check_for_changes() -> Result<bool, &'static str> {
+// Helper function to check for changes to commit (new version)
+pub fn check_for_changes_result() -> Result<bool> {
     let output = Command::new("git")
         .args(["diff", "--cached", "--quiet"])
         .status()
-        .map_err(|_| "Failed to check for staged changes")?;
+        .map_err(|_| GitXError::GitCommand("Failed to check for staged changes".to_string()))?;
 
     // If staged changes exist, we're good
     if !output.success() {
@@ -88,54 +79,62 @@ pub fn check_for_changes() -> Result<bool, &'static str> {
     let output = Command::new("git")
         .args(["diff", "--quiet"])
         .status()
-        .map_err(|_| "Failed to check for unstaged changes")?;
+        .map_err(|_| GitXError::GitCommand("Failed to check for unstaged changes".to_string()))?;
 
     // If unstaged changes exist, we need to stage them
     if !output.success() {
-        return Err("You have unstaged changes. Please stage them first with 'git add'");
+        return Err(GitXError::GitCommand(
+            "You have unstaged changes. Please stage them first with 'git add'".to_string(),
+        ));
     }
 
     Ok(false)
 }
 
-// Helper function to get short commit hash
-pub fn get_short_commit_hash(commit_hash: &str) -> Result<String, &'static str> {
+// Helper function to get short commit hash (new version)
+pub fn get_short_commit_hash_result(commit_hash: &str) -> Result<String> {
     let output = Command::new("git")
         .args(["rev-parse", "--short", commit_hash])
         .output()
-        .map_err(|_| "Failed to get short commit hash")?;
+        .map_err(|_| GitXError::GitCommand("Failed to get short commit hash".to_string()))?;
 
     if !output.status.success() {
-        return Err("Failed to resolve commit hash");
+        return Err(GitXError::GitCommand(
+            "Failed to resolve commit hash".to_string(),
+        ));
     }
 
     Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
 }
 
-// Helper function to create fixup commit
-fn create_fixup_commit(commit_hash: &str) -> Result<(), &'static str> {
+// Helper function to create fixup commit (new version)
+fn create_fixup_commit_result(commit_hash: &str) -> Result<()> {
     let status = Command::new("git")
         .args(["commit", &format!("--fixup={commit_hash}")])
         .status()
-        .map_err(|_| "Failed to create fixup commit")?;
+        .map_err(|_| GitXError::GitCommand("Failed to create fixup commit".to_string()))?;
 
     if !status.success() {
-        return Err("Failed to create fixup commit");
+        return Err(GitXError::GitCommand(
+            "Failed to create fixup commit".to_string(),
+        ));
     }
 
     Ok(())
 }
 
-// Helper function to run autosquash rebase
-fn run_autosquash_rebase(commit_hash: &str) -> Result<(), &'static str> {
+// Helper function to run autosquash rebase (new version)
+fn run_autosquash_rebase_result(commit_hash: &str) -> Result<()> {
     // Find the parent of the target commit for rebase
     let output = Command::new("git")
         .args(["rev-parse", &format!("{commit_hash}^")])
         .output()
-        .map_err(|_| "Failed to find parent commit")?;
+        .map_err(|_| GitXError::GitCommand("Failed to find parent commit".to_string()))?;
 
     if !output.status.success() {
-        return Err("Cannot rebase - commit has no parent");
+        return Err(GitXError::GitCommand(
+            "Cannot rebase - commit has no parent".to_string(),
+        ));
     }
 
     let parent_hash_string = String::from_utf8_lossy(&output.stdout);
@@ -144,10 +143,12 @@ fn run_autosquash_rebase(commit_hash: &str) -> Result<(), &'static str> {
     let status = Command::new("git")
         .args(["rebase", "-i", "--autosquash", parent_hash])
         .status()
-        .map_err(|_| "Failed to start interactive rebase")?;
+        .map_err(|_| GitXError::GitCommand("Failed to start interactive rebase".to_string()))?;
 
     if !status.success() {
-        return Err("Interactive rebase failed");
+        return Err(GitXError::GitCommand(
+            "Interactive rebase failed".to_string(),
+        ));
     }
 
     Ok(())

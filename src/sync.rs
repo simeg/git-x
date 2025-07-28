@@ -1,69 +1,45 @@
+use crate::{GitXError, Result};
 use std::process::Command;
 
-pub fn run(merge: bool) {
+pub fn run(merge: bool) -> Result<String> {
     // Get current branch
-    let current_branch = match get_current_branch() {
-        Ok(branch) => branch,
-        Err(msg) => {
-            eprintln!("{}", format_error_message(msg));
-            return;
-        }
-    };
+    let current_branch = get_current_branch_result()?;
 
     // Get upstream branch
-    let upstream = match get_upstream_branch(&current_branch) {
-        Ok(upstream) => upstream,
-        Err(msg) => {
-            eprintln!("{}", format_error_message(msg));
-            return;
-        }
-    };
+    let upstream = get_upstream_branch_result(&current_branch)?;
 
-    println!("{}", format_sync_start_message(&current_branch, &upstream));
+    let mut output = Vec::new();
+    output.push(format_sync_start_message(&current_branch, &upstream));
 
     // Fetch from remote
-    if let Err(msg) = fetch_upstream(&upstream) {
-        eprintln!("{}", format_error_message(msg));
-        return;
-    }
+    fetch_upstream_result(&upstream)?;
 
     // Check if we're ahead of upstream
-    let status = match get_sync_status(&current_branch, &upstream) {
-        Ok(status) => status,
-        Err(msg) => {
-            eprintln!("{}", format_error_message(msg));
-            return;
-        }
-    };
+    let status = get_sync_status_result(&current_branch, &upstream)?;
 
     match status {
         SyncStatus::UpToDate => {
-            println!("{}", format_up_to_date_message());
+            output.push(format_up_to_date_message().to_string());
         }
         SyncStatus::Behind(count) => {
-            println!("{}", format_behind_message(count));
-            if let Err(msg) = sync_with_upstream(&upstream, merge) {
-                eprintln!("{}", format_error_message(msg));
-            } else {
-                println!("{}", format_sync_success_message(merge));
-            }
+            output.push(format_behind_message(count));
+            sync_with_upstream_result(&upstream, merge)?;
+            output.push(format_sync_success_message(merge));
         }
         SyncStatus::Ahead(count) => {
-            println!("{}", format_ahead_message(count));
+            output.push(format_ahead_message(count));
         }
         SyncStatus::Diverged(behind, ahead) => {
-            println!("{}", format_diverged_message(behind, ahead));
+            output.push(format_diverged_message(behind, ahead));
             if merge {
-                if let Err(msg) = sync_with_upstream(&upstream, merge) {
-                    eprintln!("{}", format_error_message(msg));
-                } else {
-                    println!("{}", format_sync_success_message(merge));
-                }
+                sync_with_upstream_result(&upstream, merge)?;
+                output.push(format_sync_success_message(merge));
             } else {
-                println!("{}", format_diverged_help_message());
+                output.push(format_diverged_help_message().to_string());
             }
         }
     }
+    Ok(output.join("\n"))
 }
 
 #[derive(Debug, PartialEq)]
@@ -74,52 +50,56 @@ pub enum SyncStatus {
     Diverged(u32, u32), // behind, ahead
 }
 
-// Helper function to get current branch
-pub fn get_current_branch() -> Result<String, &'static str> {
+// Helper function to get current branch (new version)
+pub fn get_current_branch_result() -> Result<String> {
     let output = Command::new("git")
         .args(["rev-parse", "--abbrev-ref", "HEAD"])
         .output()
-        .map_err(|_| "Failed to get current branch")?;
+        .map_err(|_| GitXError::GitCommand("Failed to get current branch".to_string()))?;
 
     if !output.status.success() {
-        return Err("Not in a git repository");
+        return Err(GitXError::GitCommand("Not in a git repository".to_string()));
     }
 
     Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
 }
 
-// Helper function to get upstream branch
-pub fn get_upstream_branch(branch: &str) -> Result<String, &'static str> {
+// Helper function to get upstream branch (new version)
+pub fn get_upstream_branch_result(branch: &str) -> Result<String> {
     let output = Command::new("git")
         .args(["rev-parse", "--abbrev-ref", &format!("{branch}@{{u}}")])
         .output()
-        .map_err(|_| "Failed to get upstream branch")?;
+        .map_err(|_| GitXError::GitCommand("Failed to get upstream branch".to_string()))?;
 
     if !output.status.success() {
-        return Err("No upstream branch configured");
+        return Err(GitXError::GitCommand(
+            "No upstream branch configured".to_string(),
+        ));
     }
 
     Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
 }
 
-// Helper function to fetch from upstream
-pub fn fetch_upstream(upstream: &str) -> Result<(), &'static str> {
+// Helper function to fetch from upstream (new version)
+pub fn fetch_upstream_result(upstream: &str) -> Result<()> {
     let remote = upstream.split('/').next().unwrap_or("origin");
 
     let status = Command::new("git")
         .args(["fetch", remote])
         .status()
-        .map_err(|_| "Failed to execute fetch command")?;
+        .map_err(|_| GitXError::GitCommand("Failed to execute fetch command".to_string()))?;
 
     if !status.success() {
-        return Err("Failed to fetch from remote");
+        return Err(GitXError::GitCommand(
+            "Failed to fetch from remote".to_string(),
+        ));
     }
 
     Ok(())
 }
 
-// Helper function to get sync status
-pub fn get_sync_status(branch: &str, upstream: &str) -> Result<SyncStatus, &'static str> {
+// Helper function to get sync status (new version)
+pub fn get_sync_status_result(branch: &str, upstream: &str) -> Result<SyncStatus> {
     let output = Command::new("git")
         .args([
             "rev-list",
@@ -128,14 +108,16 @@ pub fn get_sync_status(branch: &str, upstream: &str) -> Result<SyncStatus, &'sta
             &format!("{upstream}...{branch}"),
         ])
         .output()
-        .map_err(|_| "Failed to get sync status")?;
+        .map_err(|_| GitXError::GitCommand("Failed to get sync status".to_string()))?;
 
     if !output.status.success() {
-        return Err("Failed to compare with upstream");
+        return Err(GitXError::GitCommand(
+            "Failed to compare with upstream".to_string(),
+        ));
     }
 
     let counts = String::from_utf8_lossy(&output.stdout);
-    let (behind, ahead) = parse_sync_counts(&counts)?;
+    let (behind, ahead) = parse_sync_counts_result(&counts)?;
 
     Ok(match (behind, ahead) {
         (0, 0) => SyncStatus::UpToDate,
@@ -146,8 +128,23 @@ pub fn get_sync_status(branch: &str, upstream: &str) -> Result<SyncStatus, &'sta
     })
 }
 
-// Helper function to parse sync counts
-pub fn parse_sync_counts(output: &str) -> Result<(u32, u32), &'static str> {
+// Helper function to parse sync counts (new version)
+pub fn parse_sync_counts_result(output: &str) -> Result<(u32, u32)> {
+    let mut parts = output.split_whitespace();
+    let behind = parts
+        .next()
+        .and_then(|s| s.parse().ok())
+        .ok_or_else(|| GitXError::GitCommand("Invalid sync count format".to_string()))?;
+    let ahead = parts
+        .next()
+        .and_then(|s| s.parse().ok())
+        .ok_or_else(|| GitXError::GitCommand("Invalid sync count format".to_string()))?;
+
+    Ok((behind, ahead))
+}
+
+// Helper function for backward compatibility with tests
+pub fn parse_sync_counts(output: &str) -> std::result::Result<(u32, u32), &'static str> {
     let mut parts = output.split_whitespace();
     let behind = parts
         .next()
@@ -161,8 +158,8 @@ pub fn parse_sync_counts(output: &str) -> Result<(u32, u32), &'static str> {
     Ok((behind, ahead))
 }
 
-// Helper function to sync with upstream
-pub fn sync_with_upstream(upstream: &str, merge: bool) -> Result<(), &'static str> {
+// Helper function to sync with upstream (new version)
+pub fn sync_with_upstream_result(upstream: &str, merge: bool) -> Result<()> {
     let args = if merge {
         ["merge", upstream]
     } else {
@@ -172,14 +169,14 @@ pub fn sync_with_upstream(upstream: &str, merge: bool) -> Result<(), &'static st
     let status = Command::new("git")
         .args(args)
         .status()
-        .map_err(|_| "Failed to execute sync command")?;
+        .map_err(|_| GitXError::GitCommand("Failed to execute sync command".to_string()))?;
 
     if !status.success() {
-        return Err(if merge {
-            "Merge failed"
+        return Err(GitXError::GitCommand(if merge {
+            "Merge failed".to_string()
         } else {
-            "Rebase failed"
-        });
+            "Rebase failed".to_string()
+        }));
     }
 
     Ok(())
@@ -226,5 +223,50 @@ pub fn format_sync_success_message(merge: bool) -> String {
         "✅ Successfully merged upstream changes".to_string()
     } else {
         "✅ Successfully rebased onto upstream".to_string()
+    }
+}
+
+// Backward compatibility functions for tests
+pub fn fetch_upstream(upstream: &str) -> std::result::Result<(), &'static str> {
+    match fetch_upstream_result(upstream) {
+        Ok(()) => Ok(()),
+        Err(_) => Err("Failed to fetch from remote"),
+    }
+}
+
+pub fn get_sync_status(
+    branch: &str,
+    upstream: &str,
+) -> std::result::Result<SyncStatus, &'static str> {
+    match get_sync_status_result(branch, upstream) {
+        Ok(status) => Ok(status),
+        Err(_) => Err("Failed to compare with upstream"),
+    }
+}
+
+pub fn sync_with_upstream(upstream: &str, merge: bool) -> std::result::Result<(), &'static str> {
+    match sync_with_upstream_result(upstream, merge) {
+        Ok(()) => Ok(()),
+        Err(_) => {
+            if merge {
+                Err("Merge failed")
+            } else {
+                Err("Rebase failed")
+            }
+        }
+    }
+}
+
+pub fn get_upstream_branch(branch: &str) -> std::result::Result<String, &'static str> {
+    match get_upstream_branch_result(branch) {
+        Ok(upstream) => Ok(upstream),
+        Err(_) => Err("No upstream branch configured"),
+    }
+}
+
+pub fn get_current_branch() -> std::result::Result<String, &'static str> {
+    match get_current_branch_result() {
+        Ok(branch) => Ok(branch),
+        Err(_) => Err("Not in a git repository"),
     }
 }

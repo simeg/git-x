@@ -61,7 +61,7 @@ fn test_upstream_run_set_function() {
         upstream: "origin/main".to_string(),
     };
 
-    git_x::upstream::run(action);
+    let _ = git_x::upstream::run(action);
 
     std::env::set_current_dir("/").expect("Failed to reset directory");
 }
@@ -77,7 +77,7 @@ fn test_upstream_run_set_function_invalid_format() {
         upstream: "invalid_format".to_string(),
     };
 
-    git_x::upstream::run(action);
+    let _ = git_x::upstream::run(action);
 
     std::env::set_current_dir("/").expect("Failed to reset directory");
 }
@@ -91,7 +91,7 @@ fn test_upstream_run_status_function() {
     // Test status action through run function
     let action = UpstreamAction::Status;
 
-    git_x::upstream::run(action);
+    let _ = git_x::upstream::run(action);
 
     std::env::set_current_dir("/").expect("Failed to reset directory");
 }
@@ -108,7 +108,7 @@ fn test_upstream_run_sync_all_function() {
         merge: false,
     };
 
-    git_x::upstream::run(action);
+    let _ = git_x::upstream::run(action);
 
     std::env::set_current_dir("/").expect("Failed to reset directory");
 }
@@ -125,7 +125,7 @@ fn test_upstream_run_sync_all_function_with_merge() {
         merge: true,
     };
 
-    git_x::upstream::run(action);
+    let _ = git_x::upstream::run(action);
 
     std::env::set_current_dir("/").expect("Failed to reset directory");
 }
@@ -325,7 +325,7 @@ fn test_upstream_set_invalid_format() {
     cmd.args(["upstream", "set", ""])
         .current_dir(&repo_path)
         .assert()
-        .success()
+        .failure()
         .stderr(predicate::str::contains("Upstream cannot be empty"));
 
     // Test upstream without slash
@@ -333,7 +333,7 @@ fn test_upstream_set_invalid_format() {
     cmd.args(["upstream", "set", "origin"])
         .current_dir(&repo_path)
         .assert()
-        .success()
+        .failure()
         .stderr(predicate::str::contains(
             "must be in format 'remote/branch'",
         ));
@@ -343,14 +343,14 @@ fn test_upstream_set_invalid_format() {
     cmd.args(["upstream", "set", "/main"])
         .current_dir(&repo_path)
         .assert()
-        .success()
+        .failure()
         .stderr(predicate::str::contains("Invalid upstream format"));
 
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["upstream", "set", "origin/"])
         .current_dir(&repo_path)
         .assert()
-        .success()
+        .failure()
         .stderr(predicate::str::contains("Invalid upstream format"));
 }
 
@@ -362,7 +362,7 @@ fn test_upstream_set_nonexistent_upstream() {
     cmd.args(["upstream", "set", "nonexistent/main"])
         .current_dir(&repo_path)
         .assert()
-        .success()
+        .failure()
         .stderr(predicate::str::contains("Upstream branch does not exist"));
 }
 
@@ -528,7 +528,7 @@ fn test_upstream_command_outside_git_repo() {
     cmd.args(["upstream", "status"])
         .current_dir(temp_dir.path())
         .assert()
-        .success()
+        .failure()
         .stderr(predicate::str::contains("Failed to list local branches"));
 }
 
@@ -540,7 +540,7 @@ fn test_upstream_set_outside_git_repo() {
     cmd.args(["upstream", "set", "origin/main"])
         .current_dir(temp_dir.path())
         .assert()
-        .success()
+        .failure()
         .stderr(predicate::str::contains("Upstream branch does not exist"));
 }
 
@@ -1014,7 +1014,7 @@ fn test_upstream_sync_all_error_scenarios() {
     cmd.args(["upstream", "sync-all"])
         .current_dir(temp_dir2.path())
         .assert()
-        .success()
+        .failure()
         .stderr(predicate::str::contains("Failed to list local branches"));
 }
 

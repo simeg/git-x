@@ -1,18 +1,20 @@
+use crate::{GitXError, Result};
 use std::io::{BufRead, BufReader};
-use std::process::{Command, exit};
+use std::process::Command;
 
-pub fn run(except: Option<String>) {
+pub fn run(except: Option<String>) -> Result<String> {
     let protected_branches = get_all_protected_branches(except.as_deref());
 
     // Step 1: Get current branch
     let output = Command::new("git")
         .args(["rev-parse", "--abbrev-ref", "HEAD"])
         .output()
-        .expect("Failed to get current branch");
+        .map_err(|_| GitXError::GitCommand("Failed to get current branch".to_string()))?;
 
     if !output.status.success() {
-        eprintln!("Error: Could not determine current branch.");
-        exit(1);
+        return Err(GitXError::GitCommand(
+            "Could not determine current branch".to_string(),
+        ));
     }
 
     let current_branch = String::from_utf8_lossy(&output.stdout).trim().to_string();
@@ -21,40 +23,42 @@ pub fn run(except: Option<String>) {
     let output = Command::new("git")
         .args(["branch", "--merged"])
         .output()
-        .expect("Failed to get merged branches");
+        .map_err(|_| GitXError::GitCommand("Failed to get merged branches".to_string()))?;
 
     if !output.status.success() {
-        eprintln!("Error: Failed to list merged branches.");
-        exit(1);
+        return Err(GitXError::GitCommand(
+            "Failed to list merged branches".to_string(),
+        ));
     }
 
     let reader = BufReader::new(output.stdout.as_slice());
     let branches: Vec<String> = reader
         .lines()
-        .map_while(Result::ok)
+        .map_while(|line| line.ok())
         .map(|b| clean_git_branch_name(&b))
         .filter(|b| !is_branch_protected(b, &current_branch, &protected_branches))
         .collect();
 
     if branches.is_empty() {
-        println!("{}", format_no_branches_to_prune_message());
-        return;
+        return Ok(format_no_branches_to_prune_message().to_string());
     }
 
     // Step 3: Delete branches
+    let mut output = Vec::new();
     for branch in branches {
         let delete_args = get_git_branch_delete_args(&branch);
         let status = Command::new("git")
             .args(delete_args)
             .status()
-            .expect("Failed to delete branch");
+            .map_err(|_| GitXError::GitCommand("Failed to delete branch".to_string()))?;
 
         if status.success() {
-            println!("{}", format_branch_deleted_message(&branch));
+            output.push(format_branch_deleted_message(&branch));
         } else {
-            eprintln!("{}", format_branch_delete_failed_message(&branch));
+            output.push(format_branch_delete_failed_message(&branch));
         }
     }
+    Ok(output.join("\n"))
 }
 
 // Helper function to get default protected branches

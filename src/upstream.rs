@@ -1,73 +1,48 @@
 use crate::cli::UpstreamAction;
+use crate::{GitXError, Result};
 use std::collections::HashMap;
 use std::process::Command;
 
-pub fn run(action: UpstreamAction) {
+pub fn run(action: UpstreamAction) -> Result<String> {
     match action {
-        UpstreamAction::Set { upstream } => set_upstream(upstream),
-        UpstreamAction::Status => show_upstream_status(),
-        UpstreamAction::SyncAll { dry_run, merge } => sync_all_branches(dry_run, merge),
+        UpstreamAction::Set { upstream } => set_upstream_result(upstream),
+        UpstreamAction::Status => show_upstream_status_result(),
+        UpstreamAction::SyncAll { dry_run, merge } => sync_all_branches_result(dry_run, merge),
     }
 }
 
-fn set_upstream(upstream: String) {
+fn set_upstream_result(upstream: String) -> Result<String> {
     // Validate upstream format
-    if let Err(msg) = validate_upstream_format(&upstream) {
-        eprintln!("{}", format_error_message(msg));
-        return;
-    }
+    validate_upstream_format_result(&upstream)?;
 
     // Check if upstream exists
-    if let Err(msg) = validate_upstream_exists(&upstream) {
-        eprintln!("{}", format_error_message(msg));
-        return;
-    }
+    validate_upstream_exists_result(&upstream)?;
 
     // Get current branch
-    let current_branch = match get_current_branch() {
-        Ok(branch) => branch,
-        Err(msg) => {
-            eprintln!("{}", format_error_message(msg));
-            return;
-        }
-    };
+    let current_branch = get_current_branch_result()?;
 
-    println!(
-        "{}",
-        format_setting_upstream_message(&current_branch, &upstream)
-    );
+    let mut output = Vec::new();
+    output.push(format_setting_upstream_message(&current_branch, &upstream));
 
     // Set upstream
-    if let Err(msg) = set_branch_upstream(&current_branch, &upstream) {
-        eprintln!("{}", format_error_message(msg));
-        return;
-    }
+    set_branch_upstream_result(&current_branch, &upstream)?;
 
-    println!(
-        "{}",
-        format_upstream_set_message(&current_branch, &upstream)
-    );
+    output.push(format_upstream_set_message(&current_branch, &upstream));
+    Ok(output.join("\n"))
 }
 
-fn show_upstream_status() {
+fn show_upstream_status_result() -> Result<String> {
     // Get all local branches
-    let branches = match get_all_local_branches() {
-        Ok(branches) => branches,
-        Err(msg) => {
-            eprintln!("{}", format_error_message(msg));
-            return;
-        }
-    };
+    let branches = get_all_local_branches_result()?;
 
     if branches.is_empty() {
-        println!("{}", format_no_branches_message());
-        return;
+        return Ok(format_no_branches_message().to_string());
     }
 
     // Get upstream info for each branch
     let mut branch_upstreams = HashMap::new();
     for branch in &branches {
-        if let Ok(upstream) = get_branch_upstream(branch) {
+        if let Ok(upstream) = get_branch_upstream_result(branch) {
             branch_upstreams.insert(branch.clone(), Some(upstream));
         } else {
             branch_upstreams.insert(branch.clone(), None);
@@ -75,9 +50,10 @@ fn show_upstream_status() {
     }
 
     // Get current branch for highlighting
-    let current_branch = get_current_branch().unwrap_or_default();
+    let current_branch = get_current_branch_result().unwrap_or_default();
 
-    println!("{}", format_upstream_status_header());
+    let mut output = Vec::new();
+    output.push(format_upstream_status_header().to_string());
 
     for branch in &branches {
         let is_current = branch == &current_branch;
@@ -86,45 +62,44 @@ fn show_upstream_status() {
         match upstream {
             Some(upstream_ref) => {
                 // Check sync status
-                let sync_status =
-                    get_branch_sync_status(branch, upstream_ref).unwrap_or(SyncStatus::Unknown);
+                let sync_status = get_branch_sync_status_result(branch, upstream_ref)
+                    .unwrap_or(SyncStatus::Unknown);
 
-                println!(
-                    "{}",
-                    format_branch_with_upstream(branch, upstream_ref, &sync_status, is_current)
-                );
+                output.push(format_branch_with_upstream(
+                    branch,
+                    upstream_ref,
+                    &sync_status,
+                    is_current,
+                ));
             }
             None => {
-                println!("{}", format_branch_without_upstream(branch, is_current));
+                output.push(format_branch_without_upstream(branch, is_current));
             }
         }
     }
+
+    Ok(output.join("\n"))
 }
 
-fn sync_all_branches(dry_run: bool, merge: bool) {
+fn sync_all_branches_result(dry_run: bool, merge: bool) -> Result<String> {
     // Get all branches with upstreams
-    let branches = match get_branches_with_upstreams() {
-        Ok(branches) => branches,
-        Err(msg) => {
-            eprintln!("{}", format_error_message(msg));
-            return;
-        }
-    };
+    let branches = get_branches_with_upstreams_result()?;
 
     if branches.is_empty() {
-        println!("{}", format_no_upstream_branches_message());
-        return;
+        return Ok(format_no_upstream_branches_message().to_string());
     }
 
-    println!(
-        "{}",
-        format_sync_all_start_message(branches.len(), dry_run, merge)
-    );
+    let mut output = Vec::new();
+    output.push(format_sync_all_start_message(
+        branches.len(),
+        dry_run,
+        merge,
+    ));
 
     let mut sync_results = Vec::new();
 
     for (branch, upstream) in &branches {
-        let sync_status = match get_branch_sync_status(branch, upstream) {
+        let sync_status = match get_branch_sync_status_result(branch, upstream) {
             Ok(status) => status,
             Err(_) => {
                 sync_results.push((
@@ -143,7 +118,7 @@ fn sync_all_branches(dry_run: bool, merge: bool) {
                 if dry_run {
                     sync_results.push((branch.clone(), SyncResult::WouldSync));
                 } else {
-                    match sync_branch_with_upstream(branch, upstream, merge) {
+                    match sync_branch_with_upstream_result(branch, upstream, merge) {
                         Ok(()) => sync_results.push((branch.clone(), SyncResult::Synced)),
                         Err(msg) => {
                             sync_results.push((branch.clone(), SyncResult::Error(msg.to_string())))
@@ -163,18 +138,20 @@ fn sync_all_branches(dry_run: bool, merge: bool) {
         }
     }
 
-    // Print results
-    println!("{}", format_sync_results_header());
+    // Add results
+    output.push(format_sync_results_header().to_string());
     for (branch, result) in &sync_results {
-        println!("{}", format_sync_result_line(branch, result));
+        output.push(format_sync_result_line(branch, result));
     }
 
-    // Print summary
+    // Add summary
     let synced_count = sync_results
         .iter()
         .filter(|(_, r)| matches!(r, SyncResult::Synced | SyncResult::WouldSync))
         .count();
-    println!("{}", format_sync_summary(synced_count, dry_run));
+    output.push(format_sync_summary(synced_count, dry_run));
+
+    Ok(output.join("\n"))
 }
 
 #[derive(Debug, Clone)]
@@ -195,8 +172,211 @@ pub enum SyncResult {
     Error(String),
 }
 
-// Helper function to validate upstream format
-pub fn validate_upstream_format(upstream: &str) -> Result<(), &'static str> {
+// Helper function to get current branch (new version)
+pub fn get_current_branch_result() -> Result<String> {
+    let output = Command::new("git")
+        .args(["rev-parse", "--abbrev-ref", "HEAD"])
+        .output()
+        .map_err(|_| GitXError::GitCommand("Failed to get current branch".to_string()))?;
+
+    if !output.status.success() {
+        return Err(GitXError::GitCommand("Not in a git repository".to_string()));
+    }
+
+    Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+}
+
+// Helper function to get all local branches (new version)
+pub fn get_all_local_branches_result() -> Result<Vec<String>> {
+    let output = Command::new("git")
+        .args(["branch", "--format=%(refname:short)"])
+        .output()
+        .map_err(|_| GitXError::GitCommand("Failed to get local branches".to_string()))?;
+
+    if !output.status.success() {
+        return Err(GitXError::GitCommand(
+            "Failed to list local branches".to_string(),
+        ));
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let branches: Vec<String> = stdout
+        .lines()
+        .map(|line| line.trim().to_string())
+        .filter(|line| !line.is_empty())
+        .collect();
+
+    Ok(branches)
+}
+
+// Helper function to get branches with upstreams (new version)
+pub fn get_branches_with_upstreams_result() -> Result<Vec<(String, String)>> {
+    let branches = get_all_local_branches_result()?;
+    let mut result = Vec::new();
+
+    for branch in branches {
+        if let Ok(upstream) = get_branch_upstream_result(&branch) {
+            result.push((branch, upstream));
+        }
+    }
+
+    Ok(result)
+}
+
+// Helper function to validate upstream format (new version)
+fn validate_upstream_format_result(upstream: &str) -> Result<()> {
+    if upstream.is_empty() {
+        return Err(GitXError::GitCommand(
+            "Upstream cannot be empty".to_string(),
+        ));
+    }
+
+    if !upstream.contains('/') {
+        return Err(GitXError::GitCommand(
+            "Upstream must be in format 'remote/branch' (e.g., origin/main)".to_string(),
+        ));
+    }
+
+    let parts: Vec<&str> = upstream.split('/').collect();
+    if parts.len() != 2 || parts[0].is_empty() || parts[1].is_empty() {
+        return Err(GitXError::GitCommand(
+            "Invalid upstream format. Use 'remote/branch' format".to_string(),
+        ));
+    }
+
+    Ok(())
+}
+
+// Helper function to validate upstream exists (new version)
+fn validate_upstream_exists_result(upstream: &str) -> Result<()> {
+    let output = Command::new("git")
+        .args(["rev-parse", "--verify", upstream])
+        .output()
+        .map_err(|_| GitXError::GitCommand("Failed to validate upstream".to_string()))?;
+
+    if !output.status.success() {
+        return Err(GitXError::GitCommand(
+            "Upstream branch does not exist".to_string(),
+        ));
+    }
+
+    Ok(())
+}
+
+// Helper function to set branch upstream (new version)
+fn set_branch_upstream_result(branch: &str, upstream: &str) -> Result<()> {
+    let status = Command::new("git")
+        .args(["branch", "--set-upstream-to", upstream, branch])
+        .status()
+        .map_err(|_| GitXError::GitCommand("Failed to set upstream".to_string()))?;
+
+    if !status.success() {
+        return Err(GitXError::GitCommand(
+            "Failed to set upstream branch".to_string(),
+        ));
+    }
+
+    Ok(())
+}
+
+// Helper function to get branch upstream (new version)
+fn get_branch_upstream_result(branch: &str) -> Result<String> {
+    let output = Command::new("git")
+        .args(["rev-parse", "--abbrev-ref", &format!("{branch}@{{u}}")])
+        .output()
+        .map_err(|_| GitXError::GitCommand("Failed to get upstream".to_string()))?;
+
+    if !output.status.success() {
+        return Err(GitXError::GitCommand("No upstream configured".to_string()));
+    }
+
+    Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+}
+
+// Helper function to get branch sync status (new version)
+fn get_branch_sync_status_result(branch: &str, upstream: &str) -> Result<SyncStatus> {
+    let output = Command::new("git")
+        .args([
+            "rev-list",
+            "--left-right",
+            "--count",
+            &format!("{upstream}...{branch}"),
+        ])
+        .output()
+        .map_err(|_| GitXError::GitCommand("Failed to get sync status".to_string()))?;
+
+    if !output.status.success() {
+        return Err(GitXError::GitCommand(
+            "Failed to compare with upstream".to_string(),
+        ));
+    }
+
+    let counts = String::from_utf8_lossy(&output.stdout);
+    let mut parts = counts.split_whitespace();
+
+    let behind: u32 = parts
+        .next()
+        .and_then(|s| s.parse().ok())
+        .ok_or_else(|| GitXError::GitCommand("Invalid sync count format".to_string()))?;
+
+    let ahead: u32 = parts
+        .next()
+        .and_then(|s| s.parse().ok())
+        .ok_or_else(|| GitXError::GitCommand("Invalid sync count format".to_string()))?;
+
+    Ok(match (behind, ahead) {
+        (0, 0) => SyncStatus::UpToDate,
+        (b, 0) if b > 0 => SyncStatus::Behind(b),
+        (0, a) if a > 0 => SyncStatus::Ahead(a),
+        (b, a) if b > 0 && a > 0 => SyncStatus::Diverged(b, a),
+        _ => SyncStatus::Unknown,
+    })
+}
+
+// Helper function to sync branch with upstream (new version)
+fn sync_branch_with_upstream_result(branch: &str, upstream: &str, merge: bool) -> Result<()> {
+    // Switch to the branch first
+    let status = Command::new("git")
+        .args(["checkout", branch])
+        .status()
+        .map_err(|_| GitXError::GitCommand("Failed to checkout branch".to_string()))?;
+
+    if !status.success() {
+        return Err(GitXError::GitCommand(
+            "Failed to checkout branch".to_string(),
+        ));
+    }
+
+    // Sync with upstream
+    let args = if merge {
+        ["merge", upstream]
+    } else {
+        ["rebase", upstream]
+    };
+
+    let status = Command::new("git")
+        .args(args)
+        .status()
+        .map_err(|_| GitXError::GitCommand("Failed to sync with upstream".to_string()))?;
+
+    if !status.success() {
+        return Err(GitXError::GitCommand(if merge {
+            "Merge failed".to_string()
+        } else {
+            "Rebase failed".to_string()
+        }));
+    }
+
+    Ok(())
+}
+
+// Helper function to get git branch set-upstream args
+pub fn get_git_branch_set_upstream_args() -> [&'static str; 2] {
+    ["branch", "--set-upstream-to"]
+}
+
+// Backward compatibility functions for tests
+pub fn validate_upstream_format(upstream: &str) -> std::result::Result<(), &'static str> {
     if upstream.is_empty() {
         return Err("Upstream cannot be empty");
     }
@@ -213,177 +393,49 @@ pub fn validate_upstream_format(upstream: &str) -> Result<(), &'static str> {
     Ok(())
 }
 
-// Helper function to validate upstream exists
-pub fn validate_upstream_exists(upstream: &str) -> Result<(), &'static str> {
-    let output = Command::new("git")
-        .args(["rev-parse", "--verify", upstream])
-        .output()
-        .map_err(|_| "Failed to validate upstream")?;
-
-    if !output.status.success() {
-        return Err("Upstream branch does not exist");
+pub fn validate_upstream_exists(upstream: &str) -> std::result::Result<(), &'static str> {
+    match validate_upstream_exists_result(upstream) {
+        Ok(()) => Ok(()),
+        Err(_) => Err("Upstream branch does not exist"),
     }
-
-    Ok(())
 }
 
-// Helper function to get current branch
-pub fn get_current_branch() -> Result<String, &'static str> {
-    let output = Command::new("git")
-        .args(["rev-parse", "--abbrev-ref", "HEAD"])
-        .output()
-        .map_err(|_| "Failed to get current branch")?;
-
-    if !output.status.success() {
-        return Err("Not in a git repository");
+pub fn get_current_branch() -> std::result::Result<String, &'static str> {
+    match get_current_branch_result() {
+        Ok(branch) => Ok(branch),
+        Err(_) => Err("Not in a git repository"),
     }
-
-    Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
 }
 
-// Helper function to set branch upstream
-fn set_branch_upstream(branch: &str, upstream: &str) -> Result<(), &'static str> {
-    let status = Command::new("git")
-        .args(["branch", "--set-upstream-to", upstream, branch])
-        .status()
-        .map_err(|_| "Failed to set upstream")?;
-
-    if !status.success() {
-        return Err("Failed to set upstream branch");
+pub fn get_all_local_branches() -> std::result::Result<Vec<String>, &'static str> {
+    match get_all_local_branches_result() {
+        Ok(branches) => Ok(branches),
+        Err(_) => Err("Failed to list local branches"),
     }
-
-    Ok(())
 }
 
-// Helper function to get all local branches
-pub fn get_all_local_branches() -> Result<Vec<String>, &'static str> {
-    let output = Command::new("git")
-        .args(["branch", "--format=%(refname:short)"])
-        .output()
-        .map_err(|_| "Failed to get local branches")?;
-
-    if !output.status.success() {
-        return Err("Failed to list local branches");
-    }
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let branches: Vec<String> = stdout
-        .lines()
-        .map(|line| line.trim().to_string())
-        .filter(|line| !line.is_empty())
-        .collect();
-
-    Ok(branches)
-}
-
-// Helper function to get branch upstream
-pub fn get_branch_upstream(branch: &str) -> Result<String, &'static str> {
-    let output = Command::new("git")
-        .args(["rev-parse", "--abbrev-ref", &format!("{branch}@{{u}}")])
-        .output()
-        .map_err(|_| "Failed to get upstream")?;
-
-    if !output.status.success() {
-        return Err("No upstream configured");
-    }
-
-    Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
-}
-
-// Helper function to get branch sync status
-pub fn get_branch_sync_status(branch: &str, upstream: &str) -> Result<SyncStatus, &'static str> {
-    let output = Command::new("git")
-        .args([
-            "rev-list",
-            "--left-right",
-            "--count",
-            &format!("{upstream}...{branch}"),
-        ])
-        .output()
-        .map_err(|_| "Failed to get sync status")?;
-
-    if !output.status.success() {
-        return Err("Failed to compare with upstream");
-    }
-
-    let counts = String::from_utf8_lossy(&output.stdout);
-    let mut parts = counts.split_whitespace();
-
-    let behind: u32 = parts
-        .next()
-        .and_then(|s| s.parse().ok())
-        .ok_or("Invalid sync count format")?;
-
-    let ahead: u32 = parts
-        .next()
-        .and_then(|s| s.parse().ok())
-        .ok_or("Invalid sync count format")?;
-
-    Ok(match (behind, ahead) {
-        (0, 0) => SyncStatus::UpToDate,
-        (b, 0) if b > 0 => SyncStatus::Behind(b),
-        (0, a) if a > 0 => SyncStatus::Ahead(a),
-        (b, a) if b > 0 && a > 0 => SyncStatus::Diverged(b, a),
-        _ => SyncStatus::Unknown,
-    })
-}
-
-// Helper function to get branches with upstreams
-pub fn get_branches_with_upstreams() -> Result<Vec<(String, String)>, &'static str> {
-    let branches = get_all_local_branches()?;
-    let mut result = Vec::new();
-
-    for branch in branches {
-        if let Ok(upstream) = get_branch_upstream(&branch) {
-            result.push((branch, upstream));
-        }
-    }
-
-    Ok(result)
-}
-
-// Helper function to sync branch with upstream
-fn sync_branch_with_upstream(
+pub fn get_branch_sync_status(
     branch: &str,
     upstream: &str,
-    merge: bool,
-) -> Result<(), &'static str> {
-    // Switch to the branch first
-    let status = Command::new("git")
-        .args(["checkout", branch])
-        .status()
-        .map_err(|_| "Failed to checkout branch")?;
-
-    if !status.success() {
-        return Err("Failed to checkout branch");
+) -> std::result::Result<SyncStatus, &'static str> {
+    match get_branch_sync_status_result(branch, upstream) {
+        Ok(status) => Ok(status),
+        Err(_) => Err("Failed to compare with upstream"),
     }
-
-    // Sync with upstream
-    let args = if merge {
-        ["merge", upstream]
-    } else {
-        ["rebase", upstream]
-    };
-
-    let status = Command::new("git")
-        .args(args)
-        .status()
-        .map_err(|_| "Failed to sync with upstream")?;
-
-    if !status.success() {
-        return Err(if merge {
-            "Merge failed"
-        } else {
-            "Rebase failed"
-        });
-    }
-
-    Ok(())
 }
 
-// Helper function to get git branch set-upstream args
-pub fn get_git_branch_set_upstream_args() -> [&'static str; 2] {
-    ["branch", "--set-upstream-to"]
+pub fn get_branches_with_upstreams() -> std::result::Result<Vec<(String, String)>, &'static str> {
+    match get_branches_with_upstreams_result() {
+        Ok(branches) => Ok(branches),
+        Err(_) => Err("Failed to get branches with upstreams"),
+    }
+}
+
+pub fn get_branch_upstream(branch: &str) -> std::result::Result<String, &'static str> {
+    match get_branch_upstream_result(branch) {
+        Ok(upstream) => Ok(upstream),
+        Err(_) => Err("No upstream configured"),
+    }
 }
 
 // Formatting functions

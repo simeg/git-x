@@ -157,7 +157,7 @@ fn test_sync_run_function_outside_git_repo() {
     cmd.arg("sync")
         .current_dir(temp_dir.path())
         .assert()
-        .success()
+        .failure()
         .stderr(predicate::str::contains("Not in a git repository"));
 }
 
@@ -169,7 +169,7 @@ fn test_sync_run_function_no_upstream() {
     cmd.arg("sync")
         .current_dir(&repo_path)
         .assert()
-        .success()
+        .failure()
         .stderr(predicate::str::contains("No upstream branch configured"));
 }
 
@@ -229,8 +229,8 @@ fn test_get_current_branch_not_git_repo() {
 
     let result = get_current_branch();
 
-    // Restore original directory and environment
-    std::env::set_current_dir(&original_dir).expect("Failed to reset directory");
+    // Restore original directory and environment BEFORE temp_dir is dropped
+    let _ = std::env::set_current_dir(original_dir);
     unsafe {
         if let Some(git_dir) = original_git_dir {
             std::env::set_var("GIT_DIR", git_dir);
@@ -353,7 +353,7 @@ fn test_run_function_complete_flow() {
     cmd.arg("sync")
         .current_dir(temp_dir.path())
         .assert()
-        .success()
+        .failure()
         .stderr(predicate::str::contains("Not in a git repository"));
 }
 
@@ -483,6 +483,106 @@ fn test_sync_status_debug_all_variants() {
     }
 }
 
+// Direct run() function tests
+
+#[test]
+fn test_sync_run_outside_git_repo() {
+    let temp_dir = TempDir::new().expect("Failed to create temp directory");
+
+    // Change to non-git directory
+    let original_dir = std::env::current_dir().unwrap();
+    std::env::set_current_dir(temp_dir.path()).unwrap();
+
+    // Test sync outside git repo
+    let result = git_x::sync::run(false);
+
+    // Restore directory before temp_dir is dropped
+    std::env::set_current_dir(&original_dir).unwrap();
+
+    assert!(result.is_err());
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("Not in a git repository")
+    );
+}
+
+#[test]
+fn test_sync_run_no_upstream() {
+    let (_temp_dir, repo_path) = create_test_repo();
+
+    // Change to repo directory
+    let original_dir = std::env::current_dir().unwrap();
+
+    // Use a block to ensure cleanup happens even if test panics
+    let result = {
+        if std::env::set_current_dir(&repo_path).is_err() {
+            return; // Skip test if directory change fails
+        }
+
+        // Test sync with no upstream configured
+        let result = git_x::sync::run(false);
+
+        // Restore directory immediately after the call
+        let _ = std::env::set_current_dir(&original_dir);
+
+        result
+    };
+
+    assert!(result.is_err());
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("No upstream branch configured")
+    );
+}
+
+#[test]
+fn test_sync_run_merge_vs_rebase() {
+    let (_temp_dir, repo_path) = create_test_repo();
+
+    // Change to repo directory
+    let original_dir = std::env::current_dir().unwrap();
+
+    // Use a block to ensure cleanup happens even if test panics
+    let (result_merge, result_rebase) = {
+        if std::env::set_current_dir(&repo_path).is_err() {
+            return; // Skip test if directory change fails
+        }
+
+        // Test that the sync function accepts both merge flags without crashing
+        // (These will fail due to no upstream, but they test the code path)
+        let result_merge = git_x::sync::run(true);
+        let result_rebase = git_x::sync::run(false);
+
+        // Restore directory immediately after the calls
+        let _ = std::env::set_current_dir(&original_dir);
+
+        (result_merge, result_rebase)
+    };
+
+    // Both should fail with errors related to upstream or git repository
+    assert!(result_merge.is_err());
+    assert!(result_rebase.is_err());
+
+    let merge_error = result_merge.unwrap_err().to_string();
+    let rebase_error = result_rebase.unwrap_err().to_string();
+
+    // Both errors should contain upstream-related or git-related errors
+    assert!(
+        merge_error.contains("No upstream branch configured")
+            || merge_error.contains("Not in a git repository")
+            || merge_error.contains("git repository")
+    );
+    assert!(
+        rebase_error.contains("No upstream branch configured")
+            || rebase_error.contains("Not in a git repository")
+            || rebase_error.contains("git repository")
+    );
+}
+
 #[test]
 fn test_comprehensive_formatting_functions() {
     // Test all formatting functions with various inputs
@@ -558,9 +658,10 @@ fn test_get_current_branch_comprehensive() {
     // Test successful case
     let (_temp_dir, repo_path) = create_test_repo();
 
+    let original_dir = std::env::current_dir().expect("Failed to get current directory");
     std::env::set_current_dir(&repo_path).expect("Failed to change directory");
     let result_success = get_current_branch();
-    std::env::set_current_dir("/").expect("Failed to reset directory");
+    let _ = std::env::set_current_dir(&original_dir);
 
     assert!(result_success.is_ok());
     let branch = result_success.unwrap();
@@ -580,13 +681,11 @@ fn test_get_current_branch_comprehensive() {
         std::env::remove_var("GIT_DIR");
         std::env::remove_var("GIT_WORK_TREE");
     }
-
-    let original_dir = std::env::current_dir().expect("Failed to get current directory");
     std::env::set_current_dir(&isolated_dir).expect("Failed to change directory");
     let result_error = get_current_branch();
 
     // Restore original directory and environment
-    std::env::set_current_dir(&original_dir).expect("Failed to reset directory");
+    let _ = std::env::set_current_dir(&original_dir);
     unsafe {
         if let Some(git_dir) = original_git_dir {
             std::env::set_var("GIT_DIR", git_dir);

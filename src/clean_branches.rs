@@ -1,10 +1,11 @@
+use crate::{GitXError, Result};
 use std::process::Command;
 
-pub fn run(dry_run: bool) {
+pub fn run(dry_run: bool) -> Result<String> {
     let output = Command::new("git")
         .args(get_git_branch_args())
         .output()
-        .expect("Failed to list merged branches");
+        .map_err(|_| GitXError::GitCommand("Failed to list merged branches".to_string()))?;
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let branches: Vec<String> = stdout
@@ -14,17 +15,18 @@ pub fn run(dry_run: bool) {
         .collect();
 
     let mut deleted = Vec::new();
+    let mut output_lines = Vec::new();
 
     for branch in branches {
         if dry_run {
-            println!("{}", format_dry_run_message(&branch));
+            output_lines.push(format_dry_run_message(&branch));
             deleted.push(branch);
         } else {
             let delete_args = get_git_delete_args(&branch);
             let status = Command::new("git")
                 .args(delete_args)
                 .status()
-                .expect("Failed to delete branch");
+                .map_err(|_| GitXError::GitCommand("Failed to delete branch".to_string()))?;
 
             if status.success() {
                 deleted.push(branch);
@@ -33,12 +35,13 @@ pub fn run(dry_run: bool) {
     }
 
     if deleted.is_empty() {
-        println!("{}", format_no_branches_message());
+        Ok(format_no_branches_message().to_string())
     } else {
-        println!("{}", format_deletion_summary(deleted.len(), dry_run));
+        output_lines.push(format_deletion_summary(deleted.len(), dry_run));
         for branch in deleted {
-            println!("  {branch}");
+            output_lines.push(format!("  {branch}"));
         }
+        Ok(output_lines.join("\n"))
     }
 }
 

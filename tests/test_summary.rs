@@ -139,7 +139,7 @@ fn test_summary_run_function() {
     std::env::set_current_dir(repo.path()).unwrap();
 
     // Test that the function doesn't panic and git commands work
-    git_x::summary::run("1 day ago".to_string());
+    let _ = git_x::summary::run("1 day ago".to_string());
 }
 
 #[test]
@@ -150,7 +150,7 @@ fn test_summary_run_function_no_commits() {
     std::env::set_current_dir(repo.path()).unwrap();
 
     // Test with a time range that should show no commits
-    git_x::summary::run("1 minute ago".to_string());
+    let _ = git_x::summary::run("1 minute ago".to_string());
 }
 
 #[test]
@@ -161,7 +161,7 @@ fn test_summary_run_function_git_error() {
     std::env::set_current_dir(temp_dir.path()).unwrap();
 
     // Test that the function handles git command failure gracefully
-    git_x::summary::run("1 day ago".to_string());
+    let _ = git_x::summary::run("1 day ago".to_string());
 }
 
 #[test]
@@ -172,5 +172,5 @@ fn test_summary_run_function_empty_output() {
     std::env::set_current_dir(repo.path()).unwrap();
 
     // Test with a time range that should produce empty output (future date)
-    git_x::summary::run("1 day from now".to_string());
+    let _ = git_x::summary::run("1 day from now".to_string());
 }
