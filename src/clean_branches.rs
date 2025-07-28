@@ -1,10 +1,23 @@
+use crate::{GitXError, Result};
 use std::process::Command;
 
 pub fn run(dry_run: bool) {
+    match run_clean_branches(dry_run) {
+        Ok(output) => print!("{output}"),
+        Err(e) => eprintln!("{}", crate::common::Format::error(&e.to_string())),
+    }
+}
+
+fn run_clean_branches(dry_run: bool) -> Result<String> {
     let output = Command::new("git")
         .args(get_git_branch_args())
         .output()
-        .expect("Failed to list merged branches");
+        .map_err(|e| GitXError::Io(e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(GitXError::GitCommand(format!("Failed to list merged branches: {}", stderr.trim())));
+    }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let branches: Vec<String> = stdout
@@ -14,17 +27,19 @@ pub fn run(dry_run: bool) {
         .collect();
 
     let mut deleted = Vec::new();
+    let mut result = String::new();
 
     for branch in branches {
         if dry_run {
-            println!("{}", format_dry_run_message(&branch));
+            result.push_str(&format_dry_run_message(&branch));
+            result.push('\n');
             deleted.push(branch);
         } else {
             let delete_args = get_git_delete_args(&branch);
             let status = Command::new("git")
                 .args(delete_args)
                 .status()
-                .expect("Failed to delete branch");
+                .map_err(|e| GitXError::Io(e))?;
 
             if status.success() {
                 deleted.push(branch);
@@ -33,13 +48,16 @@ pub fn run(dry_run: bool) {
     }
 
     if deleted.is_empty() {
-        println!("{}", format_no_branches_message());
+        result.push_str(&format_no_branches_message());
     } else {
-        println!("{}", format_deletion_summary(deleted.len(), dry_run));
+        result.push_str(&format_deletion_summary(deleted.len(), dry_run));
+        result.push('\n');
         for branch in deleted {
-            println!("  {branch}");
+            result.push_str(&format!("  {branch}\n"));
         }
     }
+
+    Ok(result)
 }
 
 // Helper function to get git branch args

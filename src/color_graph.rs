@@ -1,15 +1,24 @@
+use crate::{GitXError, Result};
 use std::process::Command;
 
 pub fn run() {
+    match run_color_graph() {
+        Ok(output) => print!("{output}"),
+        Err(e) => eprintln!("{}", crate::common::Format::error(&e.to_string())),
+    }
+}
+
+fn run_color_graph() -> Result<String> {
     let output = Command::new("git")
         .args(get_color_git_log_args())
         .output()
-        .expect("Failed to run git log");
+        .map_err(|e| GitXError::Io(e))?;
 
-    if is_command_successful(&output) {
-        print_git_output(&output.stdout);
+    if output.status.success() {
+        Ok(String::from_utf8_lossy(&output.stdout).to_string())
     } else {
-        print_git_error(&output.stderr);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        Err(GitXError::GitCommand(format!("git log failed: {}", stderr.trim())))
     }
 }
 

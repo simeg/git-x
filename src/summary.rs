@@ -1,27 +1,34 @@
+use crate::{GitXError, Result};
 use std::collections::BTreeMap;
 use std::process::Command;
 
 use chrono::{NaiveDate, Utc};
 
 pub fn run(since: String) {
+    match run_summary(&since) {
+        Ok(output) => print!("{output}"),
+        Err(e) => eprintln!("{}", crate::common::Format::error(&e.to_string())),
+    }
+}
+
+fn run_summary(since: &str) -> Result<String> {
     let git_log = Command::new("git")
-        .args(get_git_log_summary_args(&since))
+        .args(get_git_log_summary_args(since))
         .output()
-        .expect("Failed to run git log");
+        .map_err(|e| GitXError::Io(e))?;
 
     if !git_log.status.success() {
-        eprintln!("{}", format_git_error_message());
-        return;
+        let stderr = String::from_utf8_lossy(&git_log.stderr);
+        return Err(GitXError::GitCommand(format!("git log failed: {}", stderr.trim())));
     }
 
     let stdout = String::from_utf8_lossy(&git_log.stdout);
     if is_stdout_empty(&stdout) {
-        println!("{}", format_no_commits_message(&since));
-        return;
+        return Ok(format_no_commits_message(since));
     }
 
     let grouped = parse_git_log_output(&stdout);
-    print_commit_summary(&since, &grouped);
+    Ok(format_commit_summary(since, &grouped))
 }
 
 // Helper function to get git log summary args
@@ -94,16 +101,20 @@ pub fn format_commit_meta(author: &str, time: &str) -> String {
 }
 
 // Helper function to print commit summary
-pub fn print_commit_summary(since: &str, grouped: &BTreeMap<NaiveDate, Vec<String>>) {
-    println!("{}", format_summary_header(since));
+pub fn format_commit_summary(since: &str, grouped: &BTreeMap<NaiveDate, Vec<String>>) -> String {
+    let mut result = format_summary_header(since);
 
     for (date, commits) in grouped.iter().rev() {
-        println!("{}", format_date_header(date));
+        result.push_str(&format_date_header(date));
+        result.push('\n');
         for commit in commits {
-            println!("{commit}");
+            result.push_str(commit);
+            result.push('\n');
         }
-        println!();
+        result.push('\n');
     }
+    
+    result
 }
 
 // Helper function to format summary header
