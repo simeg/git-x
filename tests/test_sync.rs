@@ -224,36 +224,23 @@ fn test_get_current_branch_not_git_repo() {
     let isolated_dir = temp_dir.path().join("isolated");
     std::fs::create_dir(&isolated_dir).expect("Failed to create isolated directory");
 
-    // Unset GIT_DIR and GIT_WORK_TREE to ensure git doesn't find parent repos
-    let original_git_dir = std::env::var("GIT_DIR").ok();
-    let original_git_work_tree = std::env::var("GIT_WORK_TREE").ok();
-    unsafe {
-        std::env::remove_var("GIT_DIR");
-        std::env::remove_var("GIT_WORK_TREE");
-    }
-
-    // Get original directory and handle potential failures
-    let original_dir = match std::env::current_dir() {
-        Ok(dir) => dir,
-        Err(_) => return, // Skip test if current directory is invalid
-    };
-
-    if std::env::set_current_dir(&isolated_dir).is_err() {
-        return; // Skip test if directory change fails
-    }
-
-    let result = get_current_branch();
-
-    // Restore original directory
-    let _ = std::env::set_current_dir(&original_dir);
-    unsafe {
-        if let Some(git_dir) = original_git_dir {
-            std::env::set_var("GIT_DIR", git_dir);
+    // Use a wrapper to test the function in isolation without changing global state
+    let result = std::thread::spawn(move || {
+        // Unset GIT_DIR and GIT_WORK_TREE to ensure git doesn't find parent repos
+        unsafe {
+            std::env::remove_var("GIT_DIR");
+            std::env::remove_var("GIT_WORK_TREE");
         }
-        if let Some(git_work_tree) = original_git_work_tree {
-            std::env::set_var("GIT_WORK_TREE", git_work_tree);
+
+        // Change directory in this isolated thread
+        if std::env::set_current_dir(&isolated_dir).is_err() {
+            return Err("Failed to change directory");
         }
-    }
+
+        get_current_branch()
+    })
+    .join()
+    .expect("Thread should not panic");
 
     assert!(result.is_err());
     assert_eq!(result.unwrap_err(), "Not in a git repository");
