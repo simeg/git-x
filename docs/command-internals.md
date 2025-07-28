@@ -44,6 +44,30 @@ This document explains how each `git-x` subcommand works under the hood. We aim 
 
 ---
 
+## `contributors`
+
+### What it does:
+- Shows contributor statistics for the repository, including commit counts, percentages, email addresses, and date ranges.
+
+### Under the hood:
+- Executes:
+  ```shell
+  git log --all --format=%ae|%an|%ad --date=short
+  ```
+- Parses the output to group commits by email address
+- Sorts contributors by commit count (descending)
+- Calculates percentage contributions and date ranges
+- Formats output with ranking icons (🥇🥈🥉👤) and styled text
+
+### Key data processing:
+- Groups commits by contributor email to handle name variations
+- Tracks first and last commit dates for each contributor
+- Sorts by commit count to show most active contributors first
+- Calculates percentages based on total commit count
+- Uses emoji ranking system for top 3 contributors
+
+---
+
 ## `health`
 
 ### What it does:

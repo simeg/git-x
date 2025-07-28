@@ -1,6 +1,7 @@
 pub mod clean_branches;
 pub mod cli;
 pub mod color_graph;
+pub mod contributors;
 pub mod fixup;
 pub mod graph;
 pub mod health;

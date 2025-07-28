@@ -21,7 +21,7 @@ run: build
 
 ## Run unit and integration tests
 test:
-	$(CARGO) test
+	$(CARGO) test -- --test-threads=1
 
 ## Run tests serially (useful for debugging test interference)
 test-serial:

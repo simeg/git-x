@@ -15,6 +15,7 @@ It wraps common Git actions in muscle-memory-friendly, no-brainer commands — p
 - [Example Commands](#example-commands)
     - [`clean-branches`](#clean-branches)
     - [`color-graph`](#color-graph)
+    - [`contributors`](#contributors)
     - [`fixup`](#fixup)
     - [`graph`](#graph)
     - [`health`](#health)
@@ -122,6 +123,33 @@ Enhanced version of `git x graph` with:
 ```shell
 git log --oneline --graph --decorate --all --color=always --pretty=format:"%C(auto)%h%d %s %C(dim)(%an, %ar)%C(reset)"
 ```
+
+---
+
+### `contributors`
+
+> Show contributor statistics for the repository
+
+```shell
+git x contributors
+```
+
+#### Output:
+
+```shell
+📊 Repository Contributors (15 total commits):
+
+🥇 Alice Smith 10 commits (66.7%)
+   📧 alice@example.com | 📅 2025-01-01 to 2025-01-20
+
+🥈 Bob Jones 3 commits (20.0%)
+   📧 bob@example.com | 📅 2025-01-05 to 2025-01-15
+
+🥉 Charlie Brown 2 commits (13.3%)
+   📧 charlie@example.com | 📅 2025-01-10 to 2025-01-12
+```
+
+Shows repository contributors ranked by commit count with email addresses and date ranges of their contributions.
 
 ---
 

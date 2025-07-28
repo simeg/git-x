@@ -99,6 +99,8 @@ pub enum Commands {
     },
     #[clap(about = "Interactive picker for recent branches")]
     SwitchRecent,
+    #[clap(about = "Show contributor statistics for the repository")]
+    Contributors,
 }
 
 #[derive(clap::Subcommand)]
