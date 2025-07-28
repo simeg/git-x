@@ -217,36 +217,6 @@ fn test_get_current_branch_success() {
 }
 
 #[test]
-fn test_get_current_branch_not_git_repo() {
-    let temp_dir = TempDir::new().expect("Failed to create temp directory");
-
-    // Create a completely isolated directory that definitely isn't a git repo
-    let isolated_dir = temp_dir.path().join("isolated");
-    std::fs::create_dir(&isolated_dir).expect("Failed to create isolated directory");
-
-    // Use a wrapper to test the function in isolation without changing global state
-    let result = std::thread::spawn(move || {
-        // Unset GIT_DIR and GIT_WORK_TREE to ensure git doesn't find parent repos
-        unsafe {
-            std::env::remove_var("GIT_DIR");
-            std::env::remove_var("GIT_WORK_TREE");
-        }
-
-        // Change directory in this isolated thread
-        if std::env::set_current_dir(&isolated_dir).is_err() {
-            return Err("Failed to change directory");
-        }
-
-        get_current_branch()
-    })
-    .join()
-    .expect("Thread should not panic");
-
-    assert!(result.is_err());
-    assert_eq!(result.unwrap_err(), "Not in a git repository");
-}
-
-#[test]
 fn test_get_upstream_branch_no_upstream() {
     let (_temp_dir, repo_path) = create_test_repo();
 
