@@ -303,3 +303,40 @@ fn test_new_branch_command_help() {
             "Create and switch to a new branch",
         ));
 }
+
+// Additional comprehensive test coverage
+#[test]
+fn test_message_formatting_edge_cases() {
+    // Test with special characters and edge cases
+    assert!(
+        format_creating_branch_message("test/branch-123", "origin/main")
+            .contains("test/branch-123")
+    );
+    assert!(
+        format_creating_branch_message("test/branch-123", "origin/main").contains("origin/main")
+    );
+
+    assert!(format_success_message("feature/issue-456").contains("feature/issue-456"));
+    assert!(format_branch_exists_message("hotfix/urgent").contains("hotfix/urgent"));
+    assert!(
+        format_invalid_base_message("refs/remotes/origin/feature")
+            .contains("refs/remotes/origin/feature")
+    );
+}
+
+#[test]
+fn test_format_consistency() {
+    // Test that all format functions return non-empty strings for reasonable inputs
+    assert!(!format_error_message("test").is_empty());
+    assert!(!format_branch_exists_message("test").is_empty());
+    assert!(!format_invalid_base_message("test").is_empty());
+    assert!(!format_creating_branch_message("test", "main").is_empty());
+    assert!(!format_success_message("test").is_empty());
+
+    // Test that they include expected emojis or symbols
+    assert!(format_error_message("test").contains("❌"));
+    assert!(format_branch_exists_message("test").contains("❌"));
+    assert!(format_invalid_base_message("test").contains("❌"));
+    assert!(format_creating_branch_message("test", "main").contains("🌿"));
+    assert!(format_success_message("test").contains("✅"));
+}
