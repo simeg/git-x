@@ -26,6 +26,7 @@ It wraps common Git actions in muscle-memory-friendly, no-brainer commands — p
     - [`since [ref]`](#since-ref)
     - [`stash-branch`](#stash-branch)
     - [`summary`](#summary)
+    - [`switch-recent`](#switch-recent)
     - [`sync`](#sync)
     - [`undo`](#undo)
     - [`upstream`](#upstream)
@@ -395,6 +396,28 @@ git x summary --since "2 days ago"
 - Defaults to showing commits from the last 3 days
 - Can be customized using `--since` (e.g. `--since "1 week ago"`)
 - Sorts commits newest-first within each day
+
+---
+
+### `switch-recent`
+
+> Interactive picker for recent branches
+
+```shell
+git x switch-recent
+```
+
+#### Output:
+
+```shell
+? Select a branch to switch to:
+  🌟 feature/auth-improvement
+  📁 hotfix/login-bug
+  📁 feature/dark-mode
+  📁 main
+```
+
+Shows an interactive menu of your 10 most recently used branches (excluding current branch). Use arrow keys to navigate, Enter to select.
 
 ---
 

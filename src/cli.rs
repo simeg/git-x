@@ -97,6 +97,8 @@ pub enum Commands {
         #[clap(subcommand)]
         action: UpstreamAction,
     },
+    #[clap(about = "Interactive picker for recent branches")]
+    SwitchRecent,
 }
 
 #[derive(clap::Subcommand)]
@@ -138,9 +140,11 @@ pub enum UpstreamAction {
     Status,
     #[clap(about = "Sync all local branches with their upstreams")]
     SyncAll {
-        #[clap(long = "dry-run", help = "Show what would be synced without doing it", action = clap::ArgAction::SetTrue)]
+        #[clap(long = "dry-run", help = "Show what would be synced without doing it", action = clap::ArgAction::SetTrue
+        )]
         dry_run: bool,
-        #[clap(long = "merge", help = "Use merge instead of rebase", action = clap::ArgAction::SetTrue)]
+        #[clap(long = "merge", help = "Use merge instead of rebase", action = clap::ArgAction::SetTrue
+        )]
         merge: bool,
     },
 }

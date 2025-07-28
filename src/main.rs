@@ -4,7 +4,8 @@ use clap::Parser;
 use git_x::cli::{Cli, Commands};
 use git_x::{
     clean_branches, color_graph, fixup, graph, health, info, large_files, new_branch,
-    prune_branches, rename_branch, since, stash_branch, summary, sync, undo, upstream, what,
+    prune_branches, rename_branch, since, stash_branch, summary, switch_recent, sync, undo,
+    upstream, what,
 };
 
 fn main() {
@@ -40,5 +41,9 @@ fn main() {
         } => fixup::run(commit_hash, rebase),
         Commands::StashBranch { action } => stash_branch::run(action),
         Commands::Upstream { action } => upstream::run(action),
+        Commands::SwitchRecent => match switch_recent::run() {
+            Ok(message) => println!("{message}"),
+            Err(e) => eprintln!("❌ {e}"),
+        },
     }
 }

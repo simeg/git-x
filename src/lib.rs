@@ -12,6 +12,7 @@ pub mod rename_branch;
 pub mod since;
 pub mod stash_branch;
 pub mod summary;
+pub mod switch_recent;
 pub mod sync;
 pub mod undo;
 pub mod upstream;

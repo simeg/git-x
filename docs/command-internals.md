@@ -237,3 +237,24 @@ This document explains how each `git-x` subcommand works under the hood. We aim 
 - `git checkout <original-branch>` → Return to original branch
 
 ---
+
+## `switch-recent`
+
+### What it does:
+- Provides an interactive picker to quickly switch between recently used branches.
+
+### Under the hood:
+- `git for-each-ref --sort=-committerdate --format='%(refname:short)' refs/heads/` → Get branches sorted by recent activity
+- `git branch --show-current` → Get current branch to exclude from list
+- Filters out current branch and limits to 10 most recent branches
+- Uses `dialoguer::Select` for interactive terminal UI
+- `git checkout <selected-branch>` → Switch to selected branch
+
+### Features:
+- Shows up to 10 most recently committed branches
+- Excludes current branch from selection
+- Visual indicators (🌟 for most recent, 📁 for others)
+- Cancellable with Esc or Ctrl+C
+- Arrow key navigation with Enter to select
+
+---
