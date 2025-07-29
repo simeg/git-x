@@ -3,7 +3,7 @@
 //! This module provides utilities to test command functions directly
 //! instead of spawning the CLI binary, which improves test coverage.
 
-use crate::{GitXError, Result};
+use crate::Result;
 use std::env;
 
 /// Test result that captures both stdout and stderr along with exit code
@@ -46,40 +46,49 @@ pub fn sync_command_direct(_merge: bool) -> TestCommandResult {
     // We need to check the git state to determine if it would succeed
 
     // Try to get current branch to test if we're in a git repo
-    if std::process::Command::new("git")
+    let git_check = std::process::Command::new("git")
         .args(["rev-parse", "--is-inside-work-tree"])
-        .output()
-        .map(|output| !output.status.success())
-        .unwrap_or(true)
-    {
-        return TestCommandResult::failure("❌ Git command failed".to_string(), 1);
+        .output();
+    
+    match git_check {
+        Ok(output) if output.status.success() => {
+            // We're in a git repo, check for upstream
+        }
+        _ => {
+            return TestCommandResult::failure("❌ Git command failed".to_string(), 1);
+        }
     }
 
     // Check if there's an upstream configured
-    if std::process::Command::new("git")
+    let upstream_check = std::process::Command::new("git")
         .args(["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"])
-        .output()
-        .map(|output| !output.status.success())
-        .unwrap_or(true)
-    {
-        return TestCommandResult::failure("❌ No upstream configured".to_string(), 1);
+        .output();
+        
+    match upstream_check {
+        Ok(output) if output.status.success() => {
+            // Upstream exists, command would succeed
+            TestCommandResult::success("✅ Already up to date".to_string())
+        }
+        _ => {
+            return TestCommandResult::failure("❌ No upstream configured".to_string(), 1);
+        }
     }
-
-    // If we get here, the command would likely succeed
-    // For testing purposes, we'll simulate success
-    TestCommandResult::success("✅ Already up to date".to_string())
 }
 
 /// Execute a large files command directly  
 pub fn large_files_command_direct(_limit: usize, threshold: Option<f64>) -> TestCommandResult {
     // Try to check if we're in a git repo
-    if std::process::Command::new("git")
+    let git_check = std::process::Command::new("git")
         .args(["rev-parse", "--is-inside-work-tree"])
-        .output()
-        .map(|output| !output.status.success())
-        .unwrap_or(true)
-    {
-        return TestCommandResult::failure("❌ Git command failed".to_string(), 1);
+        .output();
+        
+    match git_check {
+        Ok(output) if output.status.success() => {
+            // We're in a git repo, proceed with simulation
+        }
+        _ => {
+            return TestCommandResult::failure("❌ Git command failed".to_string(), 1);
+        }
     }
 
     // Simulate the output based on threshold
@@ -133,15 +142,39 @@ pub fn execute_command_in_dir<P: AsRef<std::path::Path>>(
     dir: P,
     command: impl TestCommand,
 ) -> Result<TestCommandResult> {
-    let original_dir = env::current_dir().map_err(GitXError::Io)?;
+    let dir_path = dir.as_ref();
+    
+    // Check if directory exists before trying to change to it
+    if !dir_path.exists() {
+        return Ok(TestCommandResult::failure(
+            "❌ Git command failed".to_string(), 
+            1
+        ));
+    }
+    
+    // Check if we can get current directory
+    let original_dir = match env::current_dir() {
+        Ok(dir) => dir,
+        Err(_) => {
+            return Ok(TestCommandResult::failure(
+                "❌ Git command failed".to_string(), 
+                1
+            ));
+        }
+    };
 
-    // Change to target directory
-    env::set_current_dir(dir).map_err(GitXError::Io)?;
+    // Try to change to target directory
+    if let Err(_) = env::set_current_dir(dir_path) {
+        return Ok(TestCommandResult::failure(
+            "❌ Git command failed".to_string(), 
+            1
+        ));
+    }
 
     // Execute command
     let result = command.execute();
 
-    // Restore original directory
+    // Always try to restore original directory, but don't fail if we can't
     let _ = env::set_current_dir(original_dir);
 
     Ok(result)
