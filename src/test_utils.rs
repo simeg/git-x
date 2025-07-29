@@ -41,10 +41,10 @@ impl TestCommandResult {
 }
 
 /// Execute a sync command directly
-pub fn sync_command_direct(merge: bool) -> TestCommandResult {
+pub fn sync_command_direct(_merge: bool) -> TestCommandResult {
     // The sync::run function prints to stderr for errors and doesn't return a Result
     // We need to check the git state to determine if it would succeed
-    
+
     // Try to get current branch to test if we're in a git repo
     if std::process::Command::new("git")
         .args(["rev-parse", "--is-inside-work-tree"])
@@ -54,7 +54,7 @@ pub fn sync_command_direct(merge: bool) -> TestCommandResult {
     {
         return TestCommandResult::failure("❌ Git command failed".to_string(), 1);
     }
-    
+
     // Check if there's an upstream configured
     if std::process::Command::new("git")
         .args(["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"])
@@ -64,7 +64,7 @@ pub fn sync_command_direct(merge: bool) -> TestCommandResult {
     {
         return TestCommandResult::failure("❌ No upstream configured".to_string(), 1);
     }
-    
+
     // If we get here, the command would likely succeed
     // For testing purposes, we'll simulate success
     TestCommandResult::success("✅ Already up to date".to_string())
@@ -81,15 +81,15 @@ pub fn large_files_command_direct(_limit: usize, threshold: Option<f64>) -> Test
     {
         return TestCommandResult::failure("❌ Git command failed".to_string(), 1);
     }
-    
+
     // Simulate the output based on threshold
     if let Some(thresh) = threshold {
         if thresh > 50.0 {
             // Format with decimal to match the expected format
             let output = if thresh == thresh.floor() {
-                format!("No files larger than {:.1}MB found", thresh)
+                format!("No files larger than {thresh:.1}MB found")
             } else {
-                format!("No files larger than {}MB found", thresh)
+                format!("No files larger than {thresh}MB found")
             };
             TestCommandResult::success(output)
         } else {

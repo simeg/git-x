@@ -119,7 +119,7 @@ fn test_sync_run_function_outside_git_repo() {
         .assert()
         .success()
         .stderr(predicate::str::contains("Not in a git repository"));
-    
+
     // Test direct function call (for coverage)
     let result = execute_command_in_dir(temp_dir.path(), sync_command(false)).unwrap();
     assert!(result.is_failure());
@@ -138,7 +138,7 @@ fn test_sync_run_function_no_upstream() {
         .assert()
         .success()
         .stderr(predicate::str::contains("No upstream branch configured"));
-    
+
     // Test direct function call (for coverage)
     let result = execute_command_in_dir(repo.path(), sync_command(false)).unwrap();
     assert!(result.is_failure());
@@ -337,7 +337,7 @@ fn test_run_function_complete_flow() {
         .assert()
         .success()
         .stderr(predicate::str::contains("Not in a git repository"));
-    
+
     // Test direct function call (for coverage)
     let result = execute_command_in_dir(temp_dir.path(), sync_command(false)).unwrap();
     assert!(result.is_failure());

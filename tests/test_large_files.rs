@@ -168,7 +168,7 @@ fn test_large_files_run_function_outside_git_repo() {
         .assert()
         .success() // The command succeeds but shows an error message
         .stderr(predicate::str::contains("Failed to get file objects"));
-    
+
     // Test direct function call (for coverage)
     match execute_command_in_dir(temp_dir.path(), large_files_command(10, None)) {
         Ok(result) => {
@@ -252,7 +252,7 @@ fn test_large_files_run_function_with_files() {
         .assert()
         .success()
         .stdout(predicate::str::contains("Scanning repository"));
-    
+
     // Test direct function call (for coverage)
     match execute_command_in_dir(&repo_path, large_files_command(10, None)) {
         Ok(result) => {
@@ -283,7 +283,7 @@ fn test_large_files_with_high_threshold() {
         .assert()
         .success()
         .stdout(predicate::str::contains("No files found larger than"));
-    
+
     // Test direct function call with high threshold (for coverage)
     match execute_command_in_dir(&repo_path, large_files_command(10, Some(100.0))) {
         Ok(result) => {
