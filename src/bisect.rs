@@ -1,4 +1,6 @@
 use crate::cli::BisectAction;
+use crate::core::git::GitOperations;
+use crate::core::validation::Validate;
 use crate::{GitXError, Result};
 use console::style;
 use std::process::Command;
@@ -301,8 +303,6 @@ fn show_status() -> Result<String> {
     Ok(output.join("\n"))
 }
 
-// Helper functions
-
 fn is_bisecting() -> Result<bool> {
     // Check if .git/BISECT_START file exists, which indicates we're in bisect mode
     let output = Command::new("git")
@@ -331,15 +331,15 @@ fn ensure_bisecting() -> Result<()> {
 }
 
 fn validate_commit_exists(commit: &str) -> Result<()> {
-    crate::common::Validate::commit_exists(commit)
+    Validate::commit_exists(commit)
 }
 
 fn get_current_commit_info() -> Result<String> {
-    crate::common::GitCommand::run(&["log", "-1", "--pretty=format:%h %s"])
+    GitOperations::run(&["log", "-1", "--pretty=format:%h %s"])
 }
 
 fn get_remaining_steps() -> Result<String> {
-    match crate::common::GitCommand::run(&["bisect", "view", "--pretty=oneline"]) {
+    match GitOperations::run(&["bisect", "view", "--pretty=oneline"]) {
         Ok(output) => {
             let count = output.lines().count();
             let steps = (count as f64).log2().ceil() as usize;
@@ -350,7 +350,7 @@ fn get_remaining_steps() -> Result<String> {
 }
 
 fn get_bisect_log() -> Result<String> {
-    crate::common::GitCommand::run(&["bisect", "log"])
+    GitOperations::run(&["bisect", "log"])
 }
 
 pub fn parse_bisect_result(output: &str) -> String {
@@ -390,23 +390,9 @@ mod tests {
     }
 
     #[test]
-    fn test_gitx_error_integration() {
-        // Test that our functions work with GitXError types correctly
-        let io_error = std::io::Error::new(std::io::ErrorKind::NotFound, "git not found");
-        let gitx_error: GitXError = io_error.into();
-        match gitx_error {
-            GitXError::Io(_) => {} // Expected
-            _ => panic!("Should convert to Io error"),
-        }
-
-        let git_error = GitXError::GitCommand("test error".to_string());
-        assert_eq!(git_error.to_string(), "Git command failed: test error");
-    }
-
-    #[test]
     fn test_get_current_commit_info_error_handling() {
         // Test that the function signature works correctly
-        // In a real test environment, we can't actually test git commands
+        // In a real test environment, we can't actually test git commands,
         // but we can test the error handling logic
         let test_result: Result<String> = Err(GitXError::GitCommand("test".to_string()));
         assert!(test_result.is_err());

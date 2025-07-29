@@ -49,7 +49,7 @@ fn test_undo_run_function() {
     }
 
     // Test that the function doesn't panic and git commands work
-    git_x::undo::run();
+    let _ = git_x::undo::run();
 
     // Restore original directory
     let _ = std::env::set_current_dir(&original_dir);
@@ -71,7 +71,7 @@ fn test_undo_run_function_git_error() {
     }
 
     // Test that the function handles git command failure gracefully
-    git_x::undo::run();
+    let _ = git_x::undo::run();
 
     // Restore original directory
     let _ = std::env::set_current_dir(&original_dir);

@@ -146,16 +146,26 @@ git x bisect reset  # return to original branch
 
 ```shell
 git x clean-branches
+git x clean-branches --dry-run  # Preview what would be deleted
 ```
 
 #### Output:
 
 ```shell
-🧹 Deleted 5 merged branches:
+⚠️  Are you sure you want to clean merged branches?
+This will delete 3 merged branches: feature/refactor, bugfix/signup-typo, hotfix/quick-fix
+[y/N]: y
+
+🧹 Deleted 3 merged branches:
 - feature/refactor
 - bugfix/signup-typo
-...
+- hotfix/quick-fix
 ```
+
+**Flags:**
+- `--dry-run` — Show which branches would be deleted without actually deleting them
+
+**Note:** This command will prompt for confirmation before deleting branches to prevent accidental deletions.
 
 ---
 
@@ -237,9 +247,16 @@ git x graph
 
 #### Output:
 
-(essentially wraps this)
 ```shell
-git log --oneline --graph --decorate --all
+* fc27857 (HEAD -> master, origin/master) Make tests more robust
+* d109d83 Fix remaining test failures with improved git repository detection
+* ded10bb Apply code formatting and linting fixes
+| * 71b448a (feature/auth-improvement) Apply code formatting and linting fixes
+|/  
+* 6c69a03 Fix failing tests on GitHub Actions with robust error handling
+* 4f6565e Fix tests
+* 433788a Update README.md
+* 8594ff0 Implement comprehensive layered architecture for code structure reorganization
 ```
 
 ---
@@ -361,6 +378,23 @@ Deletes all **local branches** that have already been **merged into the current 
 
 Useful for keeping your repo tidy after merging feature branches.
 
+```shell
+git x prune-branches
+git x prune-branches --except "release,v1.0-temp"
+git x prune-branches --dry-run  # Preview what would be deleted
+```
+
+#### Output:
+
+```shell
+⚠️  Are you sure you want to prune merged branches?
+This will delete 2 merged branches: feature/completed-task, hotfix/old-bug
+[y/N]: y
+
+🧹 Deleted merged branch 'feature/completed-task'
+🧹 Deleted merged branch 'hotfix/old-bug'
+```
+
 **Defaults:**
 - Protected branches: `main`, `master`, `develop`
 - Won't delete current branch
@@ -368,10 +402,9 @@ Useful for keeping your repo tidy after merging feature branches.
 
 **Flags:**
 - `--except <branches>` — Comma-separated list of branch names to exclude from deletion
+- `--dry-run` — Show which branches would be deleted without actually deleting them
 
-```shell
-git x prune-branches --except "release,v1.0-temp"
-```
+**Note:** This command will prompt for confirmation before deleting branches to prevent accidental deletions.
 
 ---
 
@@ -434,10 +467,27 @@ git x stash-branch apply-by-branch feature-work
 - `--older-than <time>` — Remove stashes older than specified time
 - `--dry-run` — Show what would be cleaned without doing it
 
+#### Example Output for `clean`:
+
+```shell
+🧹 Cleaning 3 stash(es):
+  stash@{0}: WIP on feature: Add new component
+  stash@{1}: On main: Fix typo in README
+  stash@{2}: WIP on bugfix: Debug auth issue
+
+⚠️  Are you sure you want to clean old stashes?
+This will delete 3 stashes: stash@{0}, stash@{1}, stash@{2}
+[y/N]: y
+
+✅ Cleaned 3 stash(es)
+```
+
 **`apply-by-branch <branch-name>`** — Apply stashes from a specific branch
 - `--list` — List matching stashes instead of applying
 
 Helps manage stashes more effectively by associating them with branches.
+
+**Note:** The `clean` command will prompt for confirmation before deleting stashes to prevent accidental data loss.
 
 ---
 
@@ -618,7 +668,7 @@ Streamlines upstream branch management across your entire repository.
 
 ```shell
 git x what
-git x what develop
+git x what --target develop
 ```
 
 #### Output:
@@ -632,6 +682,9 @@ Changes:
  - ~ App.tsx
  - - old_ui.css
 ```
+
+**Flags:**
+- `--target <branch>` — Branch to compare to (default: main)
 
 ---
 
@@ -698,17 +751,9 @@ git log --oneline --graph --decorate --all
 
 ---
 
-## Roadmap Ideas
-
-- `git x stash`: A smarter stash viewer with preview
-- `git x prune`: Aggressively delete stale branches (with dry-run)
-- `git x inspect`: Interactive blame / file history explorer
-
----
-
 ## 🚧 Tab Completion 🚧
 
-I'm looking for help to get tab completion working! 🆘 By that I mean `git x <TAB>` should show available commands. I've given it my best shot without success 😅 so if anyone can help, that would be much appreciated!
+I'm looking for help to get tab completion working! 🆘 By that I mean `git x <TAB>` should show available commands. I've given it my best shot without success 😅 so if anyone can help, **that would be highly appreciated!**
 
 Your shell expertise could make `git-x` so much more pleasant to use!
 

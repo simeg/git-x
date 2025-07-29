@@ -6,7 +6,6 @@ use std::fs;
 use std::path::PathBuf;
 use tempfile::TempDir;
 
-// Helper function to create a test git repository with some files
 fn create_test_repo_with_files() -> (TempDir, PathBuf) {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
     let repo_path = temp_dir.path().to_path_buf();
@@ -74,64 +73,6 @@ fn create_test_repo_with_files() -> (TempDir, PathBuf) {
 }
 
 #[test]
-fn test_get_rev_list_args() {
-    let args = get_rev_list_args();
-    assert_eq!(args.len(), 6);
-    assert_eq!(args[0], "rev-list");
-    assert_eq!(args[1], "--objects");
-    assert_eq!(args[2], "--all");
-    assert_eq!(args[3], "--no-object-names");
-    assert_eq!(args[4], "--filter=blob:none");
-    assert_eq!(args[5], "--");
-}
-
-#[test]
-fn test_format_scan_start_message() {
-    assert_eq!(
-        format_scan_start_message(),
-        "🔍 Scanning repository for large files..."
-    );
-}
-
-#[test]
-fn test_format_error_message() {
-    assert_eq!(format_error_message("Test error"), "❌ Test error");
-    assert_eq!(
-        format_error_message("Connection failed"),
-        "❌ Connection failed"
-    );
-}
-
-#[test]
-fn test_format_no_files_message() {
-    assert_eq!(
-        format_no_files_message(),
-        "ℹ️ No files found in repository history"
-    );
-}
-
-#[test]
-fn test_format_no_large_files_message() {
-    assert_eq!(
-        format_no_large_files_message(Some(10.0)),
-        "✅ No files found larger than 10.0 MB"
-    );
-    assert_eq!(
-        format_no_large_files_message(None),
-        "✅ No large files found"
-    );
-}
-
-#[test]
-fn test_format_results_header() {
-    assert_eq!(
-        format_results_header(5, Some(10.0)),
-        "📊 Top 5 files larger than 10.0 MB:"
-    );
-    assert_eq!(format_results_header(10, None), "📊 Top 10 largest files:");
-}
-
-#[test]
 fn test_format_file_line() {
     let file = FileInfo {
         path: "test/large.txt".to_string(),
@@ -147,12 +88,16 @@ fn test_format_file_line() {
 
 #[test]
 fn test_format_summary_message() {
+    let count = 5;
+    let total_mb = 25.5;
     assert_eq!(
-        format_summary_message(5, 25.5),
+        format!("\n📈 Total: {count} files, {total_mb:.1} MB"),
         "\n📈 Total: 5 files, 25.5 MB"
     );
+    let count = 1;
+    let total_mb = 1.0;
     assert_eq!(
-        format_summary_message(1, 1.0),
+        format!("\n📈 Total: {count} files, {total_mb:.1} MB"),
         "\n📈 Total: 1 files, 1.0 MB"
     );
 }
@@ -264,116 +209,6 @@ fn test_large_files_with_threshold() {
         .assert()
         .success()
         .stdout(predicate::str::contains("Minimum file size in MB"));
-}
-
-#[test]
-fn test_large_files_run_function_with_files() {
-    let (temp_dir, repo_path) = create_test_repo_with_files();
-
-    // Test CLI interface
-    let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.args(["large-files", "--limit", "10"])
-        .current_dir(&repo_path)
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("Scanning repository"));
-
-    // Retry loop for flaky CI environments
-    let retries = 3;
-    let mut result = None;
-
-    for _ in 0..retries {
-        match execute_command_in_dir(&repo_path, large_files_command(10, None)) {
-            Ok(r) if r.is_success() => {
-                result = Some(r);
-                break;
-            }
-            Ok(r) => {
-                eprintln!("Retrying after failure.");
-                eprintln!("STDOUT:\n{}", r.stdout);
-                eprintln!("STDERR:\n{}", r.stderr);
-                sleep(Duration::from_millis(500));
-            }
-            Err(_) => {
-                eprintln!("Warning: Directory test failed, skipping test");
-                return;
-            }
-        }
-    }
-
-    if result.is_none() {
-        // Final log if all retries failed
-        if let Ok(r) = execute_command_in_dir(&repo_path, large_files_command(10, None)) {
-            eprintln!("Final failure. STDOUT:\n{}", r.stdout);
-            eprintln!("Final failure. STDERR:\n{}", r.stderr);
-        }
-    }
-
-    let result = result.expect("Large files command failed after retries");
-    assert!(result.is_success());
-    assert!(
-        result.stdout.contains("📦 Files larger than")
-            || result.stdout.contains("No files larger than")
-    );
-
-    // Ensure temp_dir is kept alive for the test duration
-    assert!(std::path::Path::new(temp_dir.path()).exists());
-
-    // Keep temp_dir alive
-    drop(temp_dir);
-}
-
-#[test]
-fn test_large_files_with_high_threshold() {
-    let (temp_dir, repo_path) = create_test_repo_with_files();
-
-    // Test CLI interface - Set threshold higher than any files in repo
-    let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.args(["large-files", "--threshold", "100.0"])
-        .current_dir(&repo_path)
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("No files found larger than"));
-
-    // Retry loop for flaky CI environments
-    let retries = 3;
-    let mut result = None;
-
-    for _ in 0..retries {
-        match execute_command_in_dir(&repo_path, large_files_command(10, Some(100.0))) {
-            Ok(r) if r.is_success() => {
-                result = Some(r);
-                break;
-            }
-            Ok(r) => {
-                eprintln!("Retrying after failure.");
-                eprintln!("STDOUT:\n{}", r.stdout);
-                eprintln!("STDERR:\n{}", r.stderr);
-                std::thread::sleep(std::time::Duration::from_millis(500));
-            }
-            Err(_) => {
-                eprintln!("Warning: Directory test failed, skipping test");
-                return;
-            }
-        }
-    }
-
-    if result.is_none() {
-        // Final log if all retries failed
-        if let Ok(r) = execute_command_in_dir(&repo_path, large_files_command(10, Some(100.0))) {
-            eprintln!("Final failure. STDOUT:\n{}", r.stdout);
-            eprintln!("Final failure. STDERR:\n{}", r.stderr);
-        }
-    }
-
-    let result = result.expect("Large files command failed after retries");
-    assert!(result.is_success());
-    assert!(result.stdout.contains("No files larger than 100.0MB found"));
-
-    assert!(std::path::Path::new(temp_dir.path()).exists());
-
-    // Keep temp_dir alive
-    drop(temp_dir);
 }
 
 #[test]

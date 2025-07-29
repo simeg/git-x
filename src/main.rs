@@ -3,44 +3,103 @@ mod cli;
 use clap::Parser;
 use git_x::cli::{Cli, Commands};
 use git_x::{
-    bisect, clean_branches, color_graph, contributors, fixup, graph, health, info, large_files,
-    new_branch, prune_branches, rename_branch, since, stash_branch, summary, switch_recent, sync,
-    technical_debt, undo, upstream, what,
+    bisect, clean_branches, contributors, fixup, health, large_files, new_branch, prune_branches,
+    rename_branch, stash_branch, summary, switch_recent, sync, technical_debt, upstream, what,
 };
+
+// Import Command trait and specific command implementations for demonstration
+use git_x::color_graph::ColorGraphCommand;
+use git_x::command::Command;
+use git_x::graph::GraphCommand;
+use git_x::info::InfoCommand;
+use git_x::since::SinceCommand;
+use git_x::undo::UndoCommand;
+
+// This demonstrates how the Command trait could be used for unified execution
+fn execute_command_with_trait<C: Command>(cmd: C, input: C::Input) {
+    println!("📋 Executing '{}': {}", cmd.name(), cmd.description());
+
+    if cmd.is_destructive() {
+        println!("⚠️  Warning: This is a destructive operation!");
+    }
+
+    match cmd.execute(input) {
+        Ok(_) => {}
+        Err(e) => eprintln!("❌ {e}"),
+    }
+}
 
 fn main() {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::RenameBranch { new_name } => rename_branch::run(&new_name),
-        Commands::PruneBranches { except } => prune_branches::run(except),
-        Commands::Info => info::run(),
-        Commands::Graph => graph::run(),
-        Commands::ColorGraph => color_graph::run(),
+        Commands::RenameBranch { new_name } => match rename_branch::run(&new_name) {
+            Ok(()) => {}
+            Err(e) => eprintln!("❌ {e}"),
+        },
+        Commands::PruneBranches { except, dry_run } => match prune_branches::run(except, dry_run) {
+            Ok(()) => {}
+            Err(e) => eprintln!("❌ {e}"),
+        },
+        // Demonstration of trait-based dispatch
+        Commands::Info => {
+            execute_command_with_trait(InfoCommand, ());
+        }
+        Commands::Graph => {
+            execute_command_with_trait(GraphCommand, ());
+        }
+        Commands::ColorGraph => {
+            execute_command_with_trait(ColorGraphCommand, ());
+        }
         Commands::Health => match health::run() {
             Ok(output) => println!("{output}"),
             Err(e) => eprintln!("Error: {e}"),
         },
-        Commands::Since { reference } => since::run(reference),
-        Commands::Undo => undo::run(),
-        Commands::CleanBranches { dry_run } => clean_branches::run(dry_run),
+        Commands::Since { reference } => {
+            execute_command_with_trait(SinceCommand, reference);
+        }
+        Commands::Undo => {
+            execute_command_with_trait(UndoCommand, ());
+        }
+        Commands::CleanBranches { dry_run } => match clean_branches::run(dry_run) {
+            Ok(()) => {}
+            Err(e) => eprintln!("❌ {e}"),
+        },
         Commands::What { target } => match what::run(target) {
             Ok(output) => println!("{output}"),
             Err(e) => eprintln!("Error: {e}"),
         },
-        Commands::Summary { since } => summary::run(since),
-        Commands::Sync { merge } => sync::run(merge),
+        Commands::Summary { since } => match summary::run(since) {
+            Ok(()) => {}
+            Err(e) => eprintln!("❌ {e}"),
+        },
+        Commands::Sync { merge } => match sync::run(merge) {
+            Ok(()) => {}
+            Err(e) => eprintln!("❌ {e}"),
+        },
         Commands::New { branch_name, from } => match new_branch::run(branch_name, from) {
             Ok(output) => println!("{output}"),
             Err(e) => eprintln!("Error: {e}"),
         },
-        Commands::LargeFiles { limit, threshold } => large_files::run(limit, threshold),
+        Commands::LargeFiles { limit, threshold } => match large_files::run(limit, threshold) {
+            Ok(()) => {}
+            Err(e) => eprintln!("❌ {e}"),
+        },
         Commands::Fixup {
             commit_hash,
             rebase,
-        } => fixup::run(commit_hash, rebase),
-        Commands::StashBranch { action } => stash_branch::run(action),
-        Commands::Upstream { action } => upstream::run(action),
+        } => match fixup::run(commit_hash, rebase) {
+            Ok(()) => {}
+            Err(e) => eprintln!("❌ {e}"),
+        },
+        Commands::StashBranch { action } => match stash_branch::run(action) {
+            Ok(()) => {}
+            Err(e) => eprintln!("❌ {e}"),
+        },
+        Commands::Upstream { action } => match upstream::run(action) {
+            Ok(()) => {}
+            Err(e) => eprintln!("❌ {e}"),
+        },
         Commands::SwitchRecent => match switch_recent::run() {
             Ok(message) => println!("{message}"),
             Err(e) => eprintln!("❌ {e}"),

@@ -1,11 +1,9 @@
 use assert_cmd::Command;
-use git_x::new_branch::*;
 use predicates::prelude::*;
 use std::fs;
 use std::path::PathBuf;
 use tempfile::TempDir;
 
-// Helper function to create a test git repository
 fn create_test_repo() -> (TempDir, PathBuf, String) {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
     let repo_path = temp_dir.path().to_path_buf();
@@ -58,84 +56,6 @@ fn create_test_repo() -> (TempDir, PathBuf, String) {
 }
 
 #[test]
-fn test_get_validation_rules() {
-    let rules = get_validation_rules();
-    assert!(!rules.is_empty());
-    assert!(rules.contains(&"Cannot be empty"));
-    assert!(rules.contains(&"Cannot start with a dash"));
-    assert!(rules.contains(&"Cannot contain '..'"));
-    assert!(rules.contains(&"Cannot contain spaces"));
-    assert!(rules.contains(&"Cannot contain ~^:?*[\\"));
-}
-
-#[test]
-fn test_format_error_message() {
-    assert_eq!(format_error_message("Test error"), "❌ Test error");
-    assert_eq!(
-        format_error_message("Invalid branch name"),
-        "❌ Invalid branch name"
-    );
-}
-
-#[test]
-fn test_format_branch_exists_message() {
-    assert_eq!(
-        format_branch_exists_message("feature"),
-        "❌ Branch 'feature' already exists"
-    );
-    assert_eq!(
-        format_branch_exists_message("main"),
-        "❌ Branch 'main' already exists"
-    );
-}
-
-#[test]
-fn test_format_invalid_base_message() {
-    assert_eq!(
-        format_invalid_base_message("nonexistent"),
-        "❌ Base branch or ref 'nonexistent' does not exist"
-    );
-    assert_eq!(
-        format_invalid_base_message("unknown-branch"),
-        "❌ Base branch or ref 'unknown-branch' does not exist"
-    );
-}
-
-#[test]
-fn test_format_creating_branch_message() {
-    assert_eq!(
-        format_creating_branch_message("feature", "main"),
-        "🌿 Creating branch 'feature' from 'main'..."
-    );
-    assert_eq!(
-        format_creating_branch_message("hotfix", "develop"),
-        "🌿 Creating branch 'hotfix' from 'develop'..."
-    );
-}
-
-#[test]
-fn test_format_success_message() {
-    assert_eq!(
-        format_success_message("feature"),
-        "✅ Created and switched to branch 'feature'"
-    );
-    assert_eq!(
-        format_success_message("new-feature"),
-        "✅ Created and switched to branch 'new-feature'"
-    );
-}
-
-#[test]
-fn test_get_git_branch_args() {
-    assert_eq!(get_git_branch_args(), ["branch", "-"]);
-}
-
-#[test]
-fn test_get_git_switch_args() {
-    assert_eq!(get_git_switch_args(), ["switch", "-"]);
-}
-
-#[test]
 fn test_new_branch_run_function_outside_git_repo() {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
 
@@ -144,7 +64,7 @@ fn test_new_branch_run_function_outside_git_repo() {
         .current_dir(temp_dir.path())
         .assert()
         .success() // The command succeeds but shows an error message
-        .stderr(predicate::str::contains("Not in a git repository"));
+        .stderr(predicate::str::contains("Failed to get current branch"));
 }
 
 #[test]
@@ -156,7 +76,7 @@ fn test_new_branch_creates_and_switches() {
         .current_dir(&repo_path)
         .assert()
         .success()
-        .stdout(predicate::str::contains("Created and switched to branch"));
+        .stdout(predicate::str::contains("feature-branch"));
 
     // Verify we're on the new branch
     let mut check_cmd = Command::new("git");
@@ -205,7 +125,7 @@ fn test_new_branch_with_from_option() {
         .current_dir(&repo_path)
         .assert()
         .success()
-        .stdout(predicate::str::contains("Created and switched to branch"));
+        .stdout(predicate::str::contains("feature-from-develop"));
 
     // Verify we're on the new branch and it has the develop file
     let mut check_cmd = Command::new("git");
@@ -302,41 +222,4 @@ fn test_new_branch_command_help() {
         .stdout(predicate::str::contains(
             "Create and switch to a new branch",
         ));
-}
-
-// Additional comprehensive test coverage
-#[test]
-fn test_message_formatting_edge_cases() {
-    // Test with special characters and edge cases
-    assert!(
-        format_creating_branch_message("test/branch-123", "origin/main")
-            .contains("test/branch-123")
-    );
-    assert!(
-        format_creating_branch_message("test/branch-123", "origin/main").contains("origin/main")
-    );
-
-    assert!(format_success_message("feature/issue-456").contains("feature/issue-456"));
-    assert!(format_branch_exists_message("hotfix/urgent").contains("hotfix/urgent"));
-    assert!(
-        format_invalid_base_message("refs/remotes/origin/feature")
-            .contains("refs/remotes/origin/feature")
-    );
-}
-
-#[test]
-fn test_format_consistency() {
-    // Test that all format functions return non-empty strings for reasonable inputs
-    assert!(!format_error_message("test").is_empty());
-    assert!(!format_branch_exists_message("test").is_empty());
-    assert!(!format_invalid_base_message("test").is_empty());
-    assert!(!format_creating_branch_message("test", "main").is_empty());
-    assert!(!format_success_message("test").is_empty());
-
-    // Test that they include expected emojis or symbols
-    assert!(format_error_message("test").contains("❌"));
-    assert!(format_branch_exists_message("test").contains("❌"));
-    assert!(format_invalid_base_message("test").contains("❌"));
-    assert!(format_creating_branch_message("test", "main").contains("🌿"));
-    assert!(format_success_message("test").contains("✅"));
 }

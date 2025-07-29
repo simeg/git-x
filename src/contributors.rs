@@ -1,10 +1,36 @@
+use crate::command::Command;
 use crate::{GitXError, Result};
 use console::style;
 use std::collections::HashMap;
-use std::process::Command;
+use std::process::Command as StdCommand;
 
 pub fn run() -> Result<String> {
-    let output = Command::new("git")
+    let cmd = ContributorsCommand;
+    cmd.execute(())
+}
+
+/// Command implementation for git contributors
+pub struct ContributorsCommand;
+
+impl Command for ContributorsCommand {
+    type Input = ();
+    type Output = String;
+
+    fn execute(&self, _input: ()) -> Result<String> {
+        run_contributors()
+    }
+
+    fn name(&self) -> &'static str {
+        "contributors"
+    }
+
+    fn description(&self) -> &'static str {
+        "Show repository contributors and their commit statistics"
+    }
+}
+
+fn run_contributors() -> Result<String> {
+    let output = StdCommand::new("git")
         .args(["log", "--all", "--format=%ae|%an|%ad", "--date=short"])
         .output()?;
 
@@ -117,7 +143,6 @@ fn format_contributors_output(contributors: &[ContributorStats]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::GitXError;
 
     #[test]
     fn test_parse_contributors_success() {
@@ -233,20 +258,6 @@ charlie@example.com|Charlie Brown|2025-01-12"#;
         assert_eq!(stats.commit_count, 5);
         assert_eq!(stats.first_commit, "2025-01-01");
         assert_eq!(stats.last_commit, "2025-01-15");
-    }
-
-    #[test]
-    fn test_gitx_error_integration() {
-        // Test that our functions work with GitXError types correctly
-        let io_error = std::io::Error::new(std::io::ErrorKind::NotFound, "git not found");
-        let gitx_error: GitXError = io_error.into();
-        match gitx_error {
-            GitXError::Io(_) => {} // Expected
-            _ => panic!("Should convert to Io error"),
-        }
-
-        let git_error = GitXError::GitCommand("test error".to_string());
-        assert_eq!(git_error.to_string(), "Git command failed: test error");
     }
 
     #[test]

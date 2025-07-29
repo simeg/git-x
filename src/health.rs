@@ -1,8 +1,34 @@
+use crate::command::Command;
 use crate::{GitXError, Result};
 use console::Style;
-use std::process::Command;
+use std::process::Command as StdCommand;
 
 pub fn run() -> Result<String> {
+    let cmd = HealthCommand;
+    cmd.execute(())
+}
+
+/// Command implementation for git health
+pub struct HealthCommand;
+
+impl Command for HealthCommand {
+    type Input = ();
+    type Output = String;
+
+    fn execute(&self, _input: ()) -> Result<String> {
+        run_health()
+    }
+
+    fn name(&self) -> &'static str {
+        "health"
+    }
+
+    fn description(&self) -> &'static str {
+        "Check repository health and show diagnostic information"
+    }
+}
+
+fn run_health() -> Result<String> {
     let bold = Style::new().bold();
     let green = Style::new().green().bold();
     let yellow = Style::new().yellow().bold();
@@ -42,7 +68,7 @@ pub fn run() -> Result<String> {
 }
 
 pub fn is_git_repo(path: &std::path::Path) -> bool {
-    Command::new("git")
+    StdCommand::new("git")
         .args(["rev-parse", "--git-dir"])
         .current_dir(path)
         .output()
@@ -51,7 +77,7 @@ pub fn is_git_repo(path: &std::path::Path) -> bool {
 }
 
 fn check_repo_status(green: &Style, _yellow: &Style, red: &Style) -> Result<String> {
-    let output = Command::new("git")
+    let output = StdCommand::new("git")
         .args(["status", "--porcelain"])
         .output()
         .map_err(|_| GitXError::GitCommand("Failed to run git status".to_string()))?;
@@ -78,7 +104,7 @@ fn check_repo_status(green: &Style, _yellow: &Style, red: &Style) -> Result<Stri
 }
 
 fn check_untracked_files(green: &Style, yellow: &Style, _red: &Style) -> Result<String> {
-    let output = Command::new("git")
+    let output = StdCommand::new("git")
         .args(["ls-files", "--others", "--exclude-standard"])
         .output()
         .map_err(|_| GitXError::GitCommand("Failed to list untracked files".to_string()))?;
@@ -104,7 +130,7 @@ fn check_untracked_files(green: &Style, yellow: &Style, _red: &Style) -> Result<
 }
 
 fn check_stale_branches(green: &Style, yellow: &Style, _red: &Style) -> Result<String> {
-    let output = Command::new("git")
+    let output = StdCommand::new("git")
         .args([
             "for-each-ref",
             "--format=%(refname:short) %(committerdate:relative)",
@@ -143,7 +169,7 @@ fn check_stale_branches(green: &Style, yellow: &Style, _red: &Style) -> Result<S
 }
 
 fn check_repo_size(green: &Style, yellow: &Style, red: &Style) -> Result<String> {
-    let output = Command::new("du")
+    let output = StdCommand::new("du")
         .args(["-sh", ".git"])
         .output()
         .map_err(|_| GitXError::GitCommand("Failed to check repository size".to_string()))?;
@@ -184,7 +210,7 @@ fn check_repo_size(green: &Style, yellow: &Style, red: &Style) -> Result<String>
 }
 
 fn check_uncommitted_changes(green: &Style, yellow: &Style, _red: &Style) -> Result<String> {
-    let output = Command::new("git")
+    let output = StdCommand::new("git")
         .args(["diff", "--cached", "--name-only"])
         .output()
         .map_err(|_| GitXError::GitCommand("Failed to check staged changes".to_string()))?;

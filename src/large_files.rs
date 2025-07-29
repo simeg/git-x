@@ -1,4 +1,5 @@
-use crate::common::BufferedOutput;
+use crate::core::output::BufferedOutput;
+use crate::{GitXError, Result};
 use std::collections::HashMap;
 use std::process::Command;
 
@@ -20,24 +21,18 @@ impl FileInfo {
     }
 }
 
-pub fn run(limit: usize, threshold: Option<f64>) {
+pub fn run(limit: usize, threshold: Option<f64>) -> Result<()> {
     let mut output = BufferedOutput::new();
 
-    output.add_line(format_scan_start_message().to_string());
+    output.add_line("🔍 Scanning repository for large files...".to_string());
 
     // Get all file objects and their sizes
-    let file_objects = match get_file_objects() {
-        Ok(objects) => objects,
-        Err(msg) => {
-            eprintln!("{}", format_error_message(msg));
-            return;
-        }
-    };
+    let file_objects = get_file_objects().map_err(|e| GitXError::GitCommand(e.to_string()))?;
 
     if file_objects.is_empty() {
-        output.add_line(format_no_files_message().to_string());
+        output.add_line("ℹ️ No files found in repository history".to_string());
         output.flush();
-        return;
+        return Ok(());
     }
 
     // Find the largest files by path
@@ -50,12 +45,19 @@ pub fn run(limit: usize, threshold: Option<f64>) {
     large_files.truncate(limit);
 
     if large_files.is_empty() {
-        output.add_line(format_no_large_files_message(threshold));
+        output.add_line(match threshold {
+            Some(mb) => format!("✅ No files found larger than {mb:.1} MB"),
+            None => "✅ No large files found".to_string(),
+        });
         output.flush();
-        return;
+        return Ok(());
     }
 
-    output.add_line(format_results_header(large_files.len(), threshold));
+    let count = large_files.len();
+    output.add_line(match threshold {
+        Some(mb) => format!("📊 Top {count} files larger than {mb:.1} MB:"),
+        None => format!("📊 Top {count} largest files:"),
+    });
 
     // Add all file results to buffer
     for (i, file) in large_files.iter().enumerate() {
@@ -69,25 +71,26 @@ pub fn run(limit: usize, threshold: Option<f64>) {
 
     // Flush all output at once for better performance
     output.flush();
+    Ok(())
 }
 
-// Helper function to get file objects from git
-fn get_file_objects() -> Result<Vec<(String, String, u64)>, &'static str> {
+fn get_file_objects() -> Result<Vec<(String, String, u64)>> {
     let output = Command::new("git")
         .args(get_rev_list_args())
         .output()
-        .map_err(|_| "Failed to execute git rev-list")?;
+        .map_err(GitXError::Io)?;
 
     if !output.status.success() {
-        return Err("Failed to get file objects from git history");
+        return Err(GitXError::GitCommand(
+            "Failed to get file objects from git history".to_string(),
+        ));
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     parse_git_objects(&stdout)
 }
 
-// Helper function to get git rev-list args
-pub fn get_rev_list_args() -> [&'static str; 6] {
+fn get_rev_list_args() -> [&'static str; 6] {
     [
         "rev-list",
         "--objects",
@@ -98,8 +101,7 @@ pub fn get_rev_list_args() -> [&'static str; 6] {
     ]
 }
 
-// Helper function to parse git objects output
-fn parse_git_objects(output: &str) -> Result<Vec<(String, String, u64)>, &'static str> {
+fn parse_git_objects(output: &str) -> Result<Vec<(String, String, u64)>> {
     let mut objects = Vec::new();
 
     for line in output.lines() {
@@ -124,23 +126,26 @@ fn parse_git_objects(output: &str) -> Result<Vec<(String, String, u64)>, &'stati
     Ok(objects)
 }
 
-// Helper function to get object size
-fn get_object_size(hash: &str) -> Result<u64, &'static str> {
+fn get_object_size(hash: &str) -> Result<u64> {
     let output = Command::new("git")
         .args(["cat-file", "-s", hash])
         .output()
-        .map_err(|_| "Failed to get object size")?;
+        .map_err(GitXError::Io)?;
 
     if !output.status.success() {
-        return Err("Failed to get object size");
+        return Err(GitXError::GitCommand(
+            "Failed to get object size".to_string(),
+        ));
     }
 
     let size_str = String::from_utf8_lossy(&output.stdout);
-    size_str.trim().parse().map_err(|_| "Invalid size format")
+    size_str
+        .trim()
+        .parse()
+        .map_err(|_| GitXError::Parse("Invalid size format".to_string()))
 }
 
-// Helper function to get object paths
-fn get_object_paths(hash: &str) -> Result<Vec<String>, &'static str> {
+fn get_object_paths(hash: &str) -> Result<Vec<String>> {
     let output = Command::new("git")
         .args([
             "log",
@@ -152,7 +157,7 @@ fn get_object_paths(hash: &str) -> Result<Vec<String>, &'static str> {
             hash,
         ])
         .output()
-        .map_err(|_| "Failed to get object paths")?;
+        .map_err(GitXError::Io)?;
 
     if !output.status.success() {
         // Fallback: try to find the path using rev-list with object names
@@ -174,11 +179,11 @@ fn get_object_paths(hash: &str) -> Result<Vec<String>, &'static str> {
 }
 
 // Fallback method to get object paths
-fn get_object_paths_fallback(hash: &str) -> Result<Vec<String>, &'static str> {
+fn get_object_paths_fallback(hash: &str) -> Result<Vec<String>> {
     let output = Command::new("git")
         .args(["rev-list", "--objects", "--all"])
         .output()
-        .map_err(|_| "Failed to get object paths")?;
+        .map_err(GitXError::Io)?;
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let paths: Vec<String> = stdout
@@ -200,7 +205,6 @@ fn get_object_paths_fallback(hash: &str) -> Result<Vec<String>, &'static str> {
     }
 }
 
-// Helper function to find largest files
 fn find_largest_files(
     objects: Vec<(String, String, u64)>,
     threshold: Option<f64>,
@@ -224,38 +228,6 @@ fn find_largest_files(
         .collect()
 }
 
-// Helper function to format scan start message
-pub fn format_scan_start_message() -> &'static str {
-    "🔍 Scanning repository for large files..."
-}
-
-// Helper function to format error message
-pub fn format_error_message(msg: &str) -> String {
-    format!("❌ {msg}")
-}
-
-// Helper function to format no files message
-pub fn format_no_files_message() -> &'static str {
-    "ℹ️ No files found in repository history"
-}
-
-// Helper function to format no large files message
-pub fn format_no_large_files_message(threshold: Option<f64>) -> String {
-    match threshold {
-        Some(mb) => format!("✅ No files found larger than {mb:.1} MB"),
-        None => "✅ No large files found".to_string(),
-    }
-}
-
-// Helper function to format results header
-pub fn format_results_header(count: usize, threshold: Option<f64>) -> String {
-    match threshold {
-        Some(mb) => format!("📊 Top {count} files larger than {mb:.1} MB:"),
-        None => format!("📊 Top {count} largest files:"),
-    }
-}
-
-// Helper function to format file line
 pub fn format_file_line(index: usize, file: &FileInfo) -> String {
     format!(
         "{index:2}. {size:>8.1} MB  {path}",
@@ -264,12 +236,10 @@ pub fn format_file_line(index: usize, file: &FileInfo) -> String {
     )
 }
 
-// Helper function to format summary message
-pub fn format_summary_message(count: usize, total_mb: f64) -> String {
+fn format_summary_message(count: usize, total_mb: f64) -> String {
     format!("\n📈 Total: {count} files, {total_mb:.1} MB")
 }
 
-// Helper function to convert bytes to human readable
 pub fn format_size_human_readable(bytes: u64) -> String {
     const UNITS: &[&str] = &["B", "KB", "MB", "GB", "TB"];
     let mut size = bytes as f64;

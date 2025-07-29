@@ -5,7 +5,6 @@ use std::fs;
 use std::path::PathBuf;
 use tempfile::TempDir;
 
-// Helper function to create a test git repository
 fn create_test_repo() -> (TempDir, PathBuf) {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
     let repo_path = temp_dir.path().to_path_buf();
@@ -47,7 +46,6 @@ fn create_test_repo() -> (TempDir, PathBuf) {
     (temp_dir, repo_path)
 }
 
-// Helper function to create multiple commits for bisect testing
 fn create_commit_history(repo_path: &PathBuf) -> Vec<String> {
     let mut commits = Vec::new();
 

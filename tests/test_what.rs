@@ -111,7 +111,7 @@ fn test_what_run_function() {
     }
 
     // Test that the function doesn't panic and git commands work
-    let _ = git_x::what::run(None);
+    let _ = run(None);
 
     // Restore original directory
     let _ = std::env::set_current_dir(&original_dir);
@@ -133,7 +133,7 @@ fn test_what_run_function_with_target() {
     }
 
     // Test with specific target
-    let _ = git_x::what::run(Some("main".to_string()));
+    let _ = run(Some("main".to_string()));
 
     // Restore original directory
     let _ = std::env::set_current_dir(&original_dir);
@@ -162,7 +162,7 @@ fn test_what_run_function_with_multiple_changes() {
     }
 
     // Test that the function prints diff lines
-    let _ = git_x::what::run(Some("main".to_string()));
+    let _ = run(Some("main".to_string()));
 
     // Restore original directory
     let _ = std::env::set_current_dir(&original_dir);

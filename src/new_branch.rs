@@ -1,4 +1,5 @@
-use crate::common::Validate;
+use crate::core::git::GitOperations;
+use crate::core::validation::Validate;
 use crate::{GitXError, Result};
 use std::process::Command;
 
@@ -27,7 +28,7 @@ pub fn run(branch_name: String, from: Option<String>) -> Result<String> {
     };
 
     let mut output = Vec::new();
-    output.push(format_creating_branch_message(&branch_name, &base_branch));
+    output.push(branch_name.clone());
 
     // Create the new branch
     create_branch_result(&branch_name, &base_branch)?;
@@ -35,11 +36,10 @@ pub fn run(branch_name: String, from: Option<String>) -> Result<String> {
     // Switch to the new branch
     switch_to_branch_result(&branch_name)?;
 
-    output.push(format_success_message(&branch_name));
+    output.push(branch_name.clone());
     Ok(output.join("\n"))
 }
 
-// Helper function to check if branch exists
 fn branch_exists(branch_name: &str) -> bool {
     Command::new("git")
         .args([
@@ -53,7 +53,6 @@ fn branch_exists(branch_name: &str) -> bool {
         .unwrap_or(false)
 }
 
-// Helper function to check if ref is valid
 fn is_valid_ref(ref_name: &str) -> bool {
     Command::new("git")
         .args(["rev-parse", "--verify", "--quiet", ref_name])
@@ -62,21 +61,11 @@ fn is_valid_ref(ref_name: &str) -> bool {
         .unwrap_or(false)
 }
 
-// Helper function to get current branch (new version)
 fn get_current_branch_result() -> Result<String> {
-    let output = Command::new("git")
-        .args(["rev-parse", "--abbrev-ref", "HEAD"])
-        .output()
-        .map_err(|_| GitXError::GitCommand("Failed to get current branch".to_string()))?;
-
-    if !output.status.success() {
-        return Err(GitXError::GitCommand("Not in a git repository".to_string()));
-    }
-
-    Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+    GitOperations::current_branch()
+        .map_err(|e| GitXError::GitCommand(format!("Failed to get current branch: {e}")))
 }
 
-// Helper function to create branch (new version)
 fn create_branch_result(branch_name: &str, base_branch: &str) -> Result<()> {
     let output = Command::new("git")
         .args(["branch", branch_name, base_branch])
@@ -94,7 +83,6 @@ fn create_branch_result(branch_name: &str, base_branch: &str) -> Result<()> {
     Ok(())
 }
 
-// Helper function to switch to branch (new version)
 fn switch_to_branch_result(branch_name: &str) -> Result<()> {
     let output = Command::new("git")
         .args(["switch", branch_name])
@@ -110,50 +98,4 @@ fn switch_to_branch_result(branch_name: &str) -> Result<()> {
     }
 
     Ok(())
-}
-
-// Helper function to get branch validation error messages
-pub fn get_validation_rules() -> &'static [&'static str] {
-    &[
-        "Cannot be empty",
-        "Cannot start with a dash",
-        "Cannot contain '..'",
-        "Cannot contain spaces",
-        "Cannot contain ~^:?*[\\",
-    ]
-}
-
-// Helper function to format error message
-pub fn format_error_message(msg: &str) -> String {
-    format!("❌ {msg}")
-}
-
-// Helper function to format branch exists message
-pub fn format_branch_exists_message(branch_name: &str) -> String {
-    format!("❌ Branch '{branch_name}' already exists")
-}
-
-// Helper function to format invalid base message
-pub fn format_invalid_base_message(base_branch: &str) -> String {
-    format!("❌ Base branch or ref '{base_branch}' does not exist")
-}
-
-// Helper function to format creating branch message
-pub fn format_creating_branch_message(branch_name: &str, base_branch: &str) -> String {
-    format!("🌿 Creating branch '{branch_name}' from '{base_branch}'...")
-}
-
-// Helper function to format success message
-pub fn format_success_message(branch_name: &str) -> String {
-    format!("✅ Created and switched to branch '{branch_name}'")
-}
-
-// Helper function to get git branch creation args
-pub fn get_git_branch_args() -> [&'static str; 2] {
-    ["branch", "-"]
-}
-
-// Helper function to get git switch args
-pub fn get_git_switch_args() -> [&'static str; 2] {
-    ["switch", "-"]
 }

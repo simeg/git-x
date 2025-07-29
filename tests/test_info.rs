@@ -1,7 +1,7 @@
 mod common;
 
 use common::{repo_with_branch, repo_with_remote_ahead};
-use git_x::common::Format;
+use git_x::core::output::Format;
 use predicates::str::contains;
 
 #[test]
@@ -64,5 +64,5 @@ fn test_info_run_function() {
 
     // Test that the function doesn't panic and git commands work
     // This repo has a remote upstream so it should work
-    git_x::info::run();
+    let _ = git_x::info::run();
 }

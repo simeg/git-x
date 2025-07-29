@@ -1,28 +1,53 @@
-use crate::common::{Format, GitCommand, RepoInfo};
+use crate::command::Command;
+use crate::core::git::GitOperations;
+use crate::core::output::Format;
 
-pub fn run() {
-    match run_info() {
-        Ok(output) => println!("{output}"),
-        Err(e) => eprintln!("{}", Format::error(&e.to_string())),
+pub fn run() -> crate::Result<()> {
+    let cmd = InfoCommand;
+    cmd.execute(())
+}
+
+/// Command implementation for git info
+pub struct InfoCommand;
+
+impl Command for InfoCommand {
+    type Input = ();
+    type Output = ();
+
+    fn execute(&self, _input: ()) -> crate::Result<()> {
+        let output = run_info()?;
+        println!("{output}");
+        Ok(())
+    }
+
+    fn name(&self) -> &'static str {
+        "info"
+    }
+
+    fn description(&self) -> &'static str {
+        "Show a high-level overview of the current repo"
     }
 }
 
 fn run_info() -> crate::Result<String> {
-    let repo_name = RepoInfo::name()?;
-    let branch_status = RepoInfo::branch_status()?;
-    let last_commit = GitCommand::run(&["log", "-1", "--pretty=format:%s (%cr)"])?;
+    let repo_name = GitOperations::repo_root()?;
+    let (current_branch, upstream, ahead, behind) = GitOperations::branch_info_optimized()?;
+    let last_commit = GitOperations::run(&["log", "-1", "--pretty=format:%s (%cr)"])?;
+
+    // Format upstream tracking info
+    let tracking = upstream
+        .as_ref()
+        .map(|u| u.to_string())
+        .unwrap_or_else(|| "(no upstream)".to_string());
 
     let mut lines = Vec::new();
     lines.push(format!("Repo: {}", Format::bold(&repo_name)));
-    lines.push(format!("Branch: {}", Format::bold(&branch_status.current)));
-    lines.push(format!(
-        "Tracking: {}",
-        Format::bold(&branch_status.format_tracking())
-    ));
+    lines.push(format!("Branch: {}", Format::bold(&current_branch)));
+    lines.push(format!("Tracking: {}", Format::bold(&tracking)));
     lines.push(format!(
         "Ahead: {} Behind: {}",
-        Format::bold(&branch_status.ahead.to_string()),
-        Format::bold(&branch_status.behind.to_string())
+        Format::bold(&ahead.to_string()),
+        Format::bold(&behind.to_string())
     ));
     lines.push(format!("Last Commit: \"{}\"", Format::bold(&last_commit)));
 

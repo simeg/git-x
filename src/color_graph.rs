@@ -1,15 +1,36 @@
+use crate::command::Command;
 use crate::{GitXError, Result};
-use std::process::Command;
+use std::process::Command as StdCommand;
 
-pub fn run() {
-    match run_color_graph() {
-        Ok(output) => print!("{output}"),
-        Err(e) => eprintln!("{}", crate::common::Format::error(&e.to_string())),
+pub fn run() -> Result<()> {
+    let cmd = ColorGraphCommand;
+    cmd.execute(())
+}
+
+/// Command implementation for git color-graph
+pub struct ColorGraphCommand;
+
+impl Command for ColorGraphCommand {
+    type Input = ();
+    type Output = ();
+
+    fn execute(&self, _input: ()) -> Result<()> {
+        let output = run_color_graph()?;
+        print!("{output}");
+        Ok(())
+    }
+
+    fn name(&self) -> &'static str {
+        "color-graph"
+    }
+
+    fn description(&self) -> &'static str {
+        "Show a colorized git log graph"
     }
 }
 
 fn run_color_graph() -> Result<String> {
-    let output = Command::new("git")
+    let output = StdCommand::new("git")
         .args(get_color_git_log_args())
         .output()
         .map_err(GitXError::Io)?;
@@ -25,30 +46,7 @@ fn run_color_graph() -> Result<String> {
     }
 }
 
-// Helper function to check if command was successful
-pub fn is_command_successful(output: &std::process::Output) -> bool {
-    output.status.success()
-}
-
-// Helper function to print git output
-pub fn print_git_output(stdout: &[u8]) {
-    let result = convert_output_to_string(stdout);
-    println!("{result}");
-}
-
-// Helper function to print git error
-pub fn print_git_error(stderr: &[u8]) {
-    let err = convert_output_to_string(stderr);
-    eprintln!("{}", format_color_git_error(&err));
-}
-
-// Helper function to convert output to string
-pub fn convert_output_to_string(output: &[u8]) -> String {
-    String::from_utf8_lossy(output).to_string()
-}
-
-// Helper function to get color git log arguments
-pub fn get_color_git_log_args() -> [&'static str; 7] {
+fn get_color_git_log_args() -> [&'static str; 7] {
     [
         "log",
         "--oneline",
@@ -58,9 +56,4 @@ pub fn get_color_git_log_args() -> [&'static str; 7] {
         "--color=always",
         "--pretty=format:%C(auto)%h%d %s %C(dim)(%an, %ar)%C(reset)",
     ]
-}
-
-// Helper function to format error message
-pub fn format_color_git_error(stderr: &str) -> String {
-    format!("❌ git log failed:\n{stderr}")
 }

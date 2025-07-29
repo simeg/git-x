@@ -31,14 +31,14 @@ fn test_git_xgraph_outputs_graph_symbols() {
 
 #[test]
 fn test_graph_run_function() {
-    let repo = common::basic_repo();
+    let repo = basic_repo();
     let original_dir = std::env::current_dir().unwrap();
 
     // Change to repo directory and run the function directly
     std::env::set_current_dir(repo.path()).unwrap();
 
     // Test that the function doesn't panic and git commands work
-    git_x::graph::run();
+    let _ = git_x::graph::run();
 
     // Restore original directory
     let _ = std::env::set_current_dir(&original_dir);
@@ -53,7 +53,7 @@ fn test_graph_run_function_in_non_git_directory() {
     std::env::set_current_dir(temp_dir.path()).unwrap();
 
     // Test that the function handles git command failure gracefully
-    git_x::graph::run();
+    let _ = git_x::graph::run();
 
     // Restore original directory
     let _ = std::env::set_current_dir(&original_dir);

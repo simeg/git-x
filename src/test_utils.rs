@@ -44,7 +44,7 @@ impl TestCommandResult {
 pub fn sync_command_direct(_merge: bool) -> TestCommandResult {
     // Check if we're in a git repo by looking for .git directory
     // This is more reliable than running git commands in test environments
-    let current_dir = match std::env::current_dir() {
+    let current_dir = match env::current_dir() {
         Ok(dir) => dir,
         Err(_) => {
             return TestCommandResult::failure("❌ Git command failed".to_string(), 1);
@@ -79,7 +79,7 @@ pub fn sync_command_direct(_merge: bool) -> TestCommandResult {
 pub fn large_files_command_direct(_limit: usize, threshold: Option<f64>) -> TestCommandResult {
     // Check if we're in a git repo by looking for .git directory
     // This is more reliable than running git commands in test environments
-    let current_dir = match std::env::current_dir() {
+    let current_dir = match env::current_dir() {
         Ok(dir) => dir,
         Err(_) => {
             return TestCommandResult::failure("❌ Git command failed".to_string(), 1);

@@ -16,8 +16,9 @@ fn test_cli_parse_rename_branch() {
 fn test_cli_parse_prune_branches() {
     let cli = Cli::try_parse_from(["git-x", "prune-branches"]).unwrap();
     match cli.command {
-        Commands::PruneBranches { except } => {
+        Commands::PruneBranches { except, dry_run } => {
             assert!(except.is_none());
+            assert!(!dry_run);
         }
         _ => panic!("Expected PruneBranches command"),
     }
@@ -27,8 +28,34 @@ fn test_cli_parse_prune_branches() {
 fn test_cli_parse_prune_branches_with_except() {
     let cli = Cli::try_parse_from(["git-x", "prune-branches", "--except", "main,develop"]).unwrap();
     match cli.command {
-        Commands::PruneBranches { except } => {
+        Commands::PruneBranches { except, dry_run } => {
             assert_eq!(except, Some("main,develop".to_string()));
+            assert!(!dry_run);
+        }
+        _ => panic!("Expected PruneBranches command"),
+    }
+}
+
+#[test]
+fn test_cli_parse_prune_branches_with_dry_run() {
+    let cli = Cli::try_parse_from(["git-x", "prune-branches", "--dry-run"]).unwrap();
+    match cli.command {
+        Commands::PruneBranches { except, dry_run } => {
+            assert!(except.is_none());
+            assert!(dry_run);
+        }
+        _ => panic!("Expected PruneBranches command"),
+    }
+}
+
+#[test]
+fn test_cli_parse_prune_branches_with_except_and_dry_run() {
+    let cli =
+        Cli::try_parse_from(["git-x", "prune-branches", "--except", "main", "--dry-run"]).unwrap();
+    match cli.command {
+        Commands::PruneBranches { except, dry_run } => {
+            assert_eq!(except, Some("main".to_string()));
+            assert!(dry_run);
         }
         _ => panic!("Expected PruneBranches command"),
     }

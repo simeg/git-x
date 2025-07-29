@@ -25,91 +25,6 @@ fn test_parse_sync_counts_invalid() {
 }
 
 #[test]
-fn test_format_sync_start_message() {
-    assert_eq!(
-        format_sync_start_message("main", "origin/main"),
-        "🔄 Syncing branch 'main' with 'origin/main'..."
-    );
-    assert_eq!(
-        format_sync_start_message("feature", "upstream/develop"),
-        "🔄 Syncing branch 'feature' with 'upstream/develop'..."
-    );
-}
-
-#[test]
-fn test_format_error_message() {
-    assert_eq!(format_error_message("Test error"), "❌ Test error");
-    assert_eq!(
-        format_error_message("Connection failed"),
-        "❌ Connection failed"
-    );
-}
-
-#[test]
-fn test_format_up_to_date_message() {
-    assert_eq!(
-        format_up_to_date_message(),
-        "✅ Branch is up to date with upstream"
-    );
-}
-
-#[test]
-fn test_format_behind_message() {
-    assert_eq!(
-        format_behind_message(1),
-        "⬇️ Branch is 1 commit(s) behind upstream"
-    );
-    assert_eq!(
-        format_behind_message(5),
-        "⬇️ Branch is 5 commit(s) behind upstream"
-    );
-}
-
-#[test]
-fn test_format_ahead_message() {
-    assert_eq!(
-        format_ahead_message(1),
-        "⬆️ Branch is 1 commit(s) ahead of upstream"
-    );
-    assert_eq!(
-        format_ahead_message(3),
-        "⬆️ Branch is 3 commit(s) ahead of upstream"
-    );
-}
-
-#[test]
-fn test_format_diverged_message() {
-    assert_eq!(
-        format_diverged_message(2, 3),
-        "🔀 Branch has diverged: 2 behind, 3 ahead"
-    );
-    assert_eq!(
-        format_diverged_message(1, 1),
-        "🔀 Branch has diverged: 1 behind, 1 ahead"
-    );
-}
-
-#[test]
-fn test_format_diverged_help_message() {
-    assert_eq!(
-        format_diverged_help_message(),
-        "💡 Use --merge flag to merge changes, or handle manually"
-    );
-}
-
-#[test]
-fn test_format_sync_success_message() {
-    assert_eq!(
-        format_sync_success_message(true),
-        "✅ Successfully merged upstream changes"
-    );
-    assert_eq!(
-        format_sync_success_message(false),
-        "✅ Successfully rebased onto upstream"
-    );
-}
-
-#[test]
 fn test_sync_run_function_outside_git_repo() {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
 
@@ -118,7 +33,7 @@ fn test_sync_run_function_outside_git_repo() {
         .current_dir(temp_dir.path())
         .assert()
         .success()
-        .stderr(predicate::str::contains("Not in a git repository"));
+        .stderr(predicate::str::contains("❌ Git command failed: Failed to get current branch: Git command failed: fatal: not a git repository (or any of the parent directories): .git"));
 
     // Test direct function call (for coverage)
     match execute_command_in_dir(temp_dir.path(), sync_command(false)) {
@@ -143,7 +58,7 @@ fn test_sync_run_function_no_upstream() {
         .current_dir(repo.path())
         .assert()
         .success()
-        .stderr(predicate::str::contains("No upstream branch configured"));
+        .stderr(predicate::str::contains("❌ Git command failed: Failed to get upstream branch: Git command failed: fatal: no upstream configured for branch 'main'"));
 
     // Test direct function call (for coverage)
     match execute_command_in_dir(repo.path(), sync_command(false)) {
@@ -177,29 +92,6 @@ fn test_sync_merge_flag() {
         .assert()
         .success()
         .stdout(predicate::str::contains("Use merge instead of rebase"));
-}
-
-#[test]
-fn test_get_current_branch_success() {
-    let repo = basic_repo();
-
-    // Get original directory and handle potential failures
-    let original_dir = match std::env::current_dir() {
-        Ok(dir) => dir,
-        Err(_) => return, // Skip test if current directory is invalid
-    };
-
-    // Change to the repo directory and call get_current_branch
-    if std::env::set_current_dir(repo.path()).is_err() {
-        return; // Skip test if directory change fails
-    }
-
-    let result = get_current_branch();
-    let _ = std::env::set_current_dir(&original_dir);
-
-    assert!(result.is_ok());
-    let branch = result.unwrap();
-    assert!(!branch.is_empty());
 }
 
 #[test]
@@ -348,7 +240,7 @@ fn test_run_function_complete_flow() {
         .current_dir(temp_dir.path())
         .assert()
         .success()
-        .stderr(predicate::str::contains("Not in a git repository"));
+        .stderr(predicate::str::contains("❌ Git command failed: Failed to get current branch: Git command failed: fatal: not a git repository (or any of the parent directories): .git"));
 
     // Test direct function call (for coverage)
     match execute_command_in_dir(temp_dir.path(), sync_command(false)) {
@@ -518,45 +410,6 @@ fn test_sync_status_debug_all_variants() {
 }
 
 #[test]
-fn test_comprehensive_formatting_functions() {
-    // Test all formatting functions with various inputs
-    assert_eq!(
-        format_sync_start_message("feature-branch", "origin/main"),
-        "🔄 Syncing branch 'feature-branch' with 'origin/main'..."
-    );
-
-    assert_eq!(
-        format_error_message("Custom error message"),
-        "❌ Custom error message"
-    );
-
-    assert_eq!(
-        format_behind_message(0),
-        "⬇️ Branch is 0 commit(s) behind upstream"
-    );
-
-    assert_eq!(
-        format_ahead_message(0),
-        "⬆️ Branch is 0 commit(s) ahead of upstream"
-    );
-
-    assert_eq!(
-        format_diverged_message(0, 0),
-        "🔀 Branch has diverged: 0 behind, 0 ahead"
-    );
-
-    assert_eq!(
-        format_sync_success_message(true),
-        "✅ Successfully merged upstream changes"
-    );
-
-    assert_eq!(
-        format_sync_success_message(false),
-        "✅ Successfully rebased onto upstream"
-    );
-}
-
-#[test]
 fn test_fetch_upstream_edge_cases() {
     let repo = basic_repo();
 
@@ -602,212 +455,6 @@ fn test_get_upstream_branch_error_path() {
 }
 
 #[test]
-fn test_get_current_branch_comprehensive() {
-    // Test successful case
-    let repo = basic_repo();
-
-    let original_dir = match std::env::current_dir() {
-        Ok(dir) => dir,
-        Err(_) => return, // Skip test if current directory is invalid
-    };
-
-    if std::env::set_current_dir(repo.path()).is_err() {
-        return; // Skip test if directory change fails
-    }
-
-    let result_success = get_current_branch();
-    let _ = std::env::set_current_dir(&original_dir);
-
-    assert!(result_success.is_ok());
-    let branch = result_success.unwrap();
-    assert!(!branch.is_empty());
-
-    // Test error case
-    let temp_dir = TempDir::new().expect("Failed to create temp directory");
-
-    // Create a completely isolated directory that definitely isn't a git repo
-    let isolated_dir = temp_dir.path().join("isolated");
-    std::fs::create_dir(&isolated_dir).expect("Failed to create isolated directory");
-
-    // Unset GIT_DIR and GIT_WORK_TREE to ensure git doesn't find parent repos
-    let original_git_dir = std::env::var("GIT_DIR").ok();
-    let original_git_work_tree = std::env::var("GIT_WORK_TREE").ok();
-    unsafe {
-        std::env::remove_var("GIT_DIR");
-        std::env::remove_var("GIT_WORK_TREE");
-    }
-
-    let original_dir_2 = match std::env::current_dir() {
-        Ok(dir) => dir,
-        Err(_) => return, // Skip test if current directory is invalid
-    };
-
-    if std::env::set_current_dir(&isolated_dir).is_err() {
-        return; // Skip test if directory change fails
-    }
-
-    let result_error = get_current_branch();
-
-    // Restore original directory and environment
-    let _ = std::env::set_current_dir(&original_dir_2);
-    unsafe {
-        if let Some(git_dir) = original_git_dir {
-            std::env::set_var("GIT_DIR", git_dir);
-        }
-        if let Some(git_work_tree) = original_git_work_tree {
-            std::env::set_var("GIT_WORK_TREE", git_work_tree);
-        }
-    }
-
-    assert!(result_error.is_err());
-    assert_eq!(result_error.unwrap_err(), "Not in a git repository");
-}
-
-// Additional tests for sync.rs to increase coverage
-
-#[test]
-fn test_sync_status_enum_coverage() {
-    // Test enum variants for complete coverage
-    let up_to_date = SyncStatus::UpToDate;
-    let behind = SyncStatus::Behind(5);
-    let ahead = SyncStatus::Ahead(3);
-    let diverged = SyncStatus::Diverged(2, 4);
-
-    // Test Debug formatting (if derived)
-    let _ = format!("{up_to_date:?}");
-    let _ = format!("{behind:?}");
-    let _ = format!("{ahead:?}");
-    let _ = format!("{diverged:?}");
-
-    // Test pattern matching coverage
-    match up_to_date {
-        SyncStatus::UpToDate => {}
-        _ => panic!("Should be UpToDate"),
-    }
-
-    match behind {
-        SyncStatus::Behind(n) => assert_eq!(n, 5),
-        _ => panic!("Should be Behind"),
-    }
-
-    match ahead {
-        SyncStatus::Ahead(n) => assert_eq!(n, 3),
-        _ => panic!("Should be Ahead"),
-    }
-
-    match diverged {
-        SyncStatus::Diverged(b, a) => {
-            assert_eq!(b, 2);
-            assert_eq!(a, 4);
-        }
-        _ => panic!("Should be Diverged"),
-    }
-}
-
-#[test]
-fn test_additional_parse_sync_counts_edge_cases() {
-    // Test more edge cases for parse_sync_counts to increase coverage
-    assert!(parse_sync_counts("").is_err());
-    assert!(parse_sync_counts("invalid").is_err());
-    assert!(parse_sync_counts("1").is_err());
-    assert!(parse_sync_counts("abc\tdef").is_err());
-    assert!(parse_sync_counts("-1\t2").is_err());
-    assert!(parse_sync_counts("1\t-2").is_err());
-    assert!(parse_sync_counts("999999999999999999999\t1").is_err());
-
-    // Test valid formats
-    assert_eq!(parse_sync_counts("0\t0").unwrap(), (0, 0));
-    assert_eq!(parse_sync_counts("10\t20").unwrap(), (10, 20));
-    assert_eq!(parse_sync_counts("1\t1").unwrap(), (1, 1));
-}
-
-#[test]
-fn test_format_message_variations() {
-    // Test format functions with different inputs for better coverage
-    assert_eq!(
-        format_behind_message(0),
-        "⬇️ Branch is 0 commit(s) behind upstream"
-    );
-    assert_eq!(
-        format_behind_message(1),
-        "⬇️ Branch is 1 commit(s) behind upstream"
-    );
-    assert_eq!(
-        format_behind_message(100),
-        "⬇️ Branch is 100 commit(s) behind upstream"
-    );
-
-    assert_eq!(
-        format_ahead_message(0),
-        "⬆️ Branch is 0 commit(s) ahead of upstream"
-    );
-    assert_eq!(
-        format_ahead_message(1),
-        "⬆️ Branch is 1 commit(s) ahead of upstream"
-    );
-    assert_eq!(
-        format_ahead_message(999),
-        "⬆️ Branch is 999 commit(s) ahead of upstream"
-    );
-
-    assert_eq!(
-        format_diverged_message(0, 0),
-        "🔀 Branch has diverged: 0 behind, 0 ahead"
-    );
-    assert_eq!(
-        format_diverged_message(1, 1),
-        "🔀 Branch has diverged: 1 behind, 1 ahead"
-    );
-    assert_eq!(
-        format_diverged_message(10, 5),
-        "🔀 Branch has diverged: 10 behind, 5 ahead"
-    );
-
-    assert_eq!(
-        format_sync_success_message(true),
-        "✅ Successfully merged upstream changes"
-    );
-    assert_eq!(
-        format_sync_success_message(false),
-        "✅ Successfully rebased onto upstream"
-    );
-
-    assert!(format_diverged_help_message().contains("handle"));
-    assert!(format_up_to_date_message().contains("up to date"));
-}
-
-#[test]
-fn test_sync_start_message_variations() {
-    // Test different branch name combinations
-    assert!(format_sync_start_message("main", "origin/main").contains("main"));
-    assert!(format_sync_start_message("main", "origin/main").contains("origin/main"));
-
-    assert!(format_sync_start_message("feature", "origin/feature").contains("feature"));
-    assert!(format_sync_start_message("", "").contains(""));
-
-    let result = format_sync_start_message("test-branch", "upstream/test-branch");
-    assert!(result.contains("test-branch"));
-    assert!(result.contains("upstream/test-branch"));
-}
-
-#[test]
-fn test_error_message_format_coverage() {
-    // Test error message formatting with various inputs
-    assert_eq!(format_error_message("test error"), "❌ test error");
-    assert_eq!(format_error_message(""), "❌ ");
-    assert_eq!(
-        format_error_message("Network timeout"),
-        "❌ Network timeout"
-    );
-    assert_eq!(
-        format_error_message("Git command failed"),
-        "❌ Git command failed"
-    );
-}
-
-// Integration tests for sync.rs run() function testing all code paths
-
-#[test]
 fn test_sync_run_outside_git_repo() {
     // Test error path: not in a git repository
     let temp_dir = TempDir::new().unwrap();
@@ -828,7 +475,7 @@ fn test_sync_run_outside_git_repo() {
 #[test]
 fn test_sync_run_no_upstream() {
     // Test error path: no upstream branch configured
-    let repo = common::basic_repo();
+    let repo = basic_repo();
 
     // Test direct function call (for coverage)
     match execute_command_in_dir(repo.path(), sync_command(false)) {

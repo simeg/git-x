@@ -1,4 +1,4 @@
-use crate::common::Interactive;
+use crate::core::interactive::Interactive;
 use crate::{GitXError, Result};
 use console::style;
 use std::process::Command;
@@ -13,7 +13,7 @@ pub fn run() -> Result<String> {
     }
 
     // Check if we're in an interactive environment
-    if !is_interactive() {
+    if !Interactive::is_interactive() {
         // In non-interactive environments (like tests), just switch to the most recent branch
         let selected_branch = &branches[0];
         switch_to_branch(selected_branch)?;
@@ -31,21 +31,6 @@ pub fn run() -> Result<String> {
         "Switched to branch '{}'",
         style(&selected_branch).green().bold()
     ))
-}
-
-/// Check if we're running in an interactive environment
-fn is_interactive() -> bool {
-    // Check for any test-related environment variables or conditions
-    if std::env::var("CARGO_TARGET_TMPDIR").is_ok()
-        || std::env::var("CI").is_ok()
-        || std::env::var("GITHUB_ACTIONS").is_ok()
-        || std::env::var("GIT_X_NON_INTERACTIVE").is_ok()
-        || !atty::is(atty::Stream::Stdin)
-    {
-        return false;
-    }
-
-    true
 }
 
 fn get_recent_branches() -> Result<Vec<String>> {

@@ -1,18 +1,37 @@
+use crate::command::Command;
 use crate::{GitXError, Result};
 use std::collections::BTreeMap;
-use std::process::Command;
+use std::process::Command as StdCommand;
 
 use chrono::{NaiveDate, Utc};
 
-pub fn run(since: String) {
-    match run_summary(&since) {
-        Ok(output) => print!("{output}"),
-        Err(e) => eprintln!("{}", crate::common::Format::error(&e.to_string())),
+pub fn run(since: String) -> Result<()> {
+    let cmd = SummaryCommand;
+    cmd.execute(since)
+}
+
+/// Command implementation for git summary
+pub struct SummaryCommand;
+
+impl Command for SummaryCommand {
+    type Input = String;
+    type Output = ();
+
+    fn execute(&self, since: String) -> Result<()> {
+        run_summary(&since)
+    }
+
+    fn name(&self) -> &'static str {
+        "summary"
+    }
+
+    fn description(&self) -> &'static str {
+        "Show a summary of commits since a given date"
     }
 }
 
-fn run_summary(since: &str) -> Result<String> {
-    let git_log = Command::new("git")
+fn run_summary(since: &str) -> Result<()> {
+    let git_log = StdCommand::new("git")
         .args(get_git_log_summary_args(since))
         .output()
         .map_err(GitXError::Io)?;
@@ -27,15 +46,16 @@ fn run_summary(since: &str) -> Result<String> {
 
     let stdout = String::from_utf8_lossy(&git_log.stdout);
     if is_stdout_empty(&stdout) {
-        return Ok(format_no_commits_message(since));
+        println!("{since}");
+        return Ok(());
     }
 
     let grouped = parse_git_log_output(&stdout);
-    Ok(format_commit_summary(since, &grouped))
+    print!("{}", format_commit_summary(since, &grouped));
+    Ok(())
 }
 
-// Helper function to get git log summary args
-pub fn get_git_log_summary_args(since: &str) -> Vec<&str> {
+fn get_git_log_summary_args(since: &str) -> Vec<&str> {
     vec![
         "log",
         "--since",
@@ -45,22 +65,10 @@ pub fn get_git_log_summary_args(since: &str) -> Vec<&str> {
     ]
 }
 
-// Helper function to format git error message
-pub fn format_git_error_message() -> &'static str {
-    "❌ Failed to retrieve commits"
-}
-
-// Helper function to check if stdout is empty
-pub fn is_stdout_empty(stdout: &str) -> bool {
+fn is_stdout_empty(stdout: &str) -> bool {
     stdout.trim().is_empty()
 }
 
-// Helper function to format no commits message
-pub fn format_no_commits_message(since: &str) -> String {
-    format!("✅ No commits found since {since}")
-}
-
-// Helper function to parse git log output
 pub fn parse_git_log_output(stdout: &str) -> BTreeMap<NaiveDate, Vec<String>> {
     let mut grouped: BTreeMap<NaiveDate, Vec<String>> = BTreeMap::new();
 
@@ -73,7 +81,6 @@ pub fn parse_git_log_output(stdout: &str) -> BTreeMap<NaiveDate, Vec<String>> {
     grouped
 }
 
-// Helper function to parse a single commit line
 pub fn parse_commit_line(line: &str) -> Option<(NaiveDate, String)> {
     let parts: Vec<&str> = line.splitn(5, '|').collect();
     if parts.len() != 5 {
@@ -81,34 +88,25 @@ pub fn parse_commit_line(line: &str) -> Option<(NaiveDate, String)> {
     }
 
     let date = parse_commit_date(parts[1])?;
-    let entry = format_commit_entry(parts[2]);
-    let meta = format_commit_meta(parts[3], parts[4]);
+    let message = parts[2];
+    let entry = format!(" - {} {}", get_commit_emoji_public(message), message.trim());
+    let author = parts[3];
+    let time = parts[4];
+    let meta = format!("(by {author}, {time})");
     Some((date, format!("{entry} {meta}")))
 }
 
-// Helper function to parse commit date
 pub fn parse_commit_date(date_str: &str) -> Option<NaiveDate> {
     NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
         .ok()
         .or_else(|| Some(Utc::now().date_naive()))
 }
 
-// Helper function to format commit entry
-pub fn format_commit_entry(message: &str) -> String {
-    format!(" - {} {}", get_commit_emoji_public(message), message.trim())
-}
-
-// Helper function to format commit meta
-pub fn format_commit_meta(author: &str, time: &str) -> String {
-    format!("(by {author}, {time})")
-}
-
-// Helper function to print commit summary
 pub fn format_commit_summary(since: &str, grouped: &BTreeMap<NaiveDate, Vec<String>>) -> String {
-    let mut result = format_summary_header(since);
+    let mut result = since.to_string();
 
     for (date, commits) in grouped.iter().rev() {
-        result.push_str(&format_date_header(date));
+        result.push_str(&date.to_string());
         result.push('\n');
         for commit in commits {
             result.push_str(commit);
@@ -120,17 +118,6 @@ pub fn format_commit_summary(since: &str, grouped: &BTreeMap<NaiveDate, Vec<Stri
     result
 }
 
-// Helper function to format summary header
-pub fn format_summary_header(since: &str) -> String {
-    format!("🗞️ Commit summary since {since}:\n")
-}
-
-// Helper function to format date header
-pub fn format_date_header(date: &NaiveDate) -> String {
-    format!("📅 {date}")
-}
-
-// Helper function to get emoji for commit message (public version for testing)
 pub fn get_commit_emoji_public(message: &str) -> &'static str {
     // Use case-insensitive matching without allocation
     let msg_bytes = message.as_bytes();

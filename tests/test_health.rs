@@ -94,7 +94,7 @@ fn test_health_shows_no_stale_branches() {
 fn test_health_fails_outside_git_repo() {
     let temp_dir = tempfile::tempdir().unwrap();
 
-    assert_cmd::Command::cargo_bin("git-x")
+    Command::cargo_bin("git-x")
         .unwrap()
         .arg("health")
         .current_dir(temp_dir.path())
@@ -112,7 +112,7 @@ fn test_is_git_repo_returns_false_for_non_git_dir() {
 
 #[test]
 fn test_health_run_function_in_git_repo() {
-    let repo = common::basic_repo();
+    let repo = basic_repo();
 
     // Get original directory and handle potential failures
     let original_dir = match std::env::current_dir() {
@@ -126,7 +126,7 @@ fn test_health_run_function_in_git_repo() {
     }
 
     // Test that the function doesn't panic and executes all health checks
-    let _ = git_x::health::run();
+    let _ = run();
 
     // Restore original directory
     let _ = std::env::set_current_dir(&original_dir);
@@ -148,7 +148,7 @@ fn test_health_run_function_outside_git_repo() {
     }
 
     // Test that the function handles non-git directory gracefully
-    let _ = git_x::health::run();
+    let _ = run();
 
     // Restore original directory
     let _ = std::env::set_current_dir(&original_dir);
@@ -319,7 +319,7 @@ fn test_health_run_outside_git_repo() {
 #[test]
 fn test_health_run_clean_repo() {
     // Test success path: clean repository
-    let repo = common::basic_repo();
+    let repo = basic_repo();
 
     let output = Command::cargo_bin("git-x")
         .unwrap()
@@ -340,7 +340,7 @@ fn test_health_run_clean_repo() {
 #[test]
 fn test_health_run_dirty_repo() {
     // Test path: repository with changes
-    let repo = common::basic_repo();
+    let repo = basic_repo();
 
     // Make some changes to make the repo dirty
     std::fs::write(repo.path().join("README.md"), "# modified test").unwrap();
@@ -363,7 +363,7 @@ fn test_health_run_dirty_repo() {
 #[test]
 fn test_health_run_with_untracked_files() {
     // Test path: repository with untracked files
-    let repo = common::basic_repo();
+    let repo = basic_repo();
 
     // Add untracked files
     std::fs::write(repo.path().join("untracked1.txt"), "untracked content 1").unwrap();
@@ -387,7 +387,7 @@ fn test_health_run_with_untracked_files() {
 #[test]
 fn test_health_run_with_staged_changes() {
     // Test path: repository with staged changes
-    let repo = common::basic_repo();
+    let repo = basic_repo();
 
     // Add and stage a file
     std::fs::write(repo.path().join("staged_file.txt"), "staged content").unwrap();
@@ -423,7 +423,7 @@ fn test_health_run_with_staged_changes() {
 #[test]
 fn test_health_run_repo_size_check() {
     // Test path: repository size check
-    let repo = common::basic_repo();
+    let repo = basic_repo();
 
     let output = Command::cargo_bin("git-x")
         .unwrap()
@@ -445,7 +445,7 @@ fn test_health_run_repo_size_check() {
 #[test]
 fn test_health_run_comprehensive_output() {
     // Test that all output components are present in success case
-    let repo = common::basic_repo();
+    let repo = basic_repo();
 
     let output = Command::cargo_bin("git-x")
         .unwrap()
@@ -473,7 +473,7 @@ fn test_health_run_comprehensive_output() {
 #[test]
 fn test_health_run_mixed_states() {
     // Test comprehensive scenario with multiple states
-    let repo = common::basic_repo();
+    let repo = basic_repo();
 
     // Create mixed scenario:
     // 1. Untracked files

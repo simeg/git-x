@@ -27,7 +27,7 @@ pub mod examples;
 pub mod bisect;
 pub mod clean_branches;
 pub mod color_graph;
-pub mod common;
+pub mod command;
 pub mod contributors;
 pub mod fixup;
 pub mod graph;

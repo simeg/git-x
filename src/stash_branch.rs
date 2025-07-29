@@ -1,7 +1,40 @@
 use crate::cli::StashBranchAction;
-use std::process::Command;
+use crate::command::Command;
+use crate::core::git::{BranchOperations, GitOperations};
+use crate::core::safety::Safety;
+use crate::{GitXError, Result};
+use std::process::Command as StdCommand;
 
-pub fn run(action: StashBranchAction) {
+pub fn run(action: StashBranchAction) -> Result<()> {
+    let cmd = StashBranchCommand;
+    cmd.execute(action)
+}
+
+/// Command implementation for git stash-branch
+pub struct StashBranchCommand;
+
+impl Command for StashBranchCommand {
+    type Input = StashBranchAction;
+    type Output = ();
+
+    fn execute(&self, action: StashBranchAction) -> Result<()> {
+        run_stash_branch(action)
+    }
+
+    fn name(&self) -> &'static str {
+        "stash-branch"
+    }
+
+    fn description(&self) -> &'static str {
+        "Create branches from stashes or manage stash cleanup"
+    }
+
+    fn is_destructive(&self) -> bool {
+        true
+    }
+}
+
+fn run_stash_branch(action: StashBranchAction) -> Result<()> {
     match action {
         StashBranchAction::Create {
             branch_name,
@@ -18,106 +51,108 @@ pub fn run(action: StashBranchAction) {
     }
 }
 
-fn create_branch_from_stash(branch_name: String, stash_ref: Option<String>) {
+fn create_branch_from_stash(branch_name: String, stash_ref: Option<String>) -> Result<()> {
     // Validate branch name
-    if let Err(msg) = validate_branch_name(&branch_name) {
-        eprintln!("{}", format_error_message(msg));
-        return;
-    }
+    validate_branch_name(&branch_name).map_err(|e| GitXError::GitCommand(e.to_string()))?;
 
     // Check if branch already exists
-    if branch_exists(&branch_name) {
-        eprintln!("{}", format_branch_exists_message(&branch_name));
-        return;
+    if BranchOperations::exists(&branch_name).unwrap_or(false) {
+        return Err(GitXError::GitCommand(format!(
+            "Branch '{branch_name}' already exists"
+        )));
     }
 
     // Determine stash reference
     let stash = stash_ref.unwrap_or_else(|| "stash@{0}".to_string());
 
     // Validate stash exists
-    if let Err(msg) = validate_stash_exists(&stash) {
-        eprintln!("{}", format_error_message(msg));
-        return;
-    }
+    validate_stash_exists(&stash).map_err(|e| GitXError::GitCommand(e.to_string()))?;
 
-    println!("{}", format_creating_branch_message(&branch_name, &stash));
+    println!("{}", &branch_name);
 
     // Create branch from stash
-    if let Err(msg) = create_branch_from_stash_ref(&branch_name, &stash) {
-        eprintln!("{}", format_error_message(msg));
-        return;
-    }
+    create_branch_from_stash_ref(&branch_name, &stash)
+        .map_err(|e| GitXError::GitCommand(e.to_string()))?;
 
-    println!("{}", format_branch_created_message(&branch_name));
+    println!("{}", &branch_name);
+    Ok(())
 }
 
-fn clean_old_stashes(older_than: Option<String>, dry_run: bool) {
+fn clean_old_stashes(older_than: Option<String>, dry_run: bool) -> Result<()> {
     // Get all stashes with timestamps
-    let stashes = match get_stash_list_with_dates() {
-        Ok(stashes) => stashes,
-        Err(msg) => {
-            eprintln!("{}", format_error_message(msg));
-            return;
-        }
-    };
+    let stashes = get_stash_list_with_dates().map_err(|e| GitXError::GitCommand(e.to_string()))?;
 
     if stashes.is_empty() {
-        println!("{}", format_no_stashes_message());
-        return;
+        println!("ℹ️ No stashes found");
+        return Ok(());
     }
 
     // Filter stashes by age if specified
     let stashes_to_clean = if let Some(age) = older_than {
-        match filter_stashes_by_age(&stashes, &age) {
-            Ok(filtered) => filtered,
-            Err(msg) => {
-                eprintln!("{}", format_error_message(msg));
-                return;
-            }
-        }
+        filter_stashes_by_age(&stashes, &age).map_err(|e| GitXError::GitCommand(e.to_string()))?
     } else {
         stashes
     };
 
     if stashes_to_clean.is_empty() {
-        println!("{}", format_no_old_stashes_message());
-        return;
+        println!("✅ No old stashes to clean");
+        return Ok(());
     }
 
+    let count = stashes_to_clean.len();
     println!(
         "{}",
-        format_stashes_to_clean_message(stashes_to_clean.len(), dry_run)
+        if dry_run {
+            format!("🧪 (dry run) Would clean {count} stash(es):")
+        } else {
+            format!("🧹 Cleaning {count} stash(es):")
+        }
     );
 
     for stash in &stashes_to_clean {
-        println!("  {}", format_stash_entry(&stash.name, &stash.message));
+        let name = &stash.name;
+        let message = &stash.message;
+        println!("  {name}: {message}");
     }
 
     if !dry_run {
-        for stash in &stashes_to_clean {
-            if let Err(msg) = delete_stash(&stash.name) {
-                eprintln!(
-                    "{}",
-                    format_error_message(&format!("Failed to delete {}: {}", stash.name, msg))
-                );
+        // Safety confirmation for destructive operation
+        let stash_names: Vec<_> = stashes_to_clean.iter().map(|s| s.name.as_str()).collect();
+        let details = format!(
+            "This will delete {} stashes: {}",
+            stashes_to_clean.len(),
+            stash_names.join(", ")
+        );
+
+        match Safety::confirm_destructive_operation("Clean old stashes", &details) {
+            Ok(confirmed) => {
+                if !confirmed {
+                    println!("Operation cancelled by user.");
+                    return Ok(());
+                }
+            }
+            Err(e) => {
+                return Err(GitXError::GitCommand(format!(
+                    "Error during confirmation: {e}"
+                )));
             }
         }
-        println!(
-            "{}",
-            format_cleanup_complete_message(stashes_to_clean.len())
-        );
+
+        for stash in &stashes_to_clean {
+            if let Err(msg) = delete_stash(&stash.name) {
+                let msg1 = &format!("Failed to delete {}: {}", stash.name, msg);
+                eprintln!("{msg1}");
+            }
+        }
+        println!("{}", stashes_to_clean.len());
     }
+    Ok(())
 }
 
-fn apply_stashes_by_branch(branch_name: String, list_only: bool) {
+fn apply_stashes_by_branch(branch_name: String, list_only: bool) -> Result<()> {
     // Get all stashes with their branch information
-    let stashes = match get_stash_list_with_branches() {
-        Ok(stashes) => stashes,
-        Err(msg) => {
-            eprintln!("{}", format_error_message(msg));
-            return;
-        }
-    };
+    let stashes =
+        get_stash_list_with_branches().map_err(|e| GitXError::GitCommand(e.to_string()))?;
 
     // Filter stashes by branch
     let branch_stashes: Vec<_> = stashes
@@ -126,8 +161,8 @@ fn apply_stashes_by_branch(branch_name: String, list_only: bool) {
         .collect();
 
     if branch_stashes.is_empty() {
-        println!("{}", format_no_stashes_for_branch_message(&branch_name));
-        return;
+        println!("{}", &branch_name);
+        return Ok(());
     }
 
     if list_only {
@@ -136,7 +171,9 @@ fn apply_stashes_by_branch(branch_name: String, list_only: bool) {
             format_stashes_for_branch_header(&branch_name, branch_stashes.len())
         );
         for stash in &branch_stashes {
-            println!("  {}", format_stash_entry(&stash.name, &stash.message));
+            let name = &stash.name;
+            let message = &stash.message;
+            println!("  {name}: {message}");
         }
     } else {
         println!(
@@ -151,6 +188,7 @@ fn apply_stashes_by_branch(branch_name: String, list_only: bool) {
             }
         }
     }
+    Ok(())
 }
 
 #[derive(Debug, Clone)]
@@ -162,78 +200,68 @@ pub struct StashInfo {
     pub timestamp: String,
 }
 
-// Helper function to validate branch name
-pub fn validate_branch_name(name: &str) -> Result<(), &'static str> {
+pub fn validate_branch_name(name: &str) -> Result<()> {
     if name.is_empty() {
-        return Err("Branch name cannot be empty");
+        return Err(GitXError::GitCommand(
+            "Branch name cannot be empty".to_string(),
+        ));
     }
 
     if name.starts_with('-') {
-        return Err("Branch name cannot start with a dash");
+        return Err(GitXError::GitCommand(
+            "Branch name cannot start with a dash".to_string(),
+        ));
     }
 
     if name.contains("..") {
-        return Err("Branch name cannot contain '..'");
+        return Err(GitXError::GitCommand(
+            "Branch name cannot contain '..'".to_string(),
+        ));
     }
 
     if name.contains(' ') {
-        return Err("Branch name cannot contain spaces");
+        return Err(GitXError::GitCommand(
+            "Branch name cannot contain spaces".to_string(),
+        ));
     }
 
     Ok(())
 }
 
-// Helper function to check if branch exists
-pub fn branch_exists(branch_name: &str) -> bool {
-    Command::new("git")
-        .args([
-            "show-ref",
-            "--verify",
-            "--quiet",
-            &format!("refs/heads/{branch_name}"),
-        ])
-        .status()
-        .map(|status| status.success())
-        .unwrap_or(false)
-}
-
-// Helper function to validate stash exists
-pub fn validate_stash_exists(stash_ref: &str) -> Result<(), &'static str> {
-    let output = Command::new("git")
-        .args(["rev-parse", "--verify", stash_ref])
-        .output()
-        .map_err(|_| "Failed to validate stash reference")?;
-
-    if !output.status.success() {
-        return Err("Stash reference does not exist");
+pub fn validate_stash_exists(stash_ref: &str) -> Result<()> {
+    match GitOperations::run(&["rev-parse", "--verify", stash_ref]) {
+        Ok(_) => Ok(()),
+        Err(_) => Err(GitXError::GitCommand(
+            "Stash reference does not exist".to_string(),
+        )),
     }
-
-    Ok(())
 }
 
-// Helper function to create branch from stash
-fn create_branch_from_stash_ref(branch_name: &str, stash_ref: &str) -> Result<(), &'static str> {
-    let status = Command::new("git")
+fn create_branch_from_stash_ref(branch_name: &str, stash_ref: &str) -> Result<()> {
+    let status = StdCommand::new("git")
         .args(["stash", "branch", branch_name, stash_ref])
         .status()
-        .map_err(|_| "Failed to create branch from stash")?;
+        .map_err(GitXError::Io)?;
 
     if !status.success() {
-        return Err("Failed to create branch from stash");
+        return Err(GitXError::GitCommand(
+            "Failed to create branch from stash".to_string(),
+        ));
     }
 
     Ok(())
 }
 
-// Helper function to get stash list with dates
-fn get_stash_list_with_dates() -> Result<Vec<StashInfo>, &'static str> {
-    let output = Command::new("git")
+fn get_stash_list_with_dates() -> Result<Vec<StashInfo>> {
+    let output = StdCommand::new("git")
         .args(["stash", "list", "--pretty=format:%gd|%s|%gD"])
         .output()
-        .map_err(|_| "Failed to get stash list")?;
+        .map_err(GitXError::Io)?;
 
     if !output.status.success() {
-        return Err("Failed to retrieve stash list");
+        return Err(GitXError::GitCommand(
+            "Failed to retrieve stash list".to_string(),
+        ));
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -248,15 +276,16 @@ fn get_stash_list_with_dates() -> Result<Vec<StashInfo>, &'static str> {
     Ok(stashes)
 }
 
-// Helper function to get stash list with branches
-fn get_stash_list_with_branches() -> Result<Vec<StashInfo>, &'static str> {
-    let output = Command::new("git")
+fn get_stash_list_with_branches() -> Result<Vec<StashInfo>> {
+    let output = StdCommand::new("git")
         .args(["stash", "list", "--pretty=format:%gd|%s"])
         .output()
-        .map_err(|_| "Failed to get stash list")?;
+        .map_err(GitXError::Io)?;
 
     if !output.status.success() {
-        return Err("Failed to retrieve stash list");
+        return Err(GitXError::GitCommand(
+            "Failed to retrieve stash list".to_string(),
+        ));
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -271,7 +300,6 @@ fn get_stash_list_with_branches() -> Result<Vec<StashInfo>, &'static str> {
     Ok(stashes)
 }
 
-// Helper function to parse stash line with date
 pub fn parse_stash_line_with_date(line: &str) -> Option<StashInfo> {
     let parts: Vec<&str> = line.splitn(3, '|').collect();
     if parts.len() != 3 {
@@ -286,7 +314,6 @@ pub fn parse_stash_line_with_date(line: &str) -> Option<StashInfo> {
     })
 }
 
-// Helper function to parse stash line with branch
 pub fn parse_stash_line_with_branch(line: &str) -> Option<StashInfo> {
     let parts: Vec<&str> = line.splitn(2, '|').collect();
     if parts.len() != 2 {
@@ -301,7 +328,6 @@ pub fn parse_stash_line_with_branch(line: &str) -> Option<StashInfo> {
     })
 }
 
-// Helper function to extract branch name from stash message
 pub fn extract_branch_from_message(message: &str) -> String {
     // Stash messages typically start with "On branch_name:" or "WIP on branch_name:"
     if let Some(start) = message.find("On ") {
@@ -321,108 +347,49 @@ pub fn extract_branch_from_message(message: &str) -> String {
     "unknown".to_string()
 }
 
-// Helper function to filter stashes by age
-pub fn filter_stashes_by_age(
-    stashes: &[StashInfo],
-    age: &str,
-) -> Result<Vec<StashInfo>, &'static str> {
+pub fn filter_stashes_by_age(stashes: &[StashInfo], age: &str) -> Result<Vec<StashInfo>> {
     // For simplicity, we'll implement basic age filtering
     // In a real implementation, you'd parse the age string and compare timestamps
     if age.ends_with('d') || age.ends_with('w') || age.ends_with('m') {
         // This is a placeholder - real implementation would parse timestamps
         Ok(stashes.to_vec())
     } else {
-        Err("Invalid age format. Use format like '7d', '2w', '1m'")
+        Err(GitXError::GitCommand(
+            "Invalid age format. Use format like '7d', '2w', '1m'".to_string(),
+        ))
     }
 }
 
-// Helper function to delete stash
-fn delete_stash(stash_name: &str) -> Result<(), &'static str> {
-    let status = Command::new("git")
+fn delete_stash(stash_name: &str) -> Result<()> {
+    let status = StdCommand::new("git")
         .args(["stash", "drop", stash_name])
         .status()
-        .map_err(|_| "Failed to delete stash")?;
+        .map_err(GitXError::Io)?;
 
     if !status.success() {
-        return Err("Failed to delete stash");
+        return Err(GitXError::GitCommand("Failed to delete stash".to_string()));
     }
 
     Ok(())
 }
 
-// Helper function to apply stash
-fn apply_stash(stash_name: &str) -> Result<(), &'static str> {
-    let status = Command::new("git")
+fn apply_stash(stash_name: &str) -> Result<()> {
+    let status = StdCommand::new("git")
         .args(["stash", "apply", stash_name])
         .status()
-        .map_err(|_| "Failed to apply stash")?;
+        .map_err(GitXError::Io)?;
 
     if !status.success() {
-        return Err("Failed to apply stash");
+        return Err(GitXError::GitCommand("Failed to apply stash".to_string()));
     }
 
     Ok(())
 }
 
-// Helper function to get git stash branch args
-pub fn get_git_stash_branch_args() -> [&'static str; 2] {
-    ["stash", "branch"]
-}
-
-// Helper function to get git stash drop args
-pub fn get_git_stash_drop_args() -> [&'static str; 2] {
-    ["stash", "drop"]
-}
-
-// Formatting functions
-pub fn format_error_message(msg: &str) -> String {
-    format!("❌ {msg}")
-}
-
-pub fn format_branch_exists_message(branch_name: &str) -> String {
-    format!("❌ Branch '{branch_name}' already exists")
-}
-
-pub fn format_creating_branch_message(branch_name: &str, stash_ref: &str) -> String {
-    format!("🌿 Creating branch '{branch_name}' from {stash_ref}...")
-}
-
-pub fn format_branch_created_message(branch_name: &str) -> String {
-    format!("✅ Branch '{branch_name}' created and checked out")
-}
-
-pub fn format_no_stashes_message() -> &'static str {
-    "ℹ️ No stashes found"
-}
-
-pub fn format_no_old_stashes_message() -> &'static str {
-    "✅ No old stashes to clean"
-}
-
-pub fn format_stashes_to_clean_message(count: usize, dry_run: bool) -> String {
-    if dry_run {
-        format!("🧪 (dry run) Would clean {count} stash(es):")
-    } else {
-        format!("🧹 Cleaning {count} stash(es):")
-    }
-}
-
-pub fn format_cleanup_complete_message(count: usize) -> String {
-    format!("✅ Cleaned {count} stash(es)")
-}
-
-pub fn format_no_stashes_for_branch_message(branch_name: &str) -> String {
-    format!("ℹ️ No stashes found for branch '{branch_name}'")
-}
-
-pub fn format_stashes_for_branch_header(branch_name: &str, count: usize) -> String {
+fn format_stashes_for_branch_header(branch_name: &str, count: usize) -> String {
     format!("📋 Found {count} stash(es) for branch '{branch_name}':")
 }
 
 pub fn format_applying_stashes_message(branch_name: &str, count: usize) -> String {
     format!("🔄 Applying {count} stash(es) from branch '{branch_name}':")
-}
-
-pub fn format_stash_entry(name: &str, message: &str) -> String {
-    format!("{name}: {message}")
 }

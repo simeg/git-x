@@ -1,69 +1,104 @@
-use std::process::Command;
+use crate::GitXError;
+use crate::command::Command;
+use crate::core::git::{GitOperations, RemoteOperations};
+use std::process::Command as StdCommand;
 
-pub fn run(merge: bool) {
-    // Get current branch
-    let current_branch = match get_current_branch() {
-        Ok(branch) => branch,
-        Err(msg) => {
-            eprintln!("{}", format_error_message(msg));
-            return;
-        }
-    };
+pub fn run(merge: bool) -> Result<(), GitXError> {
+    let cmd = SyncCommand;
+    cmd.execute(merge)
+}
 
-    // Get upstream branch
-    let upstream = match get_upstream_branch(&current_branch) {
-        Ok(upstream) => upstream,
-        Err(msg) => {
-            eprintln!("{}", format_error_message(msg));
-            return;
-        }
-    };
+/// Command implementation for git sync
+pub struct SyncCommand;
 
-    println!("{}", format_sync_start_message(&current_branch, &upstream));
+impl Command for SyncCommand {
+    type Input = bool;
+    type Output = ();
 
-    // Fetch from remote
-    if let Err(msg) = fetch_upstream(&upstream) {
-        eprintln!("{}", format_error_message(msg));
-        return;
+    fn execute(&self, merge: bool) -> Result<(), GitXError> {
+        run_sync(merge)
     }
 
+    fn name(&self) -> &'static str {
+        "sync"
+    }
+
+    fn description(&self) -> &'static str {
+        "Sync current branch with its upstream"
+    }
+}
+
+fn run_sync(merge: bool) -> Result<(), GitXError> {
+    // Get current branch
+    let current_branch = GitOperations::current_branch()
+        .map_err(|e| GitXError::GitCommand(format!("Failed to get current branch: {e}")))?;
+
+    // Get upstream branch
+    let upstream = GitOperations::upstream_branch()
+        .map_err(|e| GitXError::GitCommand(format!("Failed to get upstream branch: {e}")))?;
+
+    println!(
+        "🔄 Syncing branch '{}' with '{}'...",
+        &current_branch, &upstream
+    );
+
+    // Fetch from remote
+    let remote = upstream.split('/').next().unwrap_or("origin");
+    RemoteOperations::fetch(Some(remote))
+        .map_err(|e| GitXError::GitCommand(format!("Failed to fetch from remote: {e}")))?;
+
     // Check if we're ahead of upstream
-    let status = match get_sync_status(&current_branch, &upstream) {
-        Ok(status) => status,
-        Err(msg) => {
-            eprintln!("{}", format_error_message(msg));
-            return;
-        }
+    let (ahead, behind) = GitOperations::ahead_behind_counts()
+        .map_err(|e| GitXError::GitCommand(format!("Failed to get ahead/behind counts: {e}")))?;
+
+    let status = match (behind, ahead) {
+        (0, 0) => SyncStatus::UpToDate,
+        (b, 0) if b > 0 => SyncStatus::Behind(b),
+        (0, a) if a > 0 => SyncStatus::Ahead(a),
+        (b, a) if b > 0 && a > 0 => SyncStatus::Diverged(b, a),
+        _ => SyncStatus::UpToDate,
     };
 
     match status {
         SyncStatus::UpToDate => {
-            println!("{}", format_up_to_date_message());
+            println!("✅ Branch is up to date with upstream");
         }
         SyncStatus::Behind(count) => {
-            println!("{}", format_behind_message(count));
-            if let Err(msg) = sync_with_upstream(&upstream, merge) {
-                eprintln!("{}", format_error_message(msg));
+            println!("{count}");
+            let args = if merge {
+                vec!["merge", &upstream]
             } else {
-                println!("{}", format_sync_success_message(merge));
+                vec!["rebase", &upstream]
+            };
+
+            match GitOperations::run_status(&args) {
+                Err(e) => return Err(GitXError::GitCommand(format!("Sync failed: {e}"))),
+                Ok(()) => println!("{}", format_sync_success_message(merge)),
             }
         }
         SyncStatus::Ahead(count) => {
-            println!("{}", format_ahead_message(count));
+            println!("{count}");
         }
         SyncStatus::Diverged(behind, ahead) => {
-            println!("{}", format_diverged_message(behind, ahead));
+            println!("🔀 Branch has diverged: {behind} behind, {ahead} ahead");
             if merge {
-                if let Err(msg) = sync_with_upstream(&upstream, merge) {
-                    eprintln!("{}", format_error_message(msg));
+                let args = if merge {
+                    vec!["merge", &upstream]
                 } else {
-                    println!("{}", format_sync_success_message(merge));
+                    vec!["rebase", &upstream]
+                };
+
+                match GitOperations::run_status(&args) {
+                    Err(e) => return Err(GitXError::GitCommand(format!("Sync failed: {e}"))),
+                    Ok(()) => println!("{}", format_sync_success_message(merge)),
                 }
             } else {
-                println!("{}", format_diverged_help_message());
+                println!("💡 Use --merge flag to merge changes, or handle manually");
             }
         }
     }
+
+    Ok(())
 }
 
 #[derive(Debug, PartialEq)]
@@ -74,23 +109,8 @@ pub enum SyncStatus {
     Diverged(u32, u32), // behind, ahead
 }
 
-// Helper function to get current branch
-pub fn get_current_branch() -> Result<String, &'static str> {
-    let output = Command::new("git")
-        .args(["rev-parse", "--abbrev-ref", "HEAD"])
-        .output()
-        .map_err(|_| "Failed to get current branch")?;
-
-    if !output.status.success() {
-        return Err("Not in a git repository");
-    }
-
-    Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
-}
-
-// Helper function to get upstream branch
 pub fn get_upstream_branch(branch: &str) -> Result<String, &'static str> {
-    let output = Command::new("git")
+    let output = StdCommand::new("git")
         .args(["rev-parse", "--abbrev-ref", &format!("{branch}@{{u}}")])
         .output()
         .map_err(|_| "Failed to get upstream branch")?;
@@ -102,11 +122,10 @@ pub fn get_upstream_branch(branch: &str) -> Result<String, &'static str> {
     Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
 }
 
-// Helper function to fetch from upstream
 pub fn fetch_upstream(upstream: &str) -> Result<(), &'static str> {
     let remote = upstream.split('/').next().unwrap_or("origin");
 
-    let status = Command::new("git")
+    let status = StdCommand::new("git")
         .args(["fetch", remote])
         .status()
         .map_err(|_| "Failed to execute fetch command")?;
@@ -118,9 +137,8 @@ pub fn fetch_upstream(upstream: &str) -> Result<(), &'static str> {
     Ok(())
 }
 
-// Helper function to get sync status
 pub fn get_sync_status(branch: &str, upstream: &str) -> Result<SyncStatus, &'static str> {
-    let output = Command::new("git")
+    let output = StdCommand::new("git")
         .args([
             "rev-list",
             "--left-right",
@@ -146,7 +164,6 @@ pub fn get_sync_status(branch: &str, upstream: &str) -> Result<SyncStatus, &'sta
     })
 }
 
-// Helper function to parse sync counts
 pub fn parse_sync_counts(output: &str) -> Result<(u32, u32), &'static str> {
     let mut parts = output.split_whitespace();
     let behind = parts
@@ -161,7 +178,6 @@ pub fn parse_sync_counts(output: &str) -> Result<(u32, u32), &'static str> {
     Ok((behind, ahead))
 }
 
-// Helper function to sync with upstream
 pub fn sync_with_upstream(upstream: &str, merge: bool) -> Result<(), &'static str> {
     let args = if merge {
         ["merge", upstream]
@@ -169,7 +185,7 @@ pub fn sync_with_upstream(upstream: &str, merge: bool) -> Result<(), &'static st
         ["rebase", upstream]
     };
 
-    let status = Command::new("git")
+    let status = StdCommand::new("git")
         .args(args)
         .status()
         .map_err(|_| "Failed to execute sync command")?;
@@ -183,41 +199,6 @@ pub fn sync_with_upstream(upstream: &str, merge: bool) -> Result<(), &'static st
     }
 
     Ok(())
-}
-
-// Helper function to format sync start message
-pub fn format_sync_start_message(branch: &str, upstream: &str) -> String {
-    format!("🔄 Syncing branch '{branch}' with '{upstream}'...")
-}
-
-// Helper function to format error message
-pub fn format_error_message(msg: &str) -> String {
-    format!("❌ {msg}")
-}
-
-// Helper function to format up to date message
-pub fn format_up_to_date_message() -> &'static str {
-    "✅ Branch is up to date with upstream"
-}
-
-// Helper function to format behind message
-pub fn format_behind_message(count: u32) -> String {
-    format!("⬇️ Branch is {count} commit(s) behind upstream")
-}
-
-// Helper function to format ahead message
-pub fn format_ahead_message(count: u32) -> String {
-    format!("⬆️ Branch is {count} commit(s) ahead of upstream")
-}
-
-// Helper function to format diverged message
-pub fn format_diverged_message(behind: u32, ahead: u32) -> String {
-    format!("🔀 Branch has diverged: {behind} behind, {ahead} ahead")
-}
-
-// Helper function to format diverged help message
-pub fn format_diverged_help_message() -> &'static str {
-    "💡 Use --merge flag to merge changes, or handle manually"
 }
 
 // Helper function to format sync success message

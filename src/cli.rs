@@ -21,6 +21,8 @@ pub enum Commands {
             help = "Comma-separated list of branches to exclude"
         )]
         except: Option<String>,
+        #[clap(long = "dry-run", help = "Show which branches would be deleted without actually deleting them", action = clap::ArgAction::SetTrue)]
+        dry_run: bool,
     },
     #[clap(about = "Show a high-level overview of the current repo")]
     Info,

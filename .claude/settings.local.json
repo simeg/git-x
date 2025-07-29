@@ -29,7 +29,14 @@
       "Bash(git log:*)",
       "Bash(git checkout:*)",
       "Bash(GIT_X_NON_INTERACTIVE=1 cargo test test_clean_branches_run_function_actual_delete)",
-      "Bash(RUST_BACKTRACE=1 cargo test test_large_files_direct_call --test test_large_files)"
+      "Bash(RUST_BACKTRACE=1 cargo test test_large_files_direct_call --test test_large_files)",
+      "Bash(RUST_BACKTRACE=1 cargo test test_prune_branches_run_function_dry_run -- --nocapture)",
+      "Bash(RUST_BACKTRACE=1 cargo test test_prune_branches_run_function_dry_run --test test_prune_branches -- --nocapture)",
+      "Bash(RUST_BACKTRACE=full cargo test test_prune_branches_run_function_dry_run --test test_prune_branches)",
+      "Bash(timeout 10 cargo test test_prune_branches_run_function --lib)",
+      "Bash(timeout 10 cargo test test_prune_branches_run_function)",
+      "Bash(timeout 10 cargo test test_prune_branches_run_function --test test_prune_branches)",
+      "Bash(echo $?)"
     ],
     "deny": []
   }

@@ -2,117 +2,9 @@ mod common;
 
 use assert_cmd::Command;
 use common::basic_repo;
-use git_x::fixup::*;
 use predicates::prelude::*;
 use std::fs;
 use tempfile::TempDir;
-
-#[test]
-fn test_is_valid_commit_hash_format() {
-    // Valid hashes
-    assert!(is_valid_commit_hash_format("abc123"));
-    assert!(is_valid_commit_hash_format("1234567890abcdef"));
-    assert!(is_valid_commit_hash_format(
-        "abcdef1234567890abcdef1234567890abcdef12"
-    ));
-
-    // Invalid hashes
-    assert!(!is_valid_commit_hash_format(""));
-    assert!(!is_valid_commit_hash_format("abc"));
-    assert!(!is_valid_commit_hash_format("xyz123")); // invalid hex chars
-    assert!(!is_valid_commit_hash_format(
-        "1234567890abcdef1234567890abcdef123456789"
-    )); // too long
-    assert!(!is_valid_commit_hash_format("abc 123")); // contains space
-}
-
-#[test]
-fn test_get_commit_hash_validation_rules() {
-    let rules = get_commit_hash_validation_rules();
-    assert!(!rules.is_empty());
-    assert!(rules.contains(&"Must be 4-40 characters long"));
-    assert!(rules.contains(&"Must contain only hex characters (0-9, a-f)"));
-    assert!(rules.contains(&"Must reference an existing commit"));
-}
-
-#[test]
-fn test_get_git_fixup_args() {
-    assert_eq!(get_git_fixup_args(), ["commit", "--fixup"]);
-}
-
-#[test]
-fn test_get_git_rebase_args() {
-    assert_eq!(get_git_rebase_args(), ["rebase", "-i", "--autosquash"]);
-}
-
-#[test]
-fn test_format_error_message() {
-    assert_eq!(format_error_message("Test error"), "❌ Test error");
-    assert_eq!(
-        format_error_message("Commit not found"),
-        "❌ Commit not found"
-    );
-}
-
-#[test]
-fn test_format_no_changes_message() {
-    assert_eq!(
-        format_no_changes_message(),
-        "❌ No staged changes found. Please stage your changes first with 'git add'"
-    );
-}
-
-#[test]
-fn test_format_creating_fixup_message() {
-    assert_eq!(
-        format_creating_fixup_message("abc123"),
-        "🔧 Creating fixup commit for abc123..."
-    );
-    assert_eq!(
-        format_creating_fixup_message("def456"),
-        "🔧 Creating fixup commit for def456..."
-    );
-}
-
-#[test]
-fn test_format_fixup_created_message() {
-    assert_eq!(
-        format_fixup_created_message("abc123"),
-        "✅ Fixup commit created for abc123"
-    );
-    assert_eq!(
-        format_fixup_created_message("def456"),
-        "✅ Fixup commit created for def456"
-    );
-}
-
-#[test]
-fn test_format_starting_rebase_message() {
-    assert_eq!(
-        format_starting_rebase_message(),
-        "🔄 Starting interactive rebase with autosquash..."
-    );
-}
-
-#[test]
-fn test_format_rebase_success_message() {
-    assert_eq!(
-        format_rebase_success_message(),
-        "✅ Interactive rebase completed successfully"
-    );
-}
-
-#[test]
-fn test_format_manual_rebase_hint() {
-    assert_eq!(
-        format_manual_rebase_hint("abc123"),
-        "💡 To squash the fixup commit, run: git rebase -i --autosquash abc123^"
-    );
-    assert_eq!(
-        format_manual_rebase_hint("def456"),
-        "💡 To squash the fixup commit, run: git rebase -i --autosquash def456^"
-    );
-}
 
 #[test]
 fn test_fixup_run_function_outside_git_repo() {
@@ -156,8 +48,7 @@ fn test_fixup_with_staged_changes() {
 
     repo.run_git_x(&["fixup", &commit_hash[0..7]]) // Use short hash
         .success()
-        .stdout(predicate::str::contains("Fixup commit created"))
-        .stdout(predicate::str::contains("To squash the fixup commit"));
+        .stdout(predicate::str::contains("fixup! Test commit"));
 }
 
 #[test]
@@ -176,7 +67,9 @@ fn test_fixup_with_rebase_flag() {
         .env("GIT_SEQUENCE_EDITOR", "true") // Auto-accept rebase plan
         .assert()
         .success()
-        .stdout(predicate::str::contains("Fixup commit created"));
+        .stdout(predicate::str::contains(
+            "🔄 Starting interactive rebase with autosquash",
+        ));
 }
 
 #[test]

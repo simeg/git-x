@@ -3,6 +3,7 @@
 #[cfg(test)]
 mod migration_examples {
     use crate::adapters::CliHandlerFactory;
+    use crate::core::validation::Validate;
 
     // OLD WAY - direct git commands in CLI functions
     #[allow(dead_code)]
@@ -12,7 +13,6 @@ mod migration_examples {
         // 2. No separation of concerns
         // 3. Mixed validation, business logic, and output formatting
 
-        use crate::common::Validate;
         use std::process::Command;
 
         // Validation mixed with CLI logic
