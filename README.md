@@ -6,6 +6,8 @@ It wraps common Git actions in muscle-memory-friendly, no-brainer commands — p
 
 ⚠️ **PSA: Do you know shell tab completion? If so - I need your help! 🙏 See the [Tab Completion](#-tab-completion-) section** ⚠️
 
+![Banner](banner.png)
+
 ---
 
 ## 📚 Table of Contents

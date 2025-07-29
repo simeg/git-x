@@ -1,6 +1,26 @@
+// Core abstractions and utilities
+pub mod core;
+
+// Domain layer - business logic
+pub mod domain;
+
+// Adapter layer - connects CLI to domain
+pub mod adapters;
+
+// Command implementations organized by domain
+pub mod commands;
+
+// CLI interface
+pub mod cli;
+
+// Examples showing architecture migration
+#[cfg(test)]
+pub mod examples;
+
+// Legacy module exports for backward compatibility
+// These will eventually be removed as we migrate to the new structure
 pub mod bisect;
 pub mod clean_branches;
-pub mod cli;
 pub mod color_graph;
 pub mod common;
 pub mod contributors;
