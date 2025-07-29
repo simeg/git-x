@@ -49,7 +49,7 @@ pub fn sync_command_direct(_merge: bool) -> TestCommandResult {
     let git_check = std::process::Command::new("git")
         .args(["rev-parse", "--is-inside-work-tree"])
         .output();
-    
+
     match git_check {
         Ok(output) if output.status.success() => {
             // We're in a git repo, check for upstream
@@ -63,15 +63,13 @@ pub fn sync_command_direct(_merge: bool) -> TestCommandResult {
     let upstream_check = std::process::Command::new("git")
         .args(["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"])
         .output();
-        
+
     match upstream_check {
         Ok(output) if output.status.success() => {
             // Upstream exists, command would succeed
             TestCommandResult::success("✅ Already up to date".to_string())
         }
-        _ => {
-            return TestCommandResult::failure("❌ No upstream configured".to_string(), 1);
-        }
+        _ => TestCommandResult::failure("❌ No upstream configured".to_string(), 1),
     }
 }
 
@@ -81,7 +79,7 @@ pub fn large_files_command_direct(_limit: usize, threshold: Option<f64>) -> Test
     let git_check = std::process::Command::new("git")
         .args(["rev-parse", "--is-inside-work-tree"])
         .output();
-        
+
     match git_check {
         Ok(output) if output.status.success() => {
             // We're in a git repo, proceed with simulation
@@ -143,31 +141,31 @@ pub fn execute_command_in_dir<P: AsRef<std::path::Path>>(
     command: impl TestCommand,
 ) -> Result<TestCommandResult> {
     let dir_path = dir.as_ref();
-    
+
     // Check if directory exists before trying to change to it
     if !dir_path.exists() {
         return Ok(TestCommandResult::failure(
-            "❌ Git command failed".to_string(), 
-            1
+            "❌ Git command failed".to_string(),
+            1,
         ));
     }
-    
+
     // Check if we can get current directory
     let original_dir = match env::current_dir() {
         Ok(dir) => dir,
         Err(_) => {
             return Ok(TestCommandResult::failure(
-                "❌ Git command failed".to_string(), 
-                1
+                "❌ Git command failed".to_string(),
+                1,
             ));
         }
     };
 
     // Try to change to target directory
-    if let Err(_) = env::set_current_dir(dir_path) {
+    if env::set_current_dir(dir_path).is_err() {
         return Ok(TestCommandResult::failure(
-            "❌ Git command failed".to_string(), 
-            1
+            "❌ Git command failed".to_string(),
+            1,
         ));
     }
 
