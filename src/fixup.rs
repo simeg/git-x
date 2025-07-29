@@ -1,6 +1,13 @@
+use crate::common::Validate;
 use std::process::Command;
 
 pub fn run(commit_hash: String, rebase: bool) {
+    // Validate commit hash format first
+    if let Err(e) = Validate::commit_hash(&commit_hash) {
+        eprintln!("{}", format_error_message(&e.to_string()));
+        return;
+    }
+
     // Validate the commit hash exists
     if let Err(msg) = validate_commit_hash(&commit_hash) {
         eprintln!("{}", format_error_message(msg));

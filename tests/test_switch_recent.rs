@@ -103,19 +103,14 @@ fn test_switch_recent_with_branches() {
         .expect("Failed to switch back to master");
 
     // Test switch-recent command (it should find feature/test branch)
-    // Note: This test can't interact with the picker in CI/test environment
-    // The command should detect no TTY and exit gracefully with an error message
+    // In non-interactive mode, it should automatically switch to the most recent branch
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.current_dir(temp_dir.path())
         .arg("switch-recent")
-        .write_stdin("") // Provide empty input to prevent hanging
-        .timeout(std::time::Duration::from_secs(3))
+        .env("GIT_X_NON_INTERACTIVE", "1") // Explicitly set non-interactive mode
         .assert()
-        .success() // Command exits successfully but with error message to stderr
-        .stderr(
-            predicate::str::contains("Selection cancelled")
-                .or(predicate::str::contains("not a terminal")),
-        );
+        .success()
+        .stdout(predicate::str::contains("Switched to branch"));
 }
 
 #[test]

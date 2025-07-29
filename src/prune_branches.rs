@@ -1,3 +1,4 @@
+use crate::common::BufferedOutput;
 use std::io::{BufRead, BufReader};
 use std::process::{Command, exit};
 
@@ -41,7 +42,10 @@ pub fn run(except: Option<String>) {
         return;
     }
 
-    // Step 3: Delete branches
+    // Step 3: Delete branches with buffered output
+    let mut output = BufferedOutput::new();
+    let mut error_output = BufferedOutput::new();
+
     for branch in branches {
         let delete_args = get_git_branch_delete_args(&branch);
         let status = Command::new("git")
@@ -50,11 +54,15 @@ pub fn run(except: Option<String>) {
             .expect("Failed to delete branch");
 
         if status.success() {
-            println!("{}", format_branch_deleted_message(&branch));
+            output.add_line(format_branch_deleted_message(&branch));
         } else {
-            eprintln!("{}", format_branch_delete_failed_message(&branch));
+            error_output.add_line(format_branch_delete_failed_message(&branch));
         }
     }
+
+    // Flush all outputs at once for better performance
+    output.flush();
+    error_output.flush_err();
 }
 
 // Helper function to get default protected branches

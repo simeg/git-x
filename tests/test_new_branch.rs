@@ -241,7 +241,7 @@ fn test_new_branch_invalid_name_dash() {
         .current_dir(&repo_path)
         .assert()
         .success() // The command succeeds but shows validation error
-        .stderr(predicate::str::contains("cannot start with a dash"));
+        .stderr(predicate::str::contains("is reserved"));
 }
 
 #[test]
@@ -253,7 +253,7 @@ fn test_new_branch_invalid_name_double_dot() {
         .current_dir(&repo_path)
         .assert()
         .success() // The command succeeds but shows validation error
-        .stderr(predicate::str::contains("cannot contain '..'"));
+        .stderr(predicate::str::contains("not a valid branch name"));
 }
 
 #[test]
@@ -265,7 +265,7 @@ fn test_new_branch_invalid_name_spaces() {
         .current_dir(&repo_path)
         .assert()
         .success() // The command succeeds but shows validation error
-        .stderr(predicate::str::contains("cannot contain spaces"));
+        .stderr(predicate::str::contains("contains invalid characters"));
 }
 
 #[test]

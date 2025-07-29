@@ -1,3 +1,4 @@
+use crate::common::BufferedOutput;
 use std::collections::HashMap;
 use std::process::Command;
 
@@ -20,7 +21,9 @@ impl FileInfo {
 }
 
 pub fn run(limit: usize, threshold: Option<f64>) {
-    println!("{}", format_scan_start_message());
+    let mut output = BufferedOutput::new();
+
+    output.add_line(format_scan_start_message().to_string());
 
     // Get all file objects and their sizes
     let file_objects = match get_file_objects() {
@@ -32,7 +35,8 @@ pub fn run(limit: usize, threshold: Option<f64>) {
     };
 
     if file_objects.is_empty() {
-        println!("{}", format_no_files_message());
+        output.add_line(format_no_files_message().to_string());
+        output.flush();
         return;
     }
 
@@ -46,21 +50,25 @@ pub fn run(limit: usize, threshold: Option<f64>) {
     large_files.truncate(limit);
 
     if large_files.is_empty() {
-        println!("{}", format_no_large_files_message(threshold));
+        output.add_line(format_no_large_files_message(threshold));
+        output.flush();
         return;
     }
 
-    println!("{}", format_results_header(large_files.len(), threshold));
+    output.add_line(format_results_header(large_files.len(), threshold));
 
-    // Print results
+    // Add all file results to buffer
     for (i, file) in large_files.iter().enumerate() {
-        println!("{}", format_file_line(i + 1, file));
+        output.add_line(format_file_line(i + 1, file));
     }
 
-    // Show summary
+    // Add summary
     let total_size: u64 = large_files.iter().map(|f| f.size_bytes).sum();
     let total_mb = total_size as f64 / (1024.0 * 1024.0);
-    println!("{}", format_summary_message(large_files.len(), total_mb));
+    output.add_line(format_summary_message(large_files.len(), total_mb));
+
+    // Flush all output at once for better performance
+    output.flush();
 }
 
 // Helper function to get file objects from git

@@ -15,11 +15,14 @@ fn run_summary(since: &str) -> Result<String> {
     let git_log = Command::new("git")
         .args(get_git_log_summary_args(since))
         .output()
-        .map_err(|e| GitXError::Io(e))?;
+        .map_err(GitXError::Io)?;
 
     if !git_log.status.success() {
         let stderr = String::from_utf8_lossy(&git_log.stderr);
-        return Err(GitXError::GitCommand(format!("git log failed: {}", stderr.trim())));
+        return Err(GitXError::GitCommand(format!(
+            "git log failed: {}",
+            stderr.trim()
+        )));
     }
 
     let stdout = String::from_utf8_lossy(&git_log.stdout);
@@ -113,7 +116,7 @@ pub fn format_commit_summary(since: &str, grouped: &BTreeMap<NaiveDate, Vec<Stri
         }
         result.push('\n');
     }
-    
+
     result
 }
 

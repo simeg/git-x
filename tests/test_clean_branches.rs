@@ -37,8 +37,18 @@ fn test_clean_branches_run_function_actual_delete() {
     // Change to repo directory and run the function directly
     std::env::set_current_dir(repo.path()).unwrap();
 
+    // Set non-interactive mode for this test
+    unsafe {
+        std::env::set_var("GIT_X_NON_INTERACTIVE", "1");
+    }
+
     // Test that the function doesn't panic and actually deletes branches
     git_x::clean_branches::run(false);
+
+    // Clean up environment variable
+    unsafe {
+        std::env::remove_var("GIT_X_NON_INTERACTIVE");
+    }
 
     // Restore original directory
     let _ = std::env::set_current_dir(&original_dir);
@@ -73,8 +83,18 @@ fn test_clean_branches_run_function_non_dry_run_with_branches() {
     // Change to repo directory and run the function directly
     std::env::set_current_dir(repo.path()).unwrap();
 
+    // Set non-interactive mode for this test
+    unsafe {
+        std::env::set_var("GIT_X_NON_INTERACTIVE", "1");
+    }
+
     // Test non-dry run to actually trigger deletion path
     git_x::clean_branches::run(false);
+
+    // Clean up environment variable
+    unsafe {
+        std::env::remove_var("GIT_X_NON_INTERACTIVE");
+    }
 
     // Restore original directory
     let _ = std::env::set_current_dir(&original_dir);

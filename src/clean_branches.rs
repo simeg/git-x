@@ -1,3 +1,4 @@
+use crate::common::Safety;
 use crate::{GitXError, Result};
 use std::process::Command;
 
@@ -9,14 +10,22 @@ pub fn run(dry_run: bool) {
 }
 
 fn run_clean_branches(dry_run: bool) -> Result<String> {
+    // Safety check: ensure working directory is clean
+    if !dry_run {
+        Safety::ensure_clean_working_directory()?;
+    }
+
     let output = Command::new("git")
         .args(get_git_branch_args())
         .output()
-        .map_err(|e| GitXError::Io(e))?;
+        .map_err(GitXError::Io)?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(GitXError::GitCommand(format!("Failed to list merged branches: {}", stderr.trim())));
+        return Err(GitXError::GitCommand(format!(
+            "Failed to list merged branches: {}",
+            stderr.trim()
+        )));
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -25,6 +34,19 @@ fn run_clean_branches(dry_run: bool) -> Result<String> {
         .map(clean_branch_name)
         .filter(|branch| !is_protected_branch(branch))
         .collect();
+
+    // Safety confirmation for destructive operation
+    if !dry_run && !branches.is_empty() {
+        let details = format!(
+            "This will delete {} merged branches: {}",
+            branches.len(),
+            branches.join(", ")
+        );
+
+        if !Safety::confirm_destructive_operation("Clean merged branches", &details)? {
+            return Ok("Operation cancelled by user.".to_string());
+        }
+    }
 
     let mut deleted = Vec::new();
     let mut result = String::new();
@@ -39,7 +61,7 @@ fn run_clean_branches(dry_run: bool) -> Result<String> {
             let status = Command::new("git")
                 .args(delete_args)
                 .status()
-                .map_err(|e| GitXError::Io(e))?;
+                .map_err(GitXError::Io)?;
 
             if status.success() {
                 deleted.push(branch);
@@ -48,7 +70,7 @@ fn run_clean_branches(dry_run: bool) -> Result<String> {
     }
 
     if deleted.is_empty() {
-        result.push_str(&format_no_branches_message());
+        result.push_str(format_no_branches_message());
     } else {
         result.push_str(&format_deletion_summary(deleted.len(), dry_run));
         result.push('\n');

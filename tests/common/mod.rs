@@ -38,6 +38,7 @@ impl TestRepo {
             .unwrap()
             .args(args)
             .current_dir(self.path())
+            .env("GIT_X_NON_INTERACTIVE", "1")
             .assert()
     }
 
@@ -458,7 +459,9 @@ impl TestUtils {
 
     /// Run a git-x command and return the Command for assertions
     pub fn run_git_x_cmd(_args: &[&str]) -> Command {
-        Command::cargo_bin("git-x").expect("Failed to find git-x binary")
+        let mut cmd = Command::cargo_bin("git-x").expect("Failed to find git-x binary");
+        cmd.env("GIT_X_NON_INTERACTIVE", "1");
+        cmd
     }
 
     /// Create a git-x command with args for testing

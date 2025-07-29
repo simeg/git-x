@@ -1,9 +1,10 @@
+use crate::common::Validate;
 use crate::{GitXError, Result};
 use std::process::Command;
 
 pub fn run(branch_name: String, from: Option<String>) -> Result<String> {
-    // Validate branch name
-    validate_branch_name_result(&branch_name)?;
+    // Validate branch name format and safety
+    Validate::branch_name(&branch_name)?;
 
     // Check if branch already exists
     if branch_exists(&branch_name) {
@@ -36,43 +37,6 @@ pub fn run(branch_name: String, from: Option<String>) -> Result<String> {
 
     output.push(format_success_message(&branch_name));
     Ok(output.join("\n"))
-}
-
-// Helper function to validate branch name (new version)
-fn validate_branch_name_result(name: &str) -> Result<()> {
-    if name.is_empty() {
-        return Err(GitXError::GitCommand(
-            "Branch name cannot be empty".to_string(),
-        ));
-    }
-
-    if name.starts_with('-') {
-        return Err(GitXError::GitCommand(
-            "Branch name cannot start with a dash".to_string(),
-        ));
-    }
-
-    if name.contains("..") {
-        return Err(GitXError::GitCommand(
-            "Branch name cannot contain '..'".to_string(),
-        ));
-    }
-
-    if name.contains(' ') {
-        return Err(GitXError::GitCommand(
-            "Branch name cannot contain spaces".to_string(),
-        ));
-    }
-
-    // Check for invalid characters
-    const INVALID_CHARS: &[char] = &['~', '^', ':', '?', '*', '[', '\\'];
-    if name.chars().any(|c| INVALID_CHARS.contains(&c)) {
-        return Err(GitXError::GitCommand(
-            "Branch name contains invalid characters".to_string(),
-        ));
-    }
-
-    Ok(())
 }
 
 // Helper function to check if branch exists

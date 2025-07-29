@@ -132,7 +132,7 @@ fn test_fixup_invalid_commit_hash() {
 
     repo.run_git_x(&["fixup", "nonexistent123"])
         .success() // The command succeeds but shows an error message
-        .stderr(predicate::str::contains("Commit hash does not exist"));
+        .stderr(predicate::str::contains("Invalid commit hash format"));
 }
 
 #[test]

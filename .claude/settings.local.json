@@ -26,7 +26,9 @@
       "Bash(git x bisect reset)",
       "Bash(git x bisect:*)",
       "Bash(git-x:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(git checkout:*)",
+      "Bash(GIT_X_NON_INTERACTIVE=1 cargo test test_clean_branches_run_function_actual_delete)"
     ],
     "deny": []
   }
