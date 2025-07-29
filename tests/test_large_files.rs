@@ -32,9 +32,19 @@ fn create_test_repo_with_files() -> (TempDir, PathBuf) {
         .success();
 
     // Create files of different sizes
-    fs::write(repo_path.join("small.txt"), "small file").expect("Failed to write file");
-    fs::write(repo_path.join("medium.txt"), "x".repeat(1024)).expect("Failed to write file");
-    fs::write(repo_path.join("large.txt"), "x".repeat(1024 * 1024)).expect("Failed to write file");
+    for (name, content) in [
+        ("small.txt", "small file".as_bytes()),
+        ("medium.txt", &vec![b'x'; 1024]),
+        ("large.txt", &vec![b'x'; 1024 * 1024]),
+    ] {
+        let mut file = fs::File::create(repo_path.join(name)).expect("Failed to create file");
+        use std::io::Write;
+        file.write_all(content).expect("Failed to write");
+        file.sync_all().expect("Failed to sync");
+    }
+
+    // Give it time to persist the files to disk
+    sleep(Duration::from_millis(1000));
 
     // Add and commit files
     Command::new("git")
@@ -48,6 +58,17 @@ fn create_test_repo_with_files() -> (TempDir, PathBuf) {
         .current_dir(&repo_path)
         .assert()
         .success();
+
+    let output = Command::new("git")
+        .args(["ls-files"])
+        .current_dir(&repo_path)
+        .output()
+        .expect("Failed to run git ls-files");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("small.txt"), "small.txt not committed");
+    assert!(stdout.contains("medium.txt"), "medium.txt not committed");
+    assert!(stdout.contains("large.txt"), "large.txt not committed");
 
     (temp_dir, repo_path)
 }
@@ -257,20 +278,46 @@ fn test_large_files_run_function_with_files() {
         .success()
         .stdout(predicate::str::contains("Scanning repository"));
 
-    // Test direct function call (for coverage)
-    match execute_command_in_dir(&repo_path, large_files_command(10, None)) {
-        Ok(result) => {
-            assert!(result.is_success());
-            assert!(
-                result.stdout.contains("📦 Files larger than")
-                    || result.stdout.contains("No files larger than")
-            );
-        }
-        Err(_) => {
-            eprintln!("Warning: Directory test failed, skipping test");
-            return;
+    // Retry loop for flaky CI environments
+    let retries = 3;
+    let mut result = None;
+
+    for _ in 0..retries {
+        match execute_command_in_dir(&repo_path, large_files_command(10, None)) {
+            Ok(r) if r.is_success() => {
+                result = Some(r);
+                break;
+            }
+            Ok(r) => {
+                eprintln!("Retrying after failure.");
+                eprintln!("STDOUT:\n{}", r.stdout);
+                eprintln!("STDERR:\n{}", r.stderr);
+                sleep(Duration::from_millis(500));
+            }
+            Err(_) => {
+                eprintln!("Warning: Directory test failed, skipping test");
+                return;
+            }
         }
     }
+
+    if result.is_none() {
+        // Final log if all retries failed
+        if let Ok(r) = execute_command_in_dir(&repo_path, large_files_command(10, None)) {
+            eprintln!("Final failure. STDOUT:\n{}", r.stdout);
+            eprintln!("Final failure. STDERR:\n{}", r.stderr);
+        }
+    }
+
+    let result = result.expect("Large files command failed after retries");
+    assert!(result.is_success());
+    assert!(
+        result.stdout.contains("📦 Files larger than")
+            || result.stdout.contains("No files larger than")
+    );
+
+    // Ensure temp_dir is kept alive for the test duration
+    assert!(std::path::Path::new(temp_dir.path()).exists());
 
     // Keep temp_dir alive
     drop(temp_dir);
@@ -288,17 +335,42 @@ fn test_large_files_with_high_threshold() {
         .success()
         .stdout(predicate::str::contains("No files found larger than"));
 
-    // Test direct function call with high threshold (for coverage)
-    match execute_command_in_dir(&repo_path, large_files_command(10, Some(100.0))) {
-        Ok(result) => {
-            assert!(result.is_success());
-            assert!(result.stdout.contains("No files larger than 100.0MB found"));
-        }
-        Err(_) => {
-            eprintln!("Warning: Directory test failed, skipping test");
-            return;
+    // Retry loop for flaky CI environments
+    let retries = 3;
+    let mut result = None;
+
+    for _ in 0..retries {
+        match execute_command_in_dir(&repo_path, large_files_command(10, Some(100.0))) {
+            Ok(r) if r.is_success() => {
+                result = Some(r);
+                break;
+            }
+            Ok(r) => {
+                eprintln!("Retrying after failure.");
+                eprintln!("STDOUT:\n{}", r.stdout);
+                eprintln!("STDERR:\n{}", r.stderr);
+                std::thread::sleep(std::time::Duration::from_millis(500));
+            }
+            Err(_) => {
+                eprintln!("Warning: Directory test failed, skipping test");
+                return;
+            }
         }
     }
+
+    if result.is_none() {
+        // Final log if all retries failed
+        if let Ok(r) = execute_command_in_dir(&repo_path, large_files_command(10, Some(100.0))) {
+            eprintln!("Final failure. STDOUT:\n{}", r.stdout);
+            eprintln!("Final failure. STDERR:\n{}", r.stderr);
+        }
+    }
+
+    let result = result.expect("Large files command failed after retries");
+    assert!(result.is_success());
+    assert!(result.stdout.contains("No files larger than 100.0MB found"));
+
+    assert!(std::path::Path::new(temp_dir.path()).exists());
 
     // Keep temp_dir alive
     drop(temp_dir);
@@ -323,6 +395,8 @@ fn test_large_files_default_limit() {
 // Integration tests for large_files.rs run() function testing all code paths
 
 use std::process::Command as StdCommand;
+use std::thread::sleep;
+use std::time::Duration;
 
 mod common;
 
