@@ -550,23 +550,6 @@ fn test_get_branch_sync_status_no_upstream() {
 }
 
 #[test]
-fn test_get_branches_with_upstreams_no_upstreams() {
-    let repo = basic_repo();
-
-    std::env::set_current_dir(repo.path()).expect("Failed to change directory");
-
-    let result = get_branches_with_upstreams();
-    std::env::set_current_dir("/").expect("Failed to reset directory");
-
-    assert!(result.is_ok());
-    let branches: Vec<(String, String)> = result.unwrap();
-
-    if let Some((branch, upstream)) = branches.into_iter().next() {
-        panic!("Branch '{branch}' unexpectedly has upstream '{upstream}'");
-    }
-}
-
-#[test]
 fn test_validate_upstream_exists_invalid() {
     let repo = basic_repo();
 

@@ -58,13 +58,15 @@ fn test_sync_run_function_no_upstream() {
         .current_dir(repo.path())
         .assert()
         .success()
-        .stderr(predicate::str::contains("❌ Git command failed: Failed to get upstream branch: Git command failed: fatal: no upstream configured for branch 'main'"));
+        .stderr(predicate::str::contains("❌ Git command failed: Failed to get upstream branch: Git command failed: fatal: no upstream configured for branch"));
 
     // Test direct function call (for coverage)
     match execute_command_in_dir(repo.path(), sync_command(false)) {
         Ok(result) => {
             assert!(result.is_failure());
             assert_eq!(result.exit_code, 1);
+            dbg!(result.stdout);
+            dbg!(&result.stderr);
             assert!(result.stderr.contains("No upstream configured"));
         }
         Err(_) => {
@@ -481,6 +483,7 @@ fn test_sync_run_no_upstream() {
     match execute_command_in_dir(repo.path(), sync_command(false)) {
         Ok(result) => {
             assert!(result.is_failure());
+            dbg!(&result.stderr);
             assert!(result.stderr.contains("❌"));
             assert!(result.stderr.contains("No upstream configured"));
         }

@@ -116,8 +116,6 @@ impl TestRepo {
 }
 
 /// Create a basic Git repository with a single commit
-// Clippy seems to think this method
-#[allow(dead_code)]
 pub fn basic_repo() -> TestRepo {
     let temp = tempdir().unwrap();
     let path = temp.path().to_path_buf();
@@ -268,6 +266,49 @@ pub fn repo_with_merged_branch(feature_branch: &str, main_branch: &str) -> TestR
         .current_dir(&path)
         .assert()
         .success();
+
+    // Verify the repo was created successfully with a merged branch
+
+    // 1. Assert we're on the main branch
+    let current_branch = TestAssertions::get_git_output(&repo, &["branch", "--show-current"]);
+    assert_eq!(
+        current_branch, main_branch,
+        "Should be on the main branch after merge"
+    );
+
+    // 2. Assert the feature branch exists
+    let branches = TestAssertions::get_git_output(&repo, &["branch"]);
+    assert!(
+        branches.contains(feature_branch),
+        "Feature branch '{feature_branch}' should exist"
+    );
+
+    // 3. Assert the feature branch is merged (shows up in git branch --merged)
+    let merged_branches = TestAssertions::get_git_output(&repo, &["branch", "--merged"]);
+    assert!(
+        merged_branches.contains(feature_branch),
+        "Feature branch '{feature_branch}' should be merged"
+    );
+
+    // 4. Assert both files from main and feature branch exist
+    assert!(
+        path.join("README.md").exists(),
+        "README.md should exist from main branch"
+    );
+    assert!(
+        path.join("feature.txt").exists(),
+        "feature.txt should exist from merged feature branch"
+    );
+
+    // 5. Assert we have at least 2 commits (initial + feature)
+    let commit_count = TestAssertions::get_git_output(&repo, &["rev-list", "--count", "HEAD"]);
+    let count: u32 = commit_count
+        .parse()
+        .expect("Should be able to parse commit count");
+    assert!(
+        count >= 2,
+        "Should have at least 2 commits (initial + feature), but found {count}"
+    );
 
     repo
 }
