@@ -174,11 +174,6 @@ Enhanced version of `git x graph` with:
 - **Author names and timestamps** for each commit
 - **Rich formatting** that's easy to scan
 
-(essentially wraps this)
-```shell
-git log --oneline --graph --decorate --all --color=always --pretty=format:"%C(auto)%h%d %s %C(dim)(%an, %ar)%C(reset)"
-```
-
 ---
 
 ### `contributors`
