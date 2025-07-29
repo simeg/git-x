@@ -1,6 +1,6 @@
 [package]
 name = "git-x"
-version = "0.5.0"
+version = "0.6.0"
 authors = ["Simon Egersand <s.egersand@gmail.com>"]
 description = "CLI extensions for Git that simplify common workflows"
 keywords = ["git", "cli", "tooling"]
@@ -15,6 +15,7 @@ edition = "2024"
 
 exclude = [
     "tests/*",
+    "banner.png"
 ]
 
 [[bin]]
