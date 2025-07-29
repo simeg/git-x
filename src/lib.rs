@@ -13,12 +13,17 @@ pub mod commands;
 // CLI interface
 pub mod cli;
 
+// Test utilities for direct command testing (improves test coverage)
+pub mod test_utils;
+
 // Examples showing architecture migration
 #[cfg(test)]
 pub mod examples;
 
 // Legacy module exports for backward compatibility
 // These will eventually be removed as we migrate to the new structure
+
+// Module exports
 pub mod bisect;
 pub mod clean_branches;
 pub mod color_graph;
