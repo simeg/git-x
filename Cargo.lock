@@ -319,7 +319,7 @@ dependencies = [
 
 [[package]]
 name = "git-x"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "assert_cmd",
  "atty",
