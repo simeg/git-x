@@ -4,8 +4,6 @@
 
 It wraps common Git actions in muscle-memory-friendly, no-brainer commands — perfect for solo developers, team leads, and anyone tired of typing `git log --oneline --graph --decorate --all` for the 400th time.
 
-⚠️ **PSA: Do you know shell tab completion? If so - I need your help! 🙏 See the [Tab Completion](#-tab-completion-) section** ⚠️
-
 ![Banner](banner.png)
 
 ---
@@ -40,7 +38,6 @@ It wraps common Git actions in muscle-memory-friendly, no-brainer commands — p
 - [What's Under the Hood?](#whats-under-the-hood)
 - [Command Transparency](#command-transparency)
 - [Roadmap Ideas](#roadmap-ideas)
-- [Tab Completion](#-tab-completion-)
 - [Built With](#built-with)
 - [License](#license)
 
@@ -748,14 +745,6 @@ git log --oneline --graph --decorate --all
 - **Zero dependencies** — Single binary, no runtime requirements
 - **Cross-platform** — Works on macOS, Linux, Windows
 - **Memory safe** — No crashes, no memory leaks
-
----
-
-## 🚧 Tab Completion 🚧
-
-I'm looking for help to get tab completion working! 🆘 By that I mean `git x <TAB>` should show available commands. I've given it my best shot without success 😅 so if anyone can help, **that would be highly appreciated!**
-
-Your shell expertise could make `git-x` so much more pleasant to use!
 
 ---
 
