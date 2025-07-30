@@ -327,3 +327,72 @@ fn test_contributors_ranking_icons() {
         .stdout(predicate::str::contains("🥈")) // Silver medal for second
         .stdout(predicate::str::contains("🥉")); // Bronze medal for third
 }
+
+use git_x::commands::analysis::ContributorsCommand;
+use git_x::core::traits::Command as CommandTrait;
+
+#[test]
+fn test_contributors_command_direct() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let original_dir = std::env::current_dir().unwrap();
+
+    // Initialize git repo
+    StdCommand::new("git")
+        .args(["init"])
+        .current_dir(temp_dir.path())
+        .output()
+        .expect("Failed to init git repo");
+
+    // Configure git user for commits
+    StdCommand::new("git")
+        .args(["config", "user.name", "Test User"])
+        .current_dir(temp_dir.path())
+        .output()
+        .expect("Failed to set git user name");
+
+    StdCommand::new("git")
+        .args(["config", "user.email", "test@example.com"])
+        .current_dir(temp_dir.path())
+        .output()
+        .expect("Failed to set git user email");
+
+    // Create initial commit
+    fs::write(temp_dir.path().join("README.md"), "# Test Repo").expect("Failed to write file");
+    StdCommand::new("git")
+        .args(["add", "README.md"])
+        .current_dir(temp_dir.path())
+        .output()
+        .expect("Failed to add file");
+
+    StdCommand::new("git")
+        .args(["commit", "-m", "Initial commit"])
+        .current_dir(temp_dir.path())
+        .output()
+        .expect("Failed to commit");
+
+    std::env::set_current_dir(temp_dir.path()).unwrap();
+
+    let cmd = ContributorsCommand::new(None);
+    let result = cmd.execute();
+
+    // Should succeed and return formatted output
+    assert!(result.is_ok());
+    let output = result.unwrap();
+    assert!(output.contains("Repository Contributors"));
+    assert!(output.contains("Test User"));
+
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
+}
+
+#[test]
+fn test_contributors_command_traits() {
+    let cmd = ContributorsCommand::new(None);
+
+    // Test Command trait implementation
+    assert_eq!(cmd.name(), "contributors");
+    assert_eq!(
+        cmd.description(),
+        "Show repository contributors and their commit statistics"
+    );
+}

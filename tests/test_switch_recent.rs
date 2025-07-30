@@ -121,3 +121,44 @@ fn test_switch_recent_command_available() {
         .success()
         .stdout(predicate::str::contains("switch-recent"));
 }
+
+#[test]
+fn test_switch_recent_command_traits() {
+    use git_x::commands::branch::SwitchRecentCommand;
+    use git_x::core::traits::Command;
+
+    let cmd = SwitchRecentCommand::new();
+
+    // Test Command trait implementation
+    assert_eq!(cmd.name(), "switch-recent");
+    assert_eq!(cmd.description(), "Switch to a recently used branch");
+}
+
+#[test]
+fn test_switch_recent_command_direct() {
+    use git_x::commands::branch::SwitchRecentCommand;
+    use git_x::core::traits::Command;
+
+    let repo = common::basic_repo();
+    let original_dir = std::env::current_dir().unwrap();
+
+    std::env::set_current_dir(repo.path()).unwrap();
+
+    let cmd = SwitchRecentCommand::new();
+    let result = cmd.execute();
+
+    // The switch recent command may fail if no recent branches are found
+    // This is acceptable since it's testing error handling
+    match &result {
+        Ok(_output) => {
+            // Command succeeded - this is fine
+        }
+        Err(e) => {
+            // Git command failures are acceptable in this test scenario
+            assert!(e.to_string().contains("No recent branches found"));
+        }
+    }
+
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
+}

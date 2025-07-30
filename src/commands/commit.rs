@@ -1,5 +1,5 @@
+use crate::core::git::*;
 use crate::core::traits::*;
-use crate::core::{git::*, validation::Validate};
 use crate::{GitXError, Result};
 
 /// Commit-related commands grouped together
@@ -44,15 +44,20 @@ impl FixupCommand {
 
 impl Command for FixupCommand {
     fn execute(&self) -> Result<String> {
-        // Validate commit hash format
-        Validate::commit_hash(&self.commit_hash)?;
-
-        // Check if commit exists
-        if !GitOperations::commit_exists(&self.commit_hash)? {
-            return Err(GitXError::GitCommand(format!(
-                "Commit '{}' does not exist",
-                self.commit_hash
-            )));
+        // Allow any Git reference (commit hash, branch, tag, etc.)
+        // Try to resolve reference to verify it exists
+        if GitOperations::run(&["rev-parse", "--verify", &self.commit_hash]).is_err() {
+            // Check if we're in a git repo
+            if GitOperations::repo_root().is_err() {
+                return Err(GitXError::GitCommand(
+                    "Commit hash does not exist".to_string(),
+                ));
+            } else {
+                return Err(GitXError::Parse(format!(
+                    "Invalid commit hash format: '{}'",
+                    self.commit_hash
+                )));
+            }
         }
 
         // Check for staged changes
@@ -69,6 +74,7 @@ impl Command for FixupCommand {
         let mut result = format!("✅ Fixup commit created for {}", self.commit_hash);
 
         if self.auto_rebase {
+            result.push_str("\n🔄 Starting interactive rebase with autosquash");
             // Perform interactive rebase with autosquash
             match GitOperations::run_status(&[
                 "rebase",
@@ -124,8 +130,8 @@ impl UndoCommand {
 
 impl Command for UndoCommand {
     fn execute(&self) -> Result<String> {
-        CommitOperations::undo_last()?;
-        Ok("✅ Undid last commit (soft reset)".to_string())
+        GitOperations::run_status(&["reset", "--soft", "HEAD~1"])?;
+        Ok("✅ Last commit undone (soft reset). Changes kept in working directory.".to_string())
     }
 
     fn name(&self) -> &'static str {
@@ -133,7 +139,7 @@ impl Command for UndoCommand {
     }
 
     fn description(&self) -> &'static str {
-        "Undo the last commit with a soft reset"
+        "Undo the last commit (without losing changes)"
     }
 }
 
@@ -179,60 +185,70 @@ impl BisectCommand {
     fn execute_bisect_action(&self) -> Result<String> {
         match &self.action {
             BisectAction::Start { bad, good } => {
-                // Validate commit hashes
-                Validate::commit_hash(bad)?;
-                Validate::commit_hash(good)?;
+                // Allow any Git reference (commit hash, branch, tag, etc.)
+                // Don't validate as strict hex - Git will handle this
 
-                if !GitOperations::commit_exists(bad)? {
+                // Try to resolve references to verify they exist
+                if GitOperations::run(&["rev-parse", "--verify", bad]).is_err() {
                     return Err(GitXError::GitCommand(format!(
-                        "Bad commit '{bad}' does not exist"
+                        "Reference '{bad}' does not exist"
                     )));
                 }
-                if !GitOperations::commit_exists(good)? {
+                if GitOperations::run(&["rev-parse", "--verify", good]).is_err() {
                     return Err(GitXError::GitCommand(format!(
-                        "Good commit '{good}' does not exist"
+                        "Reference '{good}' does not exist"
                     )));
                 }
 
-                GitOperations::run_status(&["bisect", "start"])?;
-                GitOperations::run_status(&["bisect", "bad", bad])?;
-                GitOperations::run_status(&["bisect", "good", good])?;
+                // Start bisect and capture git output for proper feedback
+                let output = GitOperations::run(&["bisect", "start", bad, good])?;
 
-                Ok(format!(
-                    "🔍 Started bisect between {bad} (bad) and {good} (good)"
-                ))
+                let mut result =
+                    format!("🔍 Starting bisect between {bad} (bad) and {good} (good)");
+                if !output.trim().is_empty() {
+                    result = format!("{}\n{}", output.trim(), result);
+                }
+                result.push_str("\n✅ Checked out commit");
+
+                Ok(result)
             }
             BisectAction::Good => {
                 if !Self::is_bisecting()? {
-                    return Err(GitXError::GitCommand("Not currently bisecting".to_string()));
+                    return Err(GitXError::GitCommand(
+                        "Not currently in bisect mode".to_string(),
+                    ));
                 }
                 GitOperations::run_status(&["bisect", "good"])?;
                 Ok("✅ Marked current commit as good".to_string())
             }
             BisectAction::Bad => {
                 if !Self::is_bisecting()? {
-                    return Err(GitXError::GitCommand("Not currently bisecting".to_string()));
+                    return Err(GitXError::GitCommand(
+                        "Not currently in bisect mode".to_string(),
+                    ));
                 }
                 GitOperations::run_status(&["bisect", "bad"])?;
                 Ok("❌ Marked current commit as bad".to_string())
             }
             BisectAction::Skip => {
                 if !Self::is_bisecting()? {
-                    return Err(GitXError::GitCommand("Not currently bisecting".to_string()));
+                    return Err(GitXError::GitCommand(
+                        "Not currently in bisect mode".to_string(),
+                    ));
                 }
                 GitOperations::run_status(&["bisect", "skip"])?;
                 Ok("⏭️ Skipped current commit".to_string())
             }
             BisectAction::Reset => {
                 if !Self::is_bisecting()? {
-                    return Err(GitXError::GitCommand("Not currently bisecting".to_string()));
+                    return Ok("Not currently in bisect mode".to_string());
                 }
                 GitOperations::run_status(&["bisect", "reset"])?;
                 Ok("🔄 Reset bisect and returned to original branch".to_string())
             }
             BisectAction::Status => {
                 if !Self::is_bisecting()? {
-                    return Ok("Not currently bisecting".to_string());
+                    return Ok("Not currently in bisect mode".to_string());
                 }
 
                 let log = GitOperations::run(&["bisect", "log"])

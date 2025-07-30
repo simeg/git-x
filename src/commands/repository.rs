@@ -26,9 +26,9 @@ impl RepositoryCommands {
         UpstreamCommand::new(action).execute()
     }
 
-    /// Show what would be pushed/pulled
-    pub fn what(target: Option<String>) -> Result<String> {
-        WhatCommand::new(target).execute()
+    /// Create a new branch
+    pub fn new_branch(branch_name: String, from: Option<String>) -> Result<String> {
+        NewBranchCommand::new(branch_name, from).execute()
     }
 }
 
@@ -175,7 +175,7 @@ impl HealthCommand {
     fn check_git_config() -> Vec<String> {
         let mut issues = Vec::new();
 
-        // Check user name and email
+        // Check username and email
         if GitOperations::run(&["config", "user.name"]).is_err() {
             issues.push("❌ Git user.name not configured".to_string());
         }
@@ -221,6 +221,80 @@ impl HealthCommand {
             }
         }
 
+        // Check for stale branches
+        if let Ok(stale_count) = Self::count_stale_branches() {
+            if stale_count > 0 {
+                issues.push(format!(
+                    "⚠️  {stale_count} potentially stale branches found"
+                ));
+            }
+        }
+
+        issues
+    }
+
+    fn count_stale_branches() -> Result<usize> {
+        let output = GitOperations::run(&[
+            "for-each-ref",
+            "--format=%(refname:short) %(committerdate:relative)",
+            "refs/heads/",
+        ])?;
+
+        let stale_count = output
+            .lines()
+            .filter(|line| line.contains("months ago") || line.contains("year"))
+            .count();
+
+        Ok(stale_count)
+    }
+
+    fn check_working_directory() -> Vec<String> {
+        let mut issues = Vec::new();
+
+        // Check for untracked files
+        if let Ok(output) = GitOperations::run(&["ls-files", "--others", "--exclude-standard"]) {
+            let untracked_count = output
+                .lines()
+                .filter(|line| !line.trim().is_empty())
+                .count();
+            if untracked_count > 5 {
+                issues.push(format!("⚠️  {untracked_count} untracked files found"));
+            }
+        }
+
+        // Check for uncommitted changes
+        if let Ok(output) = GitOperations::run(&["diff", "--cached", "--name-only"]) {
+            let staged_count = output
+                .lines()
+                .filter(|line| !line.trim().is_empty())
+                .count();
+            if staged_count > 0 {
+                issues.push(format!("ℹ️  {staged_count} files staged for commit"));
+            }
+        }
+
+        issues
+    }
+
+    fn check_repository_size() -> Vec<String> {
+        let mut issues = Vec::new();
+
+        // Use git count-objects for repository size
+        if let Ok(output) = GitOperations::run(&["count-objects", "-vH"]) {
+            for line in output.lines() {
+                if line.starts_with("size-pack") {
+                    if let Some(size_str) = line.split_whitespace().nth(1) {
+                        // Parse size and check if it's concerning
+                        if size_str.ends_with("GiB") || size_str.contains("1024") {
+                            issues.push(format!(
+                                "⚠️  Repository size: {size_str} (consider cleanup)"
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+
         issues
     }
 }
@@ -258,6 +332,24 @@ impl Command for HealthCommand {
         } else {
             output.add_line("⚠️  Branches: Issues found".to_string());
             all_issues.extend(branch_issues);
+        }
+
+        // Check working directory
+        let wd_issues = Self::check_working_directory();
+        if wd_issues.is_empty() {
+            output.add_line("✅ Working directory: Clean".to_string());
+        } else {
+            output.add_line("ℹ️  Working directory: Has notes".to_string());
+            all_issues.extend(wd_issues);
+        }
+
+        // Check repository size
+        let size_issues = Self::check_repository_size();
+        if size_issues.is_empty() {
+            output.add_line("✅ Repository size: OK".to_string());
+        } else {
+            output.add_line("⚠️  Repository size: Large".to_string());
+            all_issues.extend(size_issues);
         }
 
         // Summary
@@ -430,74 +522,202 @@ impl Command for UpstreamCommand {
 
 impl GitCommand for UpstreamCommand {}
 
-/// Command to show what would be pushed/pulled
-pub struct WhatCommand {
-    target: Option<String>,
+/// Command to create a new branch
+pub struct NewBranchCommand {
+    branch_name: String,
+    from: Option<String>,
 }
 
-impl WhatCommand {
-    pub fn new(target: Option<String>) -> Self {
-        Self { target }
+impl NewBranchCommand {
+    pub fn new(branch_name: String, from: Option<String>) -> Self {
+        Self { branch_name, from }
+    }
+
+    fn branch_exists(&self, branch_name: &str) -> bool {
+        GitOperations::run(&[
+            "show-ref",
+            "--verify",
+            "--quiet",
+            &format!("refs/heads/{branch_name}"),
+        ])
+        .is_ok()
+    }
+
+    fn is_valid_ref(&self, ref_name: &str) -> bool {
+        GitOperations::run(&["rev-parse", "--verify", "--quiet", ref_name]).is_ok()
     }
 }
 
-impl Command for WhatCommand {
+impl Command for NewBranchCommand {
     fn execute(&self) -> Result<String> {
-        let (current_branch, upstream, ahead, behind) = GitOperations::branch_info_optimized()?;
-        let mut output = BufferedOutput::new();
-
-        let target_ref = self
-            .target
-            .as_deref()
-            .unwrap_or_else(|| upstream.as_deref().unwrap_or("origin/main"));
-
-        output.add_line(format!("🔍 Comparing {current_branch} with {target_ref}"));
-        output.add_line("=".repeat(50));
-
-        // Show commits that would be pushed
-        if ahead > 0 {
-            output.add_line(format!("📤 {ahead} commit(s) to push:"));
-            match GitOperations::run(&["log", "--oneline", &format!("{target_ref}..HEAD")]) {
-                Ok(commits) => {
-                    for line in commits.lines() {
-                        output.add_line(format!("  • {line}"));
-                    }
-                }
-                Err(_) => {
-                    output.add_line("  (Could not retrieve commit details)".to_string());
-                }
-            }
-        } else {
-            output.add_line("📤 No commits to push".to_string());
+        // Validate branch name format and safety
+        if self.branch_name.is_empty() {
+            return Err(GitXError::GitCommand(
+                "Branch name cannot be empty".to_string(),
+            ));
         }
 
-        // Show commits that would be pulled
-        if behind > 0 {
-            output.add_line(format!("\n📥 {behind} commit(s) to pull:"));
-            match GitOperations::run(&["log", "--oneline", &format!("HEAD..{target_ref}")]) {
-                Ok(commits) => {
-                    for line in commits.lines() {
-                        output.add_line(format!("  • {line}"));
-                    }
-                }
-                Err(_) => {
-                    output.add_line("  (Could not retrieve commit details)".to_string());
-                }
-            }
-        } else {
-            output.add_line("\n📥 No commits to pull".to_string());
+        // Check if branch already exists
+        if self.branch_exists(&self.branch_name) {
+            return Err(GitXError::GitCommand(format!(
+                "Branch '{}' already exists",
+                self.branch_name
+            )));
         }
 
-        Ok(output.content())
+        // Determine base branch
+        let base_branch = match &self.from {
+            Some(branch) => {
+                if !self.branch_exists(branch) && !self.is_valid_ref(branch) {
+                    return Err(GitXError::GitCommand(format!(
+                        "Base branch or ref '{branch}' does not exist"
+                    )));
+                }
+                branch.clone()
+            }
+            None => GitOperations::current_branch()?,
+        };
+
+        let mut output = Vec::new();
+        output.push(format!(
+            "🌿 Creating new branch '{}' from '{}'",
+            Format::bold(&self.branch_name),
+            Format::bold(&base_branch)
+        ));
+
+        // Create the new branch
+        GitOperations::run_status(&["branch", &self.branch_name, &base_branch])?;
+
+        // Switch to the new branch
+        GitOperations::run_status(&["switch", &self.branch_name])?;
+
+        output.push(format!(
+            "✅ Successfully created and switched to branch '{}'",
+            Format::bold(&self.branch_name)
+        ));
+
+        Ok(output.join("\n"))
     }
 
     fn name(&self) -> &'static str {
-        "what"
+        "new-branch"
     }
 
     fn description(&self) -> &'static str {
-        "Show what would be pushed or pulled"
+        "Create and switch to a new branch"
     }
 }
 
-impl GitCommand for WhatCommand {}
+impl GitCommand for NewBranchCommand {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Helper function to strip ANSI escape codes for testing
+    fn strip_ansi_codes(text: &str) -> String {
+        // Simple regex-like approach to remove ANSI escape sequences
+        let mut result = String::new();
+        let mut chars = text.chars().peekable();
+
+        while let Some(ch) = chars.next() {
+            if ch == '\x1B' {
+                // Found escape character, skip until 'm'
+                for next_ch in chars.by_ref() {
+                    if next_ch == 'm' {
+                        break;
+                    }
+                }
+            } else {
+                result.push(ch);
+            }
+        }
+
+        result
+    }
+
+    #[test]
+    fn test_ansi_stripping() {
+        // Test the ANSI stripping helper function
+        let formatted_text = Format::bold("main");
+        let clean_text = strip_ansi_codes(&formatted_text);
+        assert_eq!(clean_text, "main");
+
+        // Test with mixed content
+        let mixed = format!("Branch: {} Status: OK", Format::bold("feature"));
+        let clean_mixed = strip_ansi_codes(&mixed);
+        assert_eq!(clean_mixed, "Branch: feature Status: OK");
+    }
+
+    #[test]
+    fn test_info_command_creation() {
+        let cmd = InfoCommand::new();
+        assert!(!cmd.show_detailed);
+
+        let detailed_cmd = cmd.with_details();
+        assert!(detailed_cmd.show_detailed);
+    }
+
+    #[test]
+    fn test_command_trait_implementations() {
+        let info_cmd = InfoCommand::new();
+        assert_eq!(info_cmd.name(), "info");
+        assert_eq!(
+            info_cmd.description(),
+            "Show repository information and status"
+        );
+
+        let health_cmd = HealthCommand::new();
+        assert_eq!(health_cmd.name(), "health");
+        assert_eq!(
+            health_cmd.description(),
+            "Check repository health and configuration"
+        );
+
+        let sync_cmd = SyncCommand::new(SyncStrategy::Auto);
+        assert_eq!(sync_cmd.name(), "sync");
+        assert_eq!(sync_cmd.description(), "Sync current branch with upstream");
+    }
+
+    #[test]
+    fn test_branch_info_formatting() {
+        let formatted = InfoCommand::format_branch_info("main", Some("origin/main"), 2, 1);
+        let clean_text = strip_ansi_codes(&formatted);
+
+        assert!(clean_text.contains("Current branch: main"));
+        assert!(clean_text.contains("Upstream: origin/main"));
+        assert!(clean_text.contains("2 ahead"));
+        assert!(clean_text.contains("1 behind"));
+    }
+
+    #[test]
+    fn test_branch_info_formatting_no_upstream() {
+        let formatted = InfoCommand::format_branch_info("feature", None, 0, 0);
+        let clean_text = strip_ansi_codes(&formatted);
+
+        assert!(clean_text.contains("Current branch: feature"));
+        assert!(clean_text.contains("No upstream configured"));
+    }
+
+    #[test]
+    fn test_branch_info_formatting_up_to_date() {
+        let formatted = InfoCommand::format_branch_info("main", Some("origin/main"), 0, 0);
+        let clean_text = strip_ansi_codes(&formatted);
+
+        assert!(clean_text.contains("Status: Up to date"));
+    }
+
+    #[test]
+    fn test_sync_strategy_auto_selection() {
+        // Test the auto strategy logic
+        let sync_cmd = SyncCommand::new(SyncStrategy::Auto);
+        assert_eq!(sync_cmd.name(), "sync");
+
+        // Auto strategy should work for any input
+        let merge_cmd = SyncCommand::new(SyncStrategy::Merge);
+        let rebase_cmd = SyncCommand::new(SyncStrategy::Rebase);
+
+        assert_eq!(merge_cmd.name(), "sync");
+        assert_eq!(rebase_cmd.name(), "sync");
+    }
+}

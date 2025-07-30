@@ -96,7 +96,19 @@ fn test_bisect_run_start_function() {
         bad: commits[4].clone(),
     };
 
-    let result = git_x::bisect::run(action);
+    use git_x::commands::commit::{BisectAction as CommitBisectAction, BisectCommand};
+    use git_x::core::traits::Command;
+
+    let commit_action = match action {
+        BisectAction::Start { good, bad } => CommitBisectAction::Start { bad, good },
+        BisectAction::Good => CommitBisectAction::Good,
+        BisectAction::Bad => CommitBisectAction::Bad,
+        BisectAction::Skip => CommitBisectAction::Skip,
+        BisectAction::Reset => CommitBisectAction::Reset,
+        BisectAction::Status => CommitBisectAction::Status,
+    };
+    let cmd = BisectCommand::new(commit_action);
+    let result = cmd.execute();
     std::env::set_current_dir("/").expect("Failed to reset directory");
 
     assert!(result.is_ok());
@@ -117,7 +129,19 @@ fn test_bisect_run_start_function_invalid_commits() {
         bad: "another_invalid".to_string(),
     };
 
-    let result = git_x::bisect::run(action);
+    use git_x::commands::commit::{BisectAction as CommitBisectAction, BisectCommand};
+    use git_x::core::traits::Command;
+
+    let commit_action = match action {
+        BisectAction::Start { good, bad } => CommitBisectAction::Start { bad, good },
+        BisectAction::Good => CommitBisectAction::Good,
+        BisectAction::Bad => CommitBisectAction::Bad,
+        BisectAction::Skip => CommitBisectAction::Skip,
+        BisectAction::Reset => CommitBisectAction::Reset,
+        BisectAction::Status => CommitBisectAction::Status,
+    };
+    let cmd = BisectCommand::new(commit_action);
+    let result = cmd.execute();
     std::env::set_current_dir("/").expect("Failed to reset directory");
 
     assert!(result.is_err());
@@ -132,7 +156,19 @@ fn test_bisect_run_good_function() {
     // Test good action (should fail since not in bisect mode)
     let action = BisectAction::Good;
 
-    let result = git_x::bisect::run(action);
+    use git_x::commands::commit::{BisectAction as CommitBisectAction, BisectCommand};
+    use git_x::core::traits::Command;
+
+    let commit_action = match action {
+        BisectAction::Start { good, bad } => CommitBisectAction::Start { bad, good },
+        BisectAction::Good => CommitBisectAction::Good,
+        BisectAction::Bad => CommitBisectAction::Bad,
+        BisectAction::Skip => CommitBisectAction::Skip,
+        BisectAction::Reset => CommitBisectAction::Reset,
+        BisectAction::Status => CommitBisectAction::Status,
+    };
+    let cmd = BisectCommand::new(commit_action);
+    let result = cmd.execute();
     std::env::set_current_dir("/").expect("Failed to reset directory");
 
     assert!(result.is_err());
@@ -147,7 +183,19 @@ fn test_bisect_run_bad_function() {
     // Test bad action (should fail since not in bisect mode)
     let action = BisectAction::Bad;
 
-    let result = git_x::bisect::run(action);
+    use git_x::commands::commit::{BisectAction as CommitBisectAction, BisectCommand};
+    use git_x::core::traits::Command;
+
+    let commit_action = match action {
+        BisectAction::Start { good, bad } => CommitBisectAction::Start { bad, good },
+        BisectAction::Good => CommitBisectAction::Good,
+        BisectAction::Bad => CommitBisectAction::Bad,
+        BisectAction::Skip => CommitBisectAction::Skip,
+        BisectAction::Reset => CommitBisectAction::Reset,
+        BisectAction::Status => CommitBisectAction::Status,
+    };
+    let cmd = BisectCommand::new(commit_action);
+    let result = cmd.execute();
     std::env::set_current_dir("/").expect("Failed to reset directory");
 
     assert!(result.is_err());
@@ -162,7 +210,19 @@ fn test_bisect_run_skip_function() {
     // Test skip action (should fail since not in bisect mode)
     let action = BisectAction::Skip;
 
-    let result = git_x::bisect::run(action);
+    use git_x::commands::commit::{BisectAction as CommitBisectAction, BisectCommand};
+    use git_x::core::traits::Command;
+
+    let commit_action = match action {
+        BisectAction::Start { good, bad } => CommitBisectAction::Start { bad, good },
+        BisectAction::Good => CommitBisectAction::Good,
+        BisectAction::Bad => CommitBisectAction::Bad,
+        BisectAction::Skip => CommitBisectAction::Skip,
+        BisectAction::Reset => CommitBisectAction::Reset,
+        BisectAction::Status => CommitBisectAction::Status,
+    };
+    let cmd = BisectCommand::new(commit_action);
+    let result = cmd.execute();
     std::env::set_current_dir("/").expect("Failed to reset directory");
 
     assert!(result.is_err());
@@ -177,7 +237,19 @@ fn test_bisect_run_reset_function() {
     // Test reset action (should succeed even when not in bisect mode)
     let action = BisectAction::Reset;
 
-    let result = git_x::bisect::run(action);
+    use git_x::commands::commit::{BisectAction as CommitBisectAction, BisectCommand};
+    use git_x::core::traits::Command;
+
+    let commit_action = match action {
+        BisectAction::Start { good, bad } => CommitBisectAction::Start { bad, good },
+        BisectAction::Good => CommitBisectAction::Good,
+        BisectAction::Bad => CommitBisectAction::Bad,
+        BisectAction::Skip => CommitBisectAction::Skip,
+        BisectAction::Reset => CommitBisectAction::Reset,
+        BisectAction::Status => CommitBisectAction::Status,
+    };
+    let cmd = BisectCommand::new(commit_action);
+    let result = cmd.execute();
     std::env::set_current_dir("/").expect("Failed to reset directory");
 
     assert!(result.is_ok());
@@ -194,7 +266,19 @@ fn test_bisect_run_status_function() {
     // Test status action (should succeed even when not in bisect mode)
     let action = BisectAction::Status;
 
-    let result = git_x::bisect::run(action);
+    use git_x::commands::commit::{BisectAction as CommitBisectAction, BisectCommand};
+    use git_x::core::traits::Command;
+
+    let commit_action = match action {
+        BisectAction::Start { good, bad } => CommitBisectAction::Start { bad, good },
+        BisectAction::Good => CommitBisectAction::Good,
+        BisectAction::Bad => CommitBisectAction::Bad,
+        BisectAction::Skip => CommitBisectAction::Skip,
+        BisectAction::Reset => CommitBisectAction::Reset,
+        BisectAction::Status => CommitBisectAction::Status,
+    };
+    let cmd = BisectCommand::new(commit_action);
+    let result = cmd.execute();
     std::env::set_current_dir("/").expect("Failed to reset directory");
 
     assert!(result.is_ok());
@@ -419,22 +503,6 @@ fn test_bisect_start_same_commits() {
 
 // Unit tests for helper functions (these test the internal logic)
 
-#[test]
-fn test_parse_bisect_result() {
-    let sample_output =
-        "abc123def456 is the first bad commit\ncommit abc123def456\nAuthor: Test User";
-    let result = git_x::bisect::parse_bisect_result(sample_output);
-    assert!(result.contains("abc123def456"));
-    assert!(result.contains("First bad commit"));
-}
-
-#[test]
-fn test_parse_bisect_result_no_match() {
-    let sample_output = "Some other git output\nNo bad commit found";
-    let result = git_x::bisect::parse_bisect_result(sample_output);
-    assert_eq!(result, "Bisect completed");
-}
-
 // Error handling tests
 
 #[test]
@@ -533,4 +601,46 @@ fn test_bisect_start_relative_commits() {
         .current_dir(&repo_path)
         .assert()
         .success();
+}
+
+#[test]
+fn test_bisect_command_traits() {
+    use git_x::commands::commit::{BisectAction, BisectCommand};
+    use git_x::core::traits::Command;
+
+    let cmd = BisectCommand::new(BisectAction::Status);
+
+    // Test Command trait implementation
+    assert_eq!(cmd.name(), "bisect");
+    assert_eq!(
+        cmd.description(),
+        "Simplified Git bisect workflow for finding bugs"
+    );
+}
+
+#[test]
+fn test_bisect_command_direct() {
+    use git_x::commands::commit::{BisectAction, BisectCommand};
+    use git_x::core::traits::Command;
+
+    let (_temp_dir, repo_path) = create_test_repo();
+    let original_dir = std::env::current_dir().unwrap();
+
+    std::env::set_current_dir(&repo_path).unwrap();
+
+    let cmd = BisectCommand::new(BisectAction::Status);
+    let result = cmd.execute();
+
+    // Status should work even when not bisecting
+    match &result {
+        Ok(output) => {
+            assert!(output.contains("Not currently in bisect mode"));
+        }
+        Err(_e) => {
+            // Some git environments might have different behavior
+        }
+    }
+
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
 }

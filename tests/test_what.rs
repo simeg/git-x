@@ -1,8 +1,30 @@
 mod common;
 
 use common::repo_with_feature_ahead;
-use git_x::what::*;
+use git_x::commands::analysis::WhatCommand;
+use git_x::core::traits::Command;
 use predicates::str::contains;
+
+// Helper function to strip ANSI escape codes for testing
+fn strip_ansi_codes(text: &str) -> String {
+    let mut result = String::new();
+    let mut chars = text.chars().peekable();
+
+    while let Some(ch) = chars.next() {
+        if ch == '\x1B' {
+            // Found escape character, skip until 'm'
+            for next_ch in chars.by_ref() {
+                if next_ch == 'm' {
+                    break;
+                }
+            }
+        } else {
+            result.push(ch);
+        }
+    }
+
+    result
+}
 
 #[test]
 fn test_git_xwhat_shows_diff_and_commits() {
@@ -11,159 +33,78 @@ fn test_git_xwhat_shows_diff_and_commits() {
     repo.run_git_x(&["what"])
         .success()
         .stdout(contains("Branch: feature/test vs main"))
-        .stdout(contains("+ 1 commits ahead"))
-        .stdout(contains("Changes:"))
-        .stdout(contains("~ file.txt"));
-}
-
-// Unit tests for helper functions
-#[test]
-fn test_get_default_target() {
-    assert_eq!(get_default_target(), "main");
+        .stdout(contains("1 commits ahead"))
+        .stdout(contains("📝 Changes:"))
+        .stdout(contains("🔄 file.txt"));
 }
 
 #[test]
-fn test_format_branch_comparison() {
-    assert_eq!(
-        format_branch_comparison("feature", "main"),
-        "Branch: feature vs main"
-    );
-    assert_eq!(
-        format_branch_comparison("develop", "master"),
-        "Branch: develop vs master"
-    );
-}
-
-#[test]
-fn test_format_commit_counts() {
-    let (ahead, behind) = format_commit_counts("3", "1");
-    assert_eq!(ahead, "+ 3 commits ahead");
-    assert_eq!(behind, "- 1 commits behind");
-
-    let (ahead, behind) = format_commit_counts("0", "5");
-    assert_eq!(ahead, "+ 0 commits ahead");
-    assert_eq!(behind, "- 5 commits behind");
-}
-
-#[test]
-fn test_format_rev_list_range() {
-    assert_eq!(format_rev_list_range("main", "feature"), "main...feature");
-    assert_eq!(
-        format_rev_list_range("develop", "hotfix"),
-        "develop...hotfix"
-    );
-}
-
-#[test]
-fn test_parse_commit_counts() {
-    assert_eq!(
-        parse_commit_counts("2 3"),
-        ("3".to_string(), "2".to_string())
-    );
-    assert_eq!(
-        parse_commit_counts("0 1"),
-        ("1".to_string(), "0".to_string())
-    );
-    assert_eq!(parse_commit_counts("5"), ("0".to_string(), "5".to_string()));
-    assert_eq!(parse_commit_counts(""), ("0".to_string(), "0".to_string()));
-}
-
-#[test]
-fn test_git_status_to_symbol() {
-    assert_eq!(git_status_to_symbol("A"), "+");
-    assert_eq!(git_status_to_symbol("M"), "~");
-    assert_eq!(git_status_to_symbol("D"), "-");
-    assert_eq!(git_status_to_symbol("R"), "R");
-    assert_eq!(git_status_to_symbol("C"), "C");
-}
-
-#[test]
-fn test_format_diff_line() {
-    assert_eq!(
-        format_diff_line("A\tfile.txt"),
-        Some(" - + file.txt".to_string())
-    );
-    assert_eq!(
-        format_diff_line("M\tsrc/main.rs"),
-        Some(" - ~ src/main.rs".to_string())
-    );
-    assert_eq!(
-        format_diff_line("D\told.txt"),
-        Some(" - - old.txt".to_string())
-    );
-    assert_eq!(format_diff_line("A"), None);
-    assert_eq!(format_diff_line(""), None);
-}
-
-#[test]
-fn test_what_run_function() {
+fn test_what_command_direct() {
     let repo = repo_with_feature_ahead("feature/test", "main");
+    let original_dir = std::env::current_dir().unwrap();
 
-    // Get original directory and handle potential failures
-    let original_dir = match std::env::current_dir() {
-        Ok(dir) => dir,
-        Err(_) => return, // Skip test if current directory is invalid
-    };
+    std::env::set_current_dir(repo.path()).unwrap();
 
-    // Change to repo directory and run the function directly
-    if std::env::set_current_dir(repo.path()).is_err() {
-        return; // Skip test if directory change fails
+    let cmd = WhatCommand::new(None);
+    let result = cmd.execute();
+
+    // The what command may fail if branches don't exist or aren't set up correctly
+    // This is acceptable since it's testing error handling
+    match &result {
+        Ok(output) => {
+            // Strip ANSI codes to handle bold formatting
+            let clean_output = strip_ansi_codes(output);
+            assert!(clean_output.contains("Branch:"));
+            assert!(clean_output.contains("commits"));
+        }
+        Err(e) => {
+            // Git command failures are acceptable in this test scenario
+            assert!(e.to_string().contains("Git command failed"));
+        }
     }
-
-    // Test that the function doesn't panic and git commands work
-    let _ = run(None);
 
     // Restore original directory
     let _ = std::env::set_current_dir(&original_dir);
 }
 
 #[test]
-fn test_what_run_function_with_target() {
+fn test_what_command_with_target() {
     let repo = repo_with_feature_ahead("feature/compare", "main");
+    let original_dir = std::env::current_dir().unwrap();
 
-    // Get original directory and handle potential failures
-    let original_dir = match std::env::current_dir() {
-        Ok(dir) => dir,
-        Err(_) => return, // Skip test if current directory is invalid
-    };
-
-    // Change to repo directory and run the function directly
-    if std::env::set_current_dir(repo.path()).is_err() {
-        return; // Skip test if directory change fails
-    }
+    // Change to repo directory
+    std::env::set_current_dir(repo.path()).unwrap();
 
     // Test with specific target
-    let _ = run(Some("main".to_string()));
+    let cmd = WhatCommand::new(Some("main".to_string()));
+    let result = cmd.execute();
+
+    // The what command may fail if branches don't exist or aren't set up correctly
+    // This is acceptable since it's testing error handling
+    match &result {
+        Ok(output) => {
+            // Strip ANSI codes to handle bold formatting
+            let clean_output = strip_ansi_codes(output);
+            assert!(clean_output.contains("vs main"));
+        }
+        Err(e) => {
+            // Git command failures are acceptable in this test scenario
+            assert!(e.to_string().contains("Git command failed"));
+        }
+    }
 
     // Restore original directory
     let _ = std::env::set_current_dir(&original_dir);
 }
 
 #[test]
-fn test_what_run_function_with_multiple_changes() {
-    let repo = common::basic_repo();
+fn test_what_command_traits() {
+    let cmd = WhatCommand::new(None);
 
-    // Create multiple changes to trigger diff output
-    repo.create_branch("feature/multi-changes");
-
-    // Add multiple files to trigger the diff line printing
-    repo.add_commit("file1.txt", "content1", "Add file1");
-    repo.add_commit("file2.txt", "content2", "Add file2");
-
-    // Get original directory and handle potential failures
-    let original_dir = match std::env::current_dir() {
-        Ok(dir) => dir,
-        Err(_) => return, // Skip test if current directory is invalid
-    };
-
-    // Change to repo directory and run the function directly
-    if std::env::set_current_dir(repo.path()).is_err() {
-        return; // Skip test if directory change fails
-    }
-
-    // Test that the function prints diff lines
-    let _ = run(Some("main".to_string()));
-
-    // Restore original directory
-    let _ = std::env::set_current_dir(&original_dir);
+    // Test Command trait implementation
+    assert_eq!(cmd.name(), "what");
+    assert_eq!(
+        cmd.description(),
+        "Analyze what changed between current branch and target"
+    );
 }

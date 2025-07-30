@@ -1,6 +1,8 @@
 mod common;
 
 use common::repo_with_commits;
+use git_x::commands::analysis::SinceCommand;
+use git_x::core::traits::Command;
 use predicates::str::contains;
 
 #[test]
@@ -22,49 +24,53 @@ fn test_git_xsince_no_new_commits() {
         .stdout(contains("✅ No new commits since HEAD"));
 }
 
-// Unit tests for logic (helper functions moved to common module)
-
 #[test]
-fn test_since_run_function() {
+fn test_since_command_direct() {
     let repo = repo_with_commits(3);
     let original_dir = std::env::current_dir().unwrap();
 
-    // Change to repo directory and run the function directly
     std::env::set_current_dir(repo.path()).unwrap();
 
-    // Test that the function doesn't panic and git commands work
-    let _ = git_x::since::run("HEAD~1".to_string());
+    let cmd = SinceCommand::new("HEAD~1".to_string());
+    let result = cmd.execute();
+
+    // Should succeed and return formatted output
+    assert!(result.is_ok());
+    let output = result.unwrap();
+    assert!(output.contains("🔍 Commits since HEAD~1:"));
 
     // Restore original directory
     let _ = std::env::set_current_dir(&original_dir);
 }
 
 #[test]
-fn test_since_run_function_no_commits() {
+fn test_since_command_no_commits() {
     let repo = common::basic_repo();
     let original_dir = std::env::current_dir().unwrap();
 
-    // Change to repo directory and run the function directly
+    // Change to repo directory
     std::env::set_current_dir(repo.path()).unwrap();
 
     // Test with a reference that should show no commits
-    let _ = git_x::since::run("HEAD".to_string());
+    let cmd = SinceCommand::new("HEAD".to_string());
+    let result = cmd.execute();
+
+    assert!(result.is_ok());
+    let output = result.unwrap();
+    assert!(output.contains("✅ No new commits since HEAD"));
 
     // Restore original directory
     let _ = std::env::set_current_dir(&original_dir);
 }
 
 #[test]
-fn test_since_run_function_git_error() {
-    let temp_dir = tempfile::tempdir().unwrap();
-    let original_dir = std::env::current_dir().unwrap();
+fn test_since_command_traits() {
+    let cmd = SinceCommand::new("HEAD~1".to_string());
 
-    // Change to non-git directory to trigger error path
-    std::env::set_current_dir(temp_dir.path()).unwrap();
-
-    // Test that the function handles git command failure gracefully
-    let _ = git_x::since::run("HEAD".to_string());
-
-    // Restore original directory
-    let _ = std::env::set_current_dir(&original_dir);
+    // Test Command trait implementation
+    assert_eq!(cmd.name(), "since");
+    assert_eq!(
+        cmd.description(),
+        "Show commits since a reference (e.g., cb676ec, origin/main) or time"
+    );
 }

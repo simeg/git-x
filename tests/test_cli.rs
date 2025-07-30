@@ -166,7 +166,7 @@ fn test_cli_parse_summary() {
     let cli = Cli::try_parse_from(["git-x", "summary", "--since", "3 days ago"]).unwrap();
     match cli.command {
         Commands::Summary { since } => {
-            assert_eq!(since, "3 days ago");
+            assert_eq!(since, Some("3 days ago".to_string()));
         }
         _ => panic!("Expected Summary command"),
     }

@@ -55,7 +55,7 @@ pub enum Commands {
             long = "since",
             help = "Accepts flexible formats like \"yesterday\", \"3 days ago\", \"2025-07-01\", etc. (same as git log --since)"
         )]
-        since: String,
+        since: Option<String>,
     },
     #[clap(about = "Sync current branch with upstream (fetch + rebase)")]
     Sync {

@@ -1,7 +1,8 @@
 mod common;
 
 use common::repo_with_merged_branch;
-use git_x::clean_branches::*;
+use git_x::commands::branch::CleanBranchesCommand;
+use git_x::core::traits::Command;
 use predicates::str::contains;
 use std::process::Command as StdCommand;
 
@@ -23,8 +24,8 @@ fn test_clean_branches_run_function_dry_run() {
     // Change to repo directory and run the function directly
     std::env::set_current_dir(repo.path()).unwrap();
 
-    // Test that the function doesn't panic and git commands work
-    let result = run(true);
+    let cmd = CleanBranchesCommand::new(true);
+    let result = cmd.execute();
     assert!(result.is_ok());
 
     // Restore original directory
@@ -44,8 +45,8 @@ fn test_clean_branches_run_function_actual_delete() {
         std::env::set_var("GIT_X_NON_INTERACTIVE", "1");
     }
 
-    // Test that the function doesn't panic and actually deletes branches
-    let result = run(false);
+    let cmd = CleanBranchesCommand::new(false);
+    let result = cmd.execute();
     assert!(result.is_ok());
 
     // Clean up environment variable
@@ -68,8 +69,8 @@ fn test_clean_branches_run_function_with_branches_to_delete() {
     // Change to repo directory and run the function directly
     std::env::set_current_dir(repo.path()).unwrap();
 
-    // Test with dry run to ensure it finds branches and prints them
-    let result = run(true);
+    let cmd = CleanBranchesCommand::new(true);
+    let result = cmd.execute();
     assert!(result.is_ok());
 
     // Restore original directory
@@ -92,8 +93,8 @@ fn test_clean_branches_run_function_non_dry_run_with_branches() {
         std::env::set_var("GIT_X_NON_INTERACTIVE", "1");
     }
 
-    // Test non-dry run to actually trigger deletion path
-    let result = run(false);
+    let cmd = CleanBranchesCommand::new(false);
+    let result = cmd.execute();
     assert!(result.is_ok());
 
     // Clean up environment variable
@@ -113,8 +114,8 @@ fn test_clean_branches_run_function_no_branches() {
     // Change to repo directory - this repo has no merged branches to delete
     std::env::set_current_dir(repo.path()).unwrap();
 
-    // Test the no branches case
-    let result = run(true);
+    let cmd = CleanBranchesCommand::new(true);
+    let result = cmd.execute();
     assert!(result.is_ok());
 
     // Restore original directory
@@ -164,4 +165,13 @@ fn test_format_no_branches_message() {
         "No merged branches to delete.",
         "No merged branches to delete."
     );
+}
+
+#[test]
+fn test_clean_branches_command_traits() {
+    let cmd = CleanBranchesCommand::new(true);
+
+    // Test Command trait implementation
+    assert_eq!(cmd.name(), "clean-branches");
+    assert_eq!(cmd.description(), "Delete merged branches");
 }

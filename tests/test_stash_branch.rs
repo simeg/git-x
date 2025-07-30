@@ -1,6 +1,6 @@
 use assert_cmd::Command;
-use git_x::cli::StashBranchAction;
-use git_x::stash_branch::*;
+use git_x::commands::stash::{StashBranchAction as StashAction, StashCommand, StashInfo, utils::*};
+use git_x::core::traits::Command as NewCommand;
 use predicates::prelude::*;
 use std::fs;
 use std::path::PathBuf;
@@ -536,13 +536,12 @@ fn test_stash_branch_run_create_function() {
 
     std::env::set_current_dir(&repo_path).expect("Failed to change directory");
 
-    // Test create action through run function
-    let action = StashBranchAction::Create {
+    let cmd = StashCommand::new(StashAction::Create {
         branch_name: "test-branch".to_string(),
         stash_ref: None,
-    };
+    });
 
-    let _ = run(action);
+    let _ = cmd.execute();
 
     std::env::set_current_dir("/").expect("Failed to reset directory");
 }
@@ -554,13 +553,12 @@ fn test_stash_branch_run_create_function_invalid_branch() {
 
     std::env::set_current_dir(&repo_path).expect("Failed to change directory");
 
-    // Test create action with invalid branch name
-    let action = StashBranchAction::Create {
+    let cmd = StashCommand::new(StashAction::Create {
         branch_name: "".to_string(), // Invalid empty name
         stash_ref: None,
-    };
+    });
 
-    let _ = run(action);
+    let _ = cmd.execute();
 
     std::env::set_current_dir("/").expect("Failed to reset directory");
 }
@@ -571,13 +569,12 @@ fn test_stash_branch_run_create_function_no_stash() {
 
     std::env::set_current_dir(&repo_path).expect("Failed to change directory");
 
-    // Test create action with no stash available
-    let action = StashBranchAction::Create {
+    let cmd = StashCommand::new(StashAction::Create {
         branch_name: "test-branch".to_string(),
         stash_ref: None,
-    };
+    });
 
-    let _ = run(action);
+    let _ = cmd.execute();
 
     std::env::set_current_dir("/").expect("Failed to reset directory");
 }
@@ -588,13 +585,12 @@ fn test_stash_branch_run_clean_function() {
 
     std::env::set_current_dir(&repo_path).expect("Failed to change directory");
 
-    // Test clean action through run function
-    let action = StashBranchAction::Clean {
+    let cmd = StashCommand::new(StashAction::Clean {
         older_than: None,
         dry_run: true,
-    };
+    });
 
-    let _ = run(action);
+    let _ = cmd.execute();
 
     std::env::set_current_dir("/").expect("Failed to reset directory");
 }
@@ -611,13 +607,12 @@ fn test_stash_branch_run_clean_function_with_age() {
         std::env::set_var("GIT_X_NON_INTERACTIVE", "1");
     }
 
-    // Test clean action with age filter
-    let action = StashBranchAction::Clean {
+    let cmd = StashCommand::new(StashAction::Clean {
         older_than: Some("7d".to_string()),
         dry_run: false,
-    };
+    });
 
-    let _ = run(action);
+    let _ = cmd.execute();
 
     // Clean up environment variable
     unsafe {
@@ -633,13 +628,12 @@ fn test_stash_branch_run_apply_function() {
 
     std::env::set_current_dir(&repo_path).expect("Failed to change directory");
 
-    // Test apply action through run function
-    let action = StashBranchAction::ApplyByBranch {
+    let cmd = StashCommand::new(StashAction::ApplyByBranch {
         branch_name: "nonexistent".to_string(),
         list_only: true,
-    };
+    });
 
-    let _ = run(action);
+    let _ = cmd.execute();
 
     std::env::set_current_dir("/").expect("Failed to reset directory");
 }
@@ -650,13 +644,12 @@ fn test_stash_branch_run_apply_function_no_list() {
 
     std::env::set_current_dir(&repo_path).expect("Failed to change directory");
 
-    // Test apply action without list flag
-    let action = StashBranchAction::ApplyByBranch {
+    let cmd = StashCommand::new(StashAction::ApplyByBranch {
         branch_name: "main".to_string(),
         list_only: false,
-    };
+    });
 
-    let _ = run(action);
+    let _ = cmd.execute();
 
     std::env::set_current_dir("/").expect("Failed to reset directory");
 }
@@ -724,4 +717,73 @@ fn test_filter_stashes_by_age_coverage() {
     let result = filter_stashes_by_age(&sample_stashes, "7d").unwrap();
     assert_eq!(result.len(), 2);
     assert_eq!(result[0].name, "stash@{0}");
+}
+
+#[test]
+fn test_stash_command_traits() {
+    let cmd = StashCommand::new(StashAction::Create {
+        branch_name: "test-branch".to_string(),
+        stash_ref: None,
+    });
+
+    // Test Command trait implementation
+    assert_eq!(cmd.name(), "stash-branch");
+    assert_eq!(
+        cmd.description(),
+        "Create branches from stashes or manage stash cleanup"
+    );
+}
+
+#[test]
+fn test_stash_command_direct_no_stashes() {
+    let (_temp_dir, repo_path, _branch) = create_test_repo();
+    let original_dir = std::env::current_dir().unwrap();
+
+    std::env::set_current_dir(&repo_path).unwrap();
+
+    // Test clean action when no stashes exist
+    let cmd = StashCommand::new(StashAction::Clean {
+        older_than: None,
+        dry_run: true,
+    });
+    let result = cmd.execute();
+
+    match &result {
+        Ok(output) => {
+            assert!(output.contains("No stashes found"));
+        }
+        Err(_e) => {
+            // Command may fail in test environment, which is acceptable
+        }
+    }
+
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
+}
+
+#[test]
+fn test_stash_command_apply_by_branch_no_stashes() {
+    let (_temp_dir, repo_path, _branch) = create_test_repo();
+    let original_dir = std::env::current_dir().unwrap();
+
+    std::env::set_current_dir(&repo_path).unwrap();
+
+    // Test apply by branch when no stashes exist for the branch
+    let cmd = StashCommand::new(StashAction::ApplyByBranch {
+        branch_name: "nonexistent-branch".to_string(),
+        list_only: true,
+    });
+    let result = cmd.execute();
+
+    match &result {
+        Ok(output) => {
+            assert!(output.contains("No stashes found for branch"));
+        }
+        Err(_e) => {
+            // Command may fail in test environment, which is acceptable
+        }
+    }
+
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
 }

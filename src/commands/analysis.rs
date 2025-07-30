@@ -1,7 +1,8 @@
 use crate::Result;
 use crate::core::traits::*;
 use crate::core::{git::*, output::*};
-use std::collections::HashMap;
+use chrono::{NaiveDate, Utc};
+use std::collections::{BTreeMap, HashMap};
 
 /// Analysis and reporting commands grouped together
 pub struct AnalysisCommands;
@@ -40,6 +41,11 @@ impl AnalysisCommands {
     pub fn since(time_spec: String) -> Result<String> {
         SinceCommand::new(time_spec).execute()
     }
+
+    /// Analyze what changed between branches
+    pub fn what(target: Option<String>) -> Result<String> {
+        WhatCommand::new(target).execute()
+    }
 }
 
 /// Command to generate repository summary
@@ -67,6 +73,108 @@ impl SummaryCommand {
             total_commits,
             period: since_arg.to_string(),
         })
+    }
+
+    fn get_detailed_commit_summary(&self) -> Result<String> {
+        let since_arg = self.since.as_deref().unwrap_or("1 month ago");
+        let git_log_output = GitOperations::run(&[
+            "log",
+            "--since",
+            since_arg,
+            "--pretty=format:%h|%ad|%s|%an|%cr",
+            "--date=short",
+        ])?;
+
+        if git_log_output.trim().is_empty() {
+            return Ok(format!("📅 No commits found since {since_arg}"));
+        }
+
+        let grouped = self.parse_git_log_output(&git_log_output);
+        Ok(self.format_commit_summary(since_arg, &grouped))
+    }
+
+    fn parse_git_log_output(&self, stdout: &str) -> BTreeMap<NaiveDate, Vec<String>> {
+        let mut grouped: BTreeMap<NaiveDate, Vec<String>> = BTreeMap::new();
+
+        for line in stdout.lines() {
+            if let Some((date, formatted_commit)) = self.parse_commit_line(line) {
+                grouped.entry(date).or_default().push(formatted_commit);
+            }
+        }
+
+        grouped
+    }
+
+    fn parse_commit_line(&self, line: &str) -> Option<(NaiveDate, String)> {
+        let parts: Vec<&str> = line.splitn(5, '|').collect();
+        if parts.len() != 5 {
+            return None;
+        }
+
+        let date = self.parse_commit_date(parts[1])?;
+        let message = parts[2];
+        let entry = format!(" - {} {}", self.get_commit_emoji(message), message.trim());
+        let author = parts[3];
+        let time = parts[4];
+        let meta = format!("(by {author}, {time})");
+        Some((date, format!("{entry} {meta}")))
+    }
+
+    fn parse_commit_date(&self, date_str: &str) -> Option<NaiveDate> {
+        NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
+            .ok()
+            .or_else(|| Some(Utc::now().date_naive()))
+    }
+
+    fn format_commit_summary(
+        &self,
+        since: &str,
+        grouped: &BTreeMap<NaiveDate, Vec<String>>,
+    ) -> String {
+        let mut result = format!("📅 Commit Summary since {since}:\n");
+        result.push_str(&"=".repeat(50));
+        result.push('\n');
+
+        for (date, commits) in grouped.iter().rev() {
+            result.push_str(&format!("\n📆 {date}\n"));
+            for commit in commits {
+                result.push_str(commit);
+                result.push('\n');
+            }
+        }
+
+        result
+    }
+
+    fn get_commit_emoji(&self, message: &str) -> &'static str {
+        // Use case-insensitive matching without allocation
+        let msg_bytes = message.as_bytes();
+        if msg_bytes.windows(3).any(|w| w.eq_ignore_ascii_case(b"fix"))
+            || msg_bytes.windows(3).any(|w| w.eq_ignore_ascii_case(b"bug"))
+        {
+            "🐛"
+        } else if msg_bytes
+            .windows(4)
+            .any(|w| w.eq_ignore_ascii_case(b"feat"))
+            || msg_bytes.windows(3).any(|w| w.eq_ignore_ascii_case(b"add"))
+        {
+            "✨"
+        } else if msg_bytes
+            .windows(6)
+            .any(|w| w.eq_ignore_ascii_case(b"remove"))
+            || msg_bytes
+                .windows(6)
+                .any(|w| w.eq_ignore_ascii_case(b"delete"))
+        {
+            "🔥"
+        } else if msg_bytes
+            .windows(8)
+            .any(|w| w.eq_ignore_ascii_case(b"refactor"))
+        {
+            "🛠"
+        } else {
+            "🔹"
+        }
     }
 
     fn get_author_stats(&self) -> Result<Vec<AuthorStats>> {
@@ -110,6 +218,12 @@ impl SummaryCommand {
 
 impl Command for SummaryCommand {
     fn execute(&self) -> Result<String> {
+        // If a specific since parameter is provided, show detailed commit summary
+        if self.since.is_some() {
+            return self.get_detailed_commit_summary();
+        }
+
+        // Otherwise show repository summary
         let mut output = BufferedOutput::new();
 
         output.add_line("📊 Repository Summary".to_string());
@@ -283,31 +397,106 @@ impl ContributorsCommand {
     pub fn new(since: Option<String>) -> Self {
         Self { since }
     }
+
+    fn get_detailed_contributors(&self) -> Result<Vec<ContributorStats>> {
+        let args = if let Some(ref since) = self.since {
+            vec![
+                "log",
+                "--all",
+                "--format=%ae|%an|%ad",
+                "--date=short",
+                "--since",
+                since,
+            ]
+        } else {
+            vec!["log", "--all", "--format=%ae|%an|%ad", "--date=short"]
+        };
+
+        let output = GitOperations::run(&args)?;
+
+        if output.trim().is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let mut contributors: HashMap<String, ContributorStats> = HashMap::new();
+
+        for line in output.lines() {
+            let parts: Vec<&str> = line.splitn(3, '|').collect();
+            if parts.len() != 3 {
+                continue;
+            }
+
+            let email = parts[0].trim().to_string();
+            let name = parts[1].trim().to_string();
+            let date = parts[2].trim().to_string();
+
+            contributors
+                .entry(email.clone())
+                .and_modify(|stats| {
+                    stats.commit_count += 1;
+                    if date < stats.first_commit {
+                        stats.first_commit = date.clone();
+                    }
+                    if date > stats.last_commit {
+                        stats.last_commit = date.clone();
+                    }
+                })
+                .or_insert(ContributorStats {
+                    name: name.clone(),
+                    email: email.clone(),
+                    commit_count: 1,
+                    first_commit: date.clone(),
+                    last_commit: date,
+                });
+        }
+
+        let mut sorted_contributors: Vec<ContributorStats> = contributors.into_values().collect();
+        sorted_contributors.sort_by(|a, b| b.commit_count.cmp(&a.commit_count));
+
+        Ok(sorted_contributors)
+    }
 }
 
 impl Command for ContributorsCommand {
     fn execute(&self) -> Result<String> {
-        let mut args = vec!["shortlog", "-sn"];
-        if let Some(ref since) = self.since {
-            args.extend_from_slice(&["--since", since]);
+        let contributors = self.get_detailed_contributors()?;
+
+        if contributors.is_empty() {
+            return Ok("📊 No contributors found in this repository".to_string());
         }
 
-        let output = GitOperations::run(&args)?;
+        let total_commits: usize = contributors.iter().map(|c| c.commit_count).sum();
         let mut result = String::new();
 
-        result.push_str("👥 Contributors:\n");
-        result.push_str(&"=".repeat(30));
+        let time_period = self.since.as_deref().unwrap_or("all time");
+        result.push_str(&format!(
+            "📊 Repository Contributors ({total_commits} total commits, {time_period}):\n"
+        ));
+        result.push_str(&"=".repeat(60));
         result.push('\n');
 
-        for (i, line) in output.lines().enumerate() {
-            if let Some((count, name)) = line.trim().split_once('\t') {
-                let prefix = match i {
-                    0 => "🥇",
-                    1 => "🥈",
-                    2 => "🥉",
-                    _ => "👤",
-                };
-                result.push_str(&format!("{prefix} {name} ({count} commits)\n"));
+        for (index, contributor) in contributors.iter().enumerate() {
+            let rank_icon = match index {
+                0 => "🥇",
+                1 => "🥈",
+                2 => "🥉",
+                _ => "👤",
+            };
+
+            let percentage = (contributor.commit_count as f64 / total_commits as f64) * 100.0;
+
+            result.push_str(&format!(
+                "{} {} {} commits ({:.1}%)\n",
+                rank_icon, contributor.name, contributor.commit_count, percentage
+            ));
+
+            result.push_str(&format!(
+                "   📧 {} | 📅 {} to {}\n",
+                contributor.email, contributor.first_commit, contributor.last_commit
+            ));
+
+            if index < contributors.len() - 1 {
+                result.push('\n');
             }
         }
 
@@ -319,7 +508,7 @@ impl Command for ContributorsCommand {
     }
 
     fn description(&self) -> &'static str {
-        "Show contributor statistics"
+        "Show repository contributors and their commit statistics"
     }
 }
 
@@ -504,27 +693,38 @@ impl Command for LargeFilesCommand {
 
 impl GitCommand for LargeFilesCommand {}
 
-/// Command to show commits since a certain time
+/// Command to show commits since a certain time or reference
 pub struct SinceCommand {
-    time_spec: String,
+    reference: String,
 }
 
 impl SinceCommand {
-    pub fn new(time_spec: String) -> Self {
-        Self { time_spec }
+    pub fn new(reference: String) -> Self {
+        Self { reference }
     }
 }
 
 impl Command for SinceCommand {
     fn execute(&self) -> Result<String> {
-        let output = GitOperations::run(&["log", "--oneline", "--since", &self.time_spec])?;
-
-        if output.trim().is_empty() {
-            return Ok(format!("No commits found since '{}'", self.time_spec));
+        // First try as a git reference (commit hash, branch, tag)
+        let log_range = format!("{}..HEAD", self.reference);
+        if let Ok(output) = GitOperations::run(&["log", &log_range, "--pretty=format:- %h %s"]) {
+            if !output.trim().is_empty() {
+                return Ok(format!("🔍 Commits since {}:\n{}", self.reference, output));
+            } else {
+                return Ok(format!("✅ No new commits since {}", self.reference));
+            }
         }
 
-        let mut result = format!("📅 Commits since '{}':\n", self.time_spec);
-        result.push_str(&"=".repeat(40));
+        // If that fails, try as a time specification
+        let output = GitOperations::run(&["log", "--oneline", "--since", &self.reference])?;
+
+        if output.trim().is_empty() {
+            return Ok(format!("✅ No commits found since '{}'", self.reference));
+        }
+
+        let mut result = format!("📅 Commits since '{}':\n", self.reference);
+        result.push_str(&"=".repeat(50));
         result.push('\n');
 
         for line in output.lines() {
@@ -539,11 +739,129 @@ impl Command for SinceCommand {
     }
 
     fn description(&self) -> &'static str {
-        "Show commits since a specific time"
+        "Show commits since a reference (e.g., cb676ec, origin/main) or time"
     }
 }
 
 impl GitCommand for SinceCommand {}
+
+/// Command to analyze what changed between branches
+pub struct WhatCommand {
+    target: Option<String>,
+}
+
+impl WhatCommand {
+    pub fn new(target: Option<String>) -> Self {
+        Self { target }
+    }
+
+    fn get_default_target(&self) -> String {
+        "main".to_string()
+    }
+
+    fn format_branch_comparison(&self, current: &str, target: &str) -> String {
+        format!(
+            "🔍 Branch: {} vs {}",
+            Format::bold(current),
+            Format::bold(target)
+        )
+    }
+
+    fn parse_commit_counts(&self, output: &str) -> (String, String) {
+        let mut counts = output.split_whitespace();
+        let behind = counts.next().unwrap_or("0").to_string();
+        let ahead = counts.next().unwrap_or("0").to_string();
+        (ahead, behind)
+    }
+
+    fn format_commit_counts(&self, ahead: &str, behind: &str) -> (String, String) {
+        (
+            format!("📈 {ahead} commits ahead"),
+            format!("📉 {behind} commits behind"),
+        )
+    }
+
+    fn format_rev_list_range(&self, target: &str, current: &str) -> String {
+        format!("{target}...{current}")
+    }
+
+    fn git_status_to_symbol(&self, status: &str) -> &'static str {
+        match status {
+            "A" => "➕",
+            "M" => "🔄",
+            "D" => "➖",
+            _ => "❓",
+        }
+    }
+
+    fn format_diff_line(&self, line: &str) -> Option<String> {
+        let parts: Vec<&str> = line.split_whitespace().collect();
+        if parts.len() >= 2 {
+            let symbol = self.git_status_to_symbol(parts[0]);
+            Some(format!(" {} {}", symbol, parts[1]))
+        } else {
+            None
+        }
+    }
+}
+
+impl Command for WhatCommand {
+    fn execute(&self) -> Result<String> {
+        let target_branch = self
+            .target
+            .clone()
+            .unwrap_or_else(|| self.get_default_target());
+
+        // Get current branch name
+        let current_branch = GitOperations::current_branch()?;
+
+        let mut output = Vec::new();
+        output.push(self.format_branch_comparison(&current_branch, &target_branch));
+
+        // Get ahead/behind commit counts
+        let rev_list_output = GitOperations::run(&[
+            "rev-list",
+            "--left-right",
+            "--count",
+            &self.format_rev_list_range(&target_branch, &current_branch),
+        ])?;
+
+        let (ahead, behind) = self.parse_commit_counts(&rev_list_output);
+        let (ahead_msg, behind_msg) = self.format_commit_counts(&ahead, &behind);
+        output.push(ahead_msg);
+        output.push(behind_msg);
+
+        // Get diff summary
+        let diff_output = GitOperations::run(&[
+            "diff",
+            "--name-status",
+            &self.format_rev_list_range(&target_branch, &current_branch),
+        ])?;
+
+        if !diff_output.trim().is_empty() {
+            output.push("📝 Changes:".to_string());
+            for line in diff_output.lines() {
+                if let Some(formatted_line) = self.format_diff_line(line) {
+                    output.push(formatted_line);
+                }
+            }
+        } else {
+            output.push("✅ No file changes".to_string());
+        }
+
+        Ok(output.join("\n"))
+    }
+
+    fn name(&self) -> &'static str {
+        "what"
+    }
+
+    fn description(&self) -> &'static str {
+        "Analyze what changed between current branch and target"
+    }
+}
+
+impl GitCommand for WhatCommand {}
 
 // Supporting data structures
 #[derive(Debug)]
@@ -574,4 +892,13 @@ struct FileChurn {
 struct LargeFile {
     path: String,
     size_mb: f64,
+}
+
+#[derive(Debug, Clone)]
+struct ContributorStats {
+    name: String,
+    email: String,
+    commit_count: usize,
+    first_commit: String,
+    last_commit: String,
 }

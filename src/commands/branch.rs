@@ -8,6 +8,7 @@ pub struct BranchCommands;
 impl BranchCommands {
     /// Create a new branch command
     pub fn new_branch(name: &str, from: Option<&str>) -> Result<String> {
+        use crate::commands::repository::NewBranchCommand;
         NewBranchCommand::new(name.to_string(), from.map(|s| s.to_string())).execute()
     }
 
@@ -36,56 +37,6 @@ impl BranchCommands {
         StashBranchCommand::new(branch_name.to_string()).execute()
     }
 }
-
-/// Command to create a new branch
-pub struct NewBranchCommand {
-    name: String,
-    from: Option<String>,
-}
-
-impl NewBranchCommand {
-    pub fn new(name: String, from: Option<String>) -> Self {
-        Self { name, from }
-    }
-}
-
-impl Command for NewBranchCommand {
-    fn execute(&self) -> Result<String> {
-        // Validate inputs
-        Validate::branch_name(&self.name)?;
-
-        if let Some(ref base) = self.from {
-            if !GitOperations::commit_exists(base)? {
-                return Err(GitXError::GitCommand(format!(
-                    "Base branch or ref '{base}' does not exist"
-                )));
-            }
-        }
-
-        // Check if branch already exists
-        if BranchOperations::exists(&self.name)? {
-            return Err(GitXError::GitCommand(format!(
-                "Branch '{}' already exists",
-                self.name
-            )));
-        }
-
-        // Create and switch to the branch
-        BranchOperations::create(&self.name, self.from.as_deref())?;
-
-        Ok(format!("✅ Created and switched to branch '{}'", self.name))
-    }
-
-    fn name(&self) -> &'static str {
-        "new-branch"
-    }
-
-    fn description(&self) -> &'static str {
-        "Create and switch to a new branch"
-    }
-}
-
-impl GitCommand for NewBranchCommand {}
 
 /// Command to clean merged branches
 pub struct CleanBranchesCommand {
@@ -284,7 +235,7 @@ impl Command for RenameBranchCommand {
 
 impl GitCommand for RenameBranchCommand {}
 
-/// Command to prune remote branches
+/// Command to prune (delete) merged local branches
 pub struct PruneBranchesCommand {
     dry_run: bool,
 }
@@ -293,17 +244,65 @@ impl PruneBranchesCommand {
     pub fn new(dry_run: bool) -> Self {
         Self { dry_run }
     }
+
+    fn get_protected_branches() -> Vec<&'static str> {
+        vec!["main", "master", "develop"]
+    }
+
+    fn is_protected_branch(branch: &str) -> bool {
+        Self::get_protected_branches().contains(&branch)
+    }
 }
 
 impl Command for PruneBranchesCommand {
     fn execute(&self) -> Result<String> {
-        if self.dry_run {
-            GitOperations::run(&["remote", "prune", "origin", "--dry-run"])?;
-            Ok("🧪 (dry run) Showed what would be pruned".to_string())
-        } else {
-            GitOperations::run_status(&["remote", "prune", "origin"])?;
-            Ok("🧹 Pruned remote tracking branches".to_string())
+        let merged_branches = GitOperations::merged_branches()?;
+        let current_branch = GitOperations::current_branch()?;
+
+        let branches_to_delete: Vec<String> = merged_branches
+            .into_iter()
+            .filter(|branch| branch != &current_branch)
+            .filter(|branch| !Self::is_protected_branch(branch))
+            .collect();
+
+        if branches_to_delete.is_empty() {
+            return Ok("✅ No merged branches to prune.".to_string());
         }
+
+        if self.dry_run {
+            let mut result = format!(
+                "🧪 (dry run) {} branches would be deleted:\n",
+                branches_to_delete.len()
+            );
+            for branch in &branches_to_delete {
+                result.push_str(&format!("(dry run) Would delete: {branch}\n"));
+            }
+            return Ok(result);
+        }
+
+        // Confirm deletion
+        let details = format!(
+            "This will delete {} merged branches: {}",
+            branches_to_delete.len(),
+            branches_to_delete.join(", ")
+        );
+
+        if !Safety::confirm_destructive_operation("Delete merged branches", &details)? {
+            return Ok("Operation cancelled by user.".to_string());
+        }
+
+        let mut deleted = Vec::new();
+        for branch in branches_to_delete {
+            if BranchOperations::delete(&branch, false).is_ok() {
+                deleted.push(branch);
+            }
+        }
+
+        Ok(format!(
+            "🧹 Deleted {} merged branches:\n{}",
+            deleted.len(),
+            deleted.join("\n")
+        ))
     }
 
     fn name(&self) -> &'static str {
@@ -311,7 +310,7 @@ impl Command for PruneBranchesCommand {
     }
 
     fn description(&self) -> &'static str {
-        "Prune remote tracking branches"
+        "Delete merged local branches (except protected ones)"
     }
 }
 
@@ -323,6 +322,12 @@ impl DryRunnable for PruneBranchesCommand {
 
     fn is_dry_run(&self) -> bool {
         self.dry_run
+    }
+}
+
+impl Destructive for PruneBranchesCommand {
+    fn destruction_description(&self) -> String {
+        "This will permanently delete merged branches".to_string()
     }
 }
 

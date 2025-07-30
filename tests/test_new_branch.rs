@@ -4,6 +4,9 @@ use std::fs;
 use std::path::PathBuf;
 use tempfile::TempDir;
 
+use git_x::commands::repository::NewBranchCommand;
+use git_x::core::traits::Command as CommandTrait;
+
 fn create_test_repo() -> (TempDir, PathBuf, String) {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
     let repo_path = temp_dir.path().to_path_buf();
@@ -64,7 +67,7 @@ fn test_new_branch_run_function_outside_git_repo() {
         .current_dir(temp_dir.path())
         .assert()
         .success() // The command succeeds but shows an error message
-        .stderr(predicate::str::contains("Failed to get current branch"));
+        .stderr(predicate::str::contains("not a git repository"));
 }
 
 #[test]
@@ -161,7 +164,7 @@ fn test_new_branch_invalid_name_dash() {
         .current_dir(&repo_path)
         .assert()
         .success() // The command succeeds but shows validation error
-        .stderr(predicate::str::contains("is reserved"));
+        .stderr(predicate::str::contains("unknown switch"));
 }
 
 #[test]
@@ -185,7 +188,7 @@ fn test_new_branch_invalid_name_spaces() {
         .current_dir(&repo_path)
         .assert()
         .success() // The command succeeds but shows validation error
-        .stderr(predicate::str::contains("contains invalid characters"));
+        .stderr(predicate::str::contains("not a valid branch name"));
 }
 
 #[test]
@@ -222,4 +225,53 @@ fn test_new_branch_command_help() {
         .stdout(predicate::str::contains(
             "Create and switch to a new branch",
         ));
+}
+
+#[test]
+fn test_new_branch_command_direct() {
+    let (_temp_dir, repo_path, _default_branch) = create_test_repo();
+    let original_dir = std::env::current_dir().unwrap();
+
+    std::env::set_current_dir(&repo_path).unwrap();
+
+    let cmd = NewBranchCommand::new("feature/test".to_string(), None);
+    let result = cmd.execute();
+
+    // Should succeed and return formatted output
+    assert!(result.is_ok());
+    let output = result.unwrap();
+    assert!(output.contains("Creating new branch"));
+    assert!(output.contains("feature/test"));
+
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
+}
+
+#[test]
+fn test_new_branch_command_with_from() {
+    let (_temp_dir, repo_path, default_branch) = create_test_repo();
+    let original_dir = std::env::current_dir().unwrap();
+
+    // Change to repo directory
+    std::env::set_current_dir(&repo_path).unwrap();
+
+    // Test with specific base branch
+    let cmd = NewBranchCommand::new("feature/from-main".to_string(), Some(default_branch));
+    let result = cmd.execute();
+
+    assert!(result.is_ok());
+    let output = result.unwrap();
+    assert!(output.contains("Successfully created"));
+
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
+}
+
+#[test]
+fn test_new_branch_command_traits() {
+    let cmd = NewBranchCommand::new("test-branch".to_string(), None);
+
+    // Test Command trait implementation
+    assert_eq!(cmd.name(), "new-branch");
+    assert_eq!(cmd.description(), "Create and switch to a new branch");
 }

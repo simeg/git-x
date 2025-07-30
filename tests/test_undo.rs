@@ -1,6 +1,8 @@
 mod common;
 
 use common::repo_with_commits;
+use git_x::commands::commit::UndoCommand;
+use git_x::core::traits::Command as CommandTrait;
 use predicates::str::contains;
 use std::process::Command;
 
@@ -31,48 +33,33 @@ fn test_git_xundo_soft_resets_last_commit() {
     assert!(diff_output.contains("file.txt"));
 }
 
-// Unit tests for core functionality - no helper functions to test since they're now in common
-
 #[test]
-fn test_undo_run_function() {
+fn test_undo_command_direct() {
     let repo = repo_with_commits(3);
+    let original_dir = std::env::current_dir().unwrap();
 
-    // Get original directory and handle potential failures
-    let original_dir = match std::env::current_dir() {
-        Ok(dir) => dir,
-        Err(_) => return, // Skip test if current directory is invalid
-    };
+    std::env::set_current_dir(repo.path()).unwrap();
 
-    // Change to repo directory and run the function directly
-    if std::env::set_current_dir(repo.path()).is_err() {
-        return; // Skip test if directory change fails
-    }
+    let cmd = UndoCommand::new();
+    let result = cmd.execute();
 
-    // Test that the function doesn't panic and git commands work
-    let _ = git_x::undo::run();
+    // Should succeed and return formatted output
+    assert!(result.is_ok());
+    let output = result.unwrap();
+    assert!(output.contains("Last commit undone"));
 
     // Restore original directory
     let _ = std::env::set_current_dir(&original_dir);
 }
 
 #[test]
-fn test_undo_run_function_git_error() {
-    let temp_dir = tempfile::tempdir().unwrap();
+fn test_undo_command_traits() {
+    let cmd = UndoCommand::new();
 
-    // Get original directory and handle potential failures
-    let original_dir = match std::env::current_dir() {
-        Ok(dir) => dir,
-        Err(_) => return, // Skip test if current directory is invalid
-    };
-
-    // Change to non-git directory to trigger error path
-    if std::env::set_current_dir(temp_dir.path()).is_err() {
-        return; // Skip test if directory change fails
-    }
-
-    // Test that the function handles git command failure gracefully
-    let _ = git_x::undo::run();
-
-    // Restore original directory
-    let _ = std::env::set_current_dir(&original_dir);
+    // Test Command trait implementation
+    assert_eq!(cmd.name(), "undo");
+    assert_eq!(
+        cmd.description(),
+        "Undo the last commit (without losing changes)"
+    );
 }

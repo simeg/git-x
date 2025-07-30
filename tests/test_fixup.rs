@@ -19,6 +19,52 @@ fn test_fixup_run_function_outside_git_repo() {
 }
 
 #[test]
+fn test_fixup_command_traits() {
+    use git_x::commands::commit::FixupCommand;
+    use git_x::core::traits::Command;
+
+    let cmd = FixupCommand::new("abc123".to_string(), false);
+
+    // Test Command trait implementation
+    assert_eq!(cmd.name(), "fixup");
+    assert_eq!(
+        cmd.description(),
+        "Create fixup commits for easier interactive rebasing"
+    );
+}
+
+#[test]
+fn test_fixup_command_direct() {
+    use git_x::commands::commit::FixupCommand;
+    use git_x::core::traits::Command;
+
+    let repo = basic_repo();
+    let original_dir = std::env::current_dir().unwrap();
+
+    std::env::set_current_dir(repo.path()).unwrap();
+
+    let cmd = FixupCommand::new("HEAD".to_string(), false);
+    let result = cmd.execute();
+
+    // The fixup command may fail due to no staged changes, which is acceptable
+    match &result {
+        Ok(_output) => {
+            // Command succeeded - this would be rare in this test setup
+        }
+        Err(e) => {
+            // No staged changes error is expected in this test scenario
+            assert!(
+                e.to_string().contains("No staged changes")
+                    || e.to_string().contains("Git command failed")
+            );
+        }
+    }
+
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
+}
+
+#[test]
 fn test_fixup_invalid_commit_hash() {
     let repo = basic_repo();
 

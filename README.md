@@ -110,7 +110,7 @@ git x bisect reset
 
 ```shell
 # Start bisecting between a known good commit and HEAD
-git x bisect start HEAD~10 HEAD
+git x bisect start HEAD HEAD~10
 
 # Git checks out a commit for testing
 # Test your code, then mark the commit:
@@ -269,16 +269,15 @@ git x health
 #### Output:
 
 ```shell
-Repository Health Check
-=========================
+🏥 Repository Health Check
+==============================
+✅ Git configuration: OK
+✅ Remotes: OK
+✅ Branches: OK
+✅ Working directory: Clean
+✅ Repository size: OK
 
-✓ Working directory is clean
-✓ No untracked files
-✓ No stale branches (older than 1 month)
-✓ Repository size: 524K (healthy)
-✓ No staged changes
-
-Health check complete!
+🎉 Repository is healthy!
 ```
 
 #### What it checks:
@@ -307,11 +306,12 @@ git x info
 #### Output:
 
 ```shell
-Repo: my-project
-Branch: feature/auth
-Tracking: origin/feature/auth
-Ahead: 2 Behind: 0
-Last Commit: "fix login bug" (2 hours ago)
+🗂️  Repository: git-x
+📍 Current branch: master
+🔗 Upstream: origin/master
+✅ Status: Up to date
+⚠️  Working directory: Has changes
+📋 Staged files: None
 ```
 
 ---
@@ -501,24 +501,35 @@ git x summary --since "2 days ago"
 - `--since` — Accepts natural date formats like "2 days ago", "last Monday", or exact dates like "2025-07-01". It uses Git's built-in date parser, so most human-readable expressions work.
 
 #### Output:
+
+**Without `--since` flag (shows repository summary):**
 ```shell
-🗞️ Commit summary since 3 days ago:
-
-📅 2025-07-25
- - 🛠 fix: update token refresh logic (by Alice, 3 hours ago)
- - ✨ feat: add dark mode support (by Bob, 6 hours ago)
-
-📅 2025-07-24
- - 🔥 remove unused dependencies (by Alice, 1 day ago)
-
-📅 2025-07-23
- - 🐛 fix: handle null response in API call (by Carol, 2 days ago)
+📊 Repository Summary
+==================================================
+🗂️  Repository: git-x
+📍 Current branch: master
+🔗 Upstream: origin/master (up to date)
+📈 Commits (1 month ago): 72
+📁 Files: 63 total
 ```
 
-- Groups commits by day
-- Shows commit message, author, and relative time
+**With `--since` flag (shows changelog-style commit history):**
+```shell
+📅 Commit Summary since 2 days ago:
+==================================================
+
+📆 2025-07-30
+ - 🔹 Big re-architecture (by Simon Egersand, 4 hours ago)
+ - 🐛 Fix remaining test failures (by Alice, 6 hours ago)
+
+📆 2025-07-29
+ - ✨ Add new features (by Bob, 1 day ago)
+ - 🛠 Refactor core components (by Carol, 1 day ago)
+```
+
+- **Default behavior**: Shows repository overview with stats from the last month
+- **With `--since`**: Groups commits by day with commit messages, authors, and timestamps
 - Useful for writing daily stand-ups, changelogs, or review summaries
-- Defaults to showing commits from the last 3 days
 - Can be customized using `--since` (e.g. `--since "1 week ago"`)
 - Sorts commits newest-first within each day
 
@@ -699,7 +710,7 @@ Every `git-x` command is a **thin wrapper** around standard Git operations that 
 
 **Example:** When you run `git x graph`, it literally executes:
 ```shell
-git log --oneline --graph --decorate --all
+git log --graph --oneline --all -20
 ```
 
 No database calls, no hidden state, no magic — just Git doing Git things, with better UX.
@@ -737,7 +748,7 @@ This is Git's standard extension mechanism — no configuration needed.
 
 **Example:** `git x graph` literally runs:
 ```shell
-git log --oneline --graph --decorate --all
+git log --graph --oneline --all -20
 ```
 
 **Why Rust?**

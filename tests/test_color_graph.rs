@@ -1,15 +1,20 @@
 mod common;
 
+use git_x::commands::analysis::ColorGraphCommand;
+use git_x::core::traits::Command;
+
 #[test]
 fn test_color_graph_run_function() {
     let repo = common::basic_repo();
     let original_dir = std::env::current_dir().unwrap();
 
-    // Change to repo directory and run the function directly
     std::env::set_current_dir(repo.path()).unwrap();
 
-    // Test that the function doesn't panic and git commands work
-    let _ = git_x::color_graph::run();
+    let cmd = ColorGraphCommand::new();
+    let result = cmd.execute();
+
+    // Should succeed and return formatted output
+    assert!(result.is_ok());
 
     // Restore original directory
     let _ = std::env::set_current_dir(&original_dir);
@@ -23,9 +28,21 @@ fn test_color_graph_run_function_in_non_git_directory() {
     // Change to non-git directory to trigger error path
     std::env::set_current_dir(temp_dir.path()).unwrap();
 
-    // Test that the function handles git command failure gracefully
-    let _ = git_x::color_graph::run();
+    let cmd = ColorGraphCommand::new();
+    let result = cmd.execute();
+
+    // Should fail gracefully in non-git directory
+    assert!(result.is_err());
 
     // Restore original directory
     let _ = std::env::set_current_dir(&original_dir);
+}
+
+#[test]
+fn test_color_graph_command_traits() {
+    let cmd = ColorGraphCommand::new();
+
+    // Test Command trait implementation
+    assert_eq!(cmd.name(), "color-graph");
+    assert_eq!(cmd.description(), "Show a colored commit graph");
 }

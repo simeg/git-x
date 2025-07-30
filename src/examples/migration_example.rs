@@ -1,5 +1,3 @@
-// This file shows how the old command structure would be migrated to the new architecture
-
 #[cfg(test)]
 mod migration_examples {
     use crate::adapters::CliHandlerFactory;
@@ -48,7 +46,6 @@ mod migration_examples {
 
     #[test]
     fn demonstrate_architecture_benefits() {
-        // The new architecture provides:
         // 1. **Testability**: Each layer can be tested independently
         // 2. **Maintainability**: Changes to git operations don't affect CLI
         // 3. **Reusability**: Domain logic can be used by different interfaces

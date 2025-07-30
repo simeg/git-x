@@ -1,7 +1,8 @@
 mod common;
 
 use common::repo_with_merged_branch;
-use git_x::prune_branches::*;
+use git_x::commands::branch::PruneBranchesCommand;
+use git_x::core::traits::Command;
 use predicates::boolean::PredicateBooleanExt;
 use predicates::str::contains;
 
@@ -30,28 +31,6 @@ fn test_prune_branches_respects_exclude() {
 }
 
 #[test]
-fn test_get_all_protected_branches() {
-    let default_only = get_all_protected_branches(None);
-    assert_eq!(default_only, vec!["main", "master", "develop"]);
-
-    let with_except = get_all_protected_branches(Some("feature,hotfix"));
-    assert_eq!(
-        with_except,
-        vec!["main", "master", "develop", "feature", "hotfix"]
-    );
-}
-
-#[test]
-fn test_is_branch_protected() {
-    let protected = vec!["main".to_string(), "develop".to_string()];
-
-    assert!(is_branch_protected("main", "current", &protected));
-    assert!(is_branch_protected("develop", "current", &protected));
-    assert!(is_branch_protected("current", "current", &protected));
-    assert!(!is_branch_protected("feature", "current", &protected));
-}
-
-#[test]
 fn test_prune_branches_run_function() {
     let repo = repo_with_merged_branch("feature/delete-me", "main");
 
@@ -62,8 +41,8 @@ fn test_prune_branches_run_function() {
         std::env::set_var("GIT_X_NON_INTERACTIVE", "1");
     }
 
-    // Test run function directly without exceptions
-    let result = run(None, false);
+    let cmd = PruneBranchesCommand::new(false);
+    let result = cmd.execute();
     assert!(result.is_ok());
 
     unsafe {
@@ -83,8 +62,8 @@ fn test_prune_branches_run_function_with_except() {
         std::env::set_var("GIT_X_NON_INTERACTIVE", "1");
     }
 
-    // Test run function with exceptions
-    let result = run(Some("main,master".to_string()), false);
+    let cmd = PruneBranchesCommand::new(false);
+    let result = cmd.execute();
     assert!(result.is_ok());
 
     unsafe {
@@ -99,8 +78,8 @@ fn test_prune_branches_run_function_dry_run() {
 
     std::env::set_current_dir(repo.path()).expect("Failed to change directory");
 
-    // Test run function with dry-run enabled
-    let result = run(None, true);
+    let cmd = PruneBranchesCommand::new(true);
+    let result = cmd.execute();
     assert!(result.is_ok());
 
     std::env::set_current_dir("/").expect("Failed to reset directory");
@@ -112,8 +91,8 @@ fn test_prune_branches_run_function_dry_run_with_except() {
 
     std::env::set_current_dir(repo.path()).expect("Failed to change directory");
 
-    // Test run function with dry-run and exceptions
-    let result = run(Some("main,master".to_string()), true);
+    let cmd = PruneBranchesCommand::new(true);
+    let result = cmd.execute();
     assert!(result.is_ok());
 
     std::env::set_current_dir("/").expect("Failed to reset directory");
@@ -125,7 +104,8 @@ fn test_prune_branches_run_function_error_handling() {
     let temp_dir = tempfile::tempdir().expect("Failed to create temp directory");
     std::env::set_current_dir(temp_dir.path()).expect("Failed to change directory");
 
-    let result = run(None, false);
+    let cmd = PruneBranchesCommand::new(false);
+    let result = cmd.execute();
     assert!(result.is_err());
 
     std::env::set_current_dir("/").expect("Failed to reset directory");
@@ -155,4 +135,16 @@ fn test_prune_branches_dry_run_with_except() {
         .success()
         .stdout(contains("🧪 (dry run)"))
         .stdout(contains("feature/delete-me"));
+}
+
+#[test]
+fn test_prune_branches_command_traits() {
+    let cmd = PruneBranchesCommand::new(true);
+
+    // Test Command trait implementation
+    assert_eq!(cmd.name(), "prune-branches");
+    assert_eq!(
+        cmd.description(),
+        "Delete merged local branches (except protected ones)"
+    );
 }

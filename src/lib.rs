@@ -20,33 +20,6 @@ pub mod test_utils;
 #[cfg(test)]
 pub mod examples;
 
-// Legacy module exports for backward compatibility
-// These will eventually be removed as we migrate to the new structure
-
-// Module exports
-pub mod bisect;
-pub mod clean_branches;
-pub mod color_graph;
-pub mod command;
-pub mod contributors;
-pub mod fixup;
-pub mod graph;
-pub mod health;
-pub mod info;
-pub mod large_files;
-pub mod new_branch;
-pub mod prune_branches;
-pub mod rename_branch;
-pub mod since;
-pub mod stash_branch;
-pub mod summary;
-pub mod switch_recent;
-pub mod sync;
-pub mod technical_debt;
-pub mod undo;
-pub mod upstream;
-pub mod what;
-
 /// Common error type for git-x operations
 #[derive(Debug)]
 pub enum GitXError {

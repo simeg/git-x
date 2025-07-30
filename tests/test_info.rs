@@ -1,7 +1,9 @@
 mod common;
 
 use common::{repo_with_branch, repo_with_remote_ahead};
+use git_x::commands::repository::InfoCommand;
 use git_x::core::output::Format;
+use git_x::core::traits::Command;
 use predicates::str::contains;
 
 #[test]
@@ -10,9 +12,8 @@ fn test_info_output_contains_expected_lines() {
 
     repo.run_git_x(&["info"])
         .success()
-        .stdout(contains("Repo:"))
-        .stdout(contains("Branch: test-branch"))
-        .stdout(contains("Last Commit: \"initial commit"));
+        .stdout(contains("Repository:"))
+        .stdout(contains("Current branch: test-branch"));
 }
 
 #[test]
@@ -25,8 +26,7 @@ fn test_info_output_includes_ahead_behind() {
 
     repo.run_git_x(&["info"])
         .success()
-        .stdout(contains("Ahead: 1"))
-        .stdout(contains("Behind: 0"));
+        .stdout(contains("Status: 1 ahead"));
 }
 
 #[test]
@@ -35,8 +35,7 @@ fn test_info_output_shows_behind() {
 
     repo.run_git_x(&["info"])
         .success()
-        .stdout(contains("Ahead: 0"))
-        .stdout(contains("Behind: 1"));
+        .stdout(contains("Status: 1 behind"));
 }
 
 // Unit tests for common utilities
@@ -56,13 +55,44 @@ fn test_format_functions() {
 }
 
 #[test]
-fn test_info_run_function() {
+fn test_info_command_direct() {
     let (repo, _remote) = repo_with_remote_ahead("main");
 
-    // Change to repo directory and run the function directly
     std::env::set_current_dir(repo.path()).unwrap();
 
-    // Test that the function doesn't panic and git commands work
-    // This repo has a remote upstream so it should work
-    let _ = git_x::info::run();
+    let cmd = InfoCommand::new();
+    let result = cmd.execute();
+
+    // Should succeed and return formatted output
+    assert!(result.is_ok());
+    let output = result.unwrap();
+    assert!(output.contains("Repository:"));
+    assert!(output.contains("Current branch:"));
+}
+
+#[test]
+fn test_info_command_traits() {
+    let cmd = InfoCommand::new();
+
+    // Test Command trait implementation
+    assert_eq!(cmd.name(), "info");
+    assert_eq!(cmd.description(), "Show repository information and status");
+}
+
+#[test]
+fn test_info_command_with_details() {
+    let (repo, _remote) = repo_with_remote_ahead("main");
+    std::env::set_current_dir(repo.path()).unwrap();
+
+    // Test enhanced command with details
+    let cmd = InfoCommand::new().with_details();
+    let result = cmd.execute();
+
+    assert!(result.is_ok());
+    let output = result.unwrap();
+
+    // Detailed version should include more information
+    assert!(output.contains("Repository:"));
+    assert!(output.contains("Working directory:"));
+    assert!(output.contains("Staged files:"));
 }
