@@ -23,6 +23,7 @@ pub enum GitXError {
     GitCommand(String),
     Io(std::io::Error),
     Parse(String),
+    Dialog(String),
 }
 
 impl std::fmt::Display for GitXError {
@@ -31,6 +32,7 @@ impl std::fmt::Display for GitXError {
             GitXError::GitCommand(cmd) => write!(f, "Git command failed: {cmd}"),
             GitXError::Io(err) => write!(f, "IO error: {err}"),
             GitXError::Parse(msg) => write!(f, "Parse error: {msg}"),
+            GitXError::Dialog(msg) => write!(f, "Dialog error: {msg}"),
         }
     }
 }
@@ -39,7 +41,7 @@ impl std::error::Error for GitXError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             GitXError::Io(err) => Some(err),
-            GitXError::GitCommand(_) | GitXError::Parse(_) => None,
+            GitXError::GitCommand(_) | GitXError::Parse(_) | GitXError::Dialog(_) => None,
         }
     }
 }
@@ -47,6 +49,12 @@ impl std::error::Error for GitXError {
 impl From<std::io::Error> for GitXError {
     fn from(err: std::io::Error) -> Self {
         GitXError::Io(err)
+    }
+}
+
+impl From<dialoguer::Error> for GitXError {
+    fn from(err: dialoguer::Error) -> Self {
+        GitXError::Dialog(err.to_string())
     }
 }
 

@@ -6,6 +6,14 @@ use git_x::core::traits::Command;
 use predicates::str::contains;
 use std::process::Command as StdCommand;
 
+// Helper to check if we should run potentially destructive tests
+fn should_run_destructive_tests() -> bool {
+    // Only run destructive tests in CI or when explicitly enabled
+    std::env::var("CI").is_ok()
+        || std::env::var("GITHUB_ACTIONS").is_ok()
+        || std::env::var("ENABLE_DESTRUCTIVE_TESTS").is_ok()
+}
+
 #[test]
 fn test_clean_branches_dry_run_outputs_expected() {
     let repo = repo_with_merged_branch("feature/cleanup", "master");
@@ -34,6 +42,10 @@ fn test_clean_branches_run_function_dry_run() {
 
 #[test]
 fn test_clean_branches_run_function_actual_delete() {
+    if !should_run_destructive_tests() {
+        return;
+    }
+
     let repo = repo_with_merged_branch("feature/delete-me", "master");
     let original_dir = std::env::current_dir().unwrap();
 
@@ -79,6 +91,10 @@ fn test_clean_branches_run_function_with_branches_to_delete() {
 
 #[test]
 fn test_clean_branches_run_function_non_dry_run_with_branches() {
+    if !should_run_destructive_tests() {
+        return;
+    }
+
     let repo = repo_with_merged_branch("test-non-dry", "master");
     let original_dir = std::env::current_dir().unwrap();
 
@@ -124,6 +140,10 @@ fn test_clean_branches_run_function_no_branches() {
 
 #[test]
 fn test_clean_branches_actually_deletes_branch() {
+    if !should_run_destructive_tests() {
+        return;
+    }
+
     let repo = repo_with_merged_branch("feature/cleanup", "master");
 
     // Sanity check: branch exists before cleanup
@@ -148,23 +168,6 @@ fn test_clean_branches_actually_deletes_branch() {
         .expect("Failed to list branches");
     let stdout_after = String::from_utf8_lossy(&output_after.stdout);
     assert!(!stdout_after.contains("feature/cleanup"));
-}
-
-#[test]
-fn test_format_dry_run_message() {
-    let branch = "feature/test";
-    assert_eq!(
-        format!("(dry run) Would delete: {branch}"),
-        "(dry run) Would delete: feature/test"
-    );
-}
-
-#[test]
-fn test_format_no_branches_message() {
-    assert_eq!(
-        "No merged branches to delete.",
-        "No merged branches to delete."
-    );
 }
 
 #[test]

@@ -271,25 +271,49 @@ git x health
 ```shell
 🏥 Repository Health Check
 ==============================
+⠁ [00:00:01] [########################################] 8/8 Health check complete!
 ✅ Git configuration: OK
 ✅ Remotes: OK
 ✅ Branches: OK
 ✅ Working directory: Clean
 ✅ Repository size: OK
+⚠️  Security: Potential issues found
+✅ .gitignore: Looks good
+✅ Binary files: OK
 
-🎉 Repository is healthy!
+🔧 Found 3 issue(s):
+   🔒 2 potentially sensitive commit message(s) found:
+        • a1b2c3d Add API key configuration
+        • d4e5f6g Update secret token handling
+   🔐 1 potentially sensitive file(s) in repository:
+        • config/private.key
+   ⚠️  2 environment file(s) found - ensure no secrets are committed:
+        • .env.local
+        • .env.production
 ```
 
 #### What it checks:
+- **Git configuration** - Validates user.name and user.email settings
+- **Remotes** - Ensures remote repositories are configured
 - **Working directory status** - Detects uncommitted changes
 - **Untracked files** - Counts files not under version control
 - **Stale branches** - Identifies branches older than 1 month
 - **Repository size** - Warns about large repositories that may need cleanup
 - **Staged changes** - Shows files ready for commit
+- **Security issues** - Scans for potential credentials in history and sensitive files
+- **.gitignore effectiveness** - Suggests improvements to ignore patterns
+- **Binary files** - Identifies large binary files that might benefit from Git LFS
+
+#### Enhanced Features:
+- **Progress Indicator**: Real-time progress bar showing current check being performed
+- **Detailed Security Reporting**: Shows exactly which commits, files, and patterns triggered security warnings
+- **Specific Recommendations**: Lists actual files and examples instead of just counts
+- **Performance Optimized**: Efficiently scans large repositories with visual feedback
 
 Useful for:
 - Daily repository maintenance
 - Pre-commit health checks
+- Security auditing
 - Identifying cleanup opportunities
 - Team onboarding (ensuring clean local state)
 
@@ -312,7 +336,20 @@ git x info
 ✅ Status: Up to date
 ⚠️  Working directory: Has changes
 📋 Staged files: None
+❌ No open PR for current branch
+📊 vs main: 2 ahead, 1 behind
+
+📋 Recent activity:
+   * a1b2c3d Add new feature (2 hours ago) <Alice>
+   * d4e5f6g Fix bug in parser (4 hours ago) <Bob>
+   * g7h8i9j Update documentation (1 day ago) <Charlie>
 ```
+
+#### Enhanced Features:
+- **Recent activity timeline** - Shows recent commits across all branches with author info
+- **GitHub PR detection** - Automatically detects if current branch has an open pull request (requires `gh` CLI)
+- **Branch comparisons** - Shows ahead/behind status compared to main branches
+- **Detailed view** - Use any git-x command to see additional details
 
 ---
 
@@ -453,6 +490,8 @@ git x since origin/main
 git x stash-branch create new-feature
 git x stash-branch clean --older-than 7d
 git x stash-branch apply-by-branch feature-work
+git x stash-branch interactive
+git x stash-branch export ./patches
 ```
 
 #### Subcommands:
@@ -482,9 +521,36 @@ This will delete 3 stashes: stash@{0}, stash@{1}, stash@{2}
 **`apply-by-branch <branch-name>`** — Apply stashes from a specific branch
 - `--list` — List matching stashes instead of applying
 
-Helps manage stashes more effectively by associating them with branches.
+**`interactive`** — Interactive stash management with fuzzy search
+- Visual menu for applying, deleting, or creating branches from stashes
+- Supports multiple selection for batch operations
+- Shows stash content and branch associations
 
-**Note:** The `clean` command will prompt for confirmation before deleting stashes to prevent accidental data loss.
+**`export <output-dir>`** — Export stashes to patch files
+- `--stash <ref>` — Export specific stash (default: all stashes)
+- Creates `.patch` files that can be shared or archived
+- Useful for backing up or sharing stash content
+
+#### Example Output for `interactive`:
+
+```shell
+📋 What would you like to do?
+❯ Apply selected stash
+  Delete selected stashes
+  Create branch from stash
+  Show stash diff
+  List all stashes
+  Exit
+
+🎯 Select stash to apply:
+❯ stash@{0}: WIP on feature: Add authentication (from feature-auth)
+  stash@{1}: On main: Fix README typo (from main)
+  stash@{2}: WIP on bugfix: Debug API calls (from api-fixes)
+```
+
+Helps manage stashes more effectively by associating them with branches and providing modern interactive workflows.
+
+**Note:** Interactive and destructive commands will prompt for confirmation to prevent accidental data loss.
 
 ---
 

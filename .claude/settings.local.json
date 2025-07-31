@@ -41,7 +41,9 @@
       "Bash(./target/debug/git-x stash-branch --help)",
       "Bash(timeout 15 cargo test --test test_interactive)",
       "Bash(timeout 30 cargo test --test test_interactive -- --test-threads=1)",
-      "Bash(timeout 20 cargo test --test test_interactive -- --test-threads=1)"
+      "Bash(timeout 20 cargo test --test test_interactive -- --test-threads=1)",
+      "Bash(GIT_X_NON_INTERACTIVE=1 cargo test test_health_command_direct -- --nocapture)",
+      "Bash(git x:*)"
     ],
     "deny": []
   }

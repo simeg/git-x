@@ -33,6 +33,20 @@ impl StashCommands {
         })
         .execute()
     }
+
+    /// Interactive stash management
+    pub fn interactive() -> Result<String> {
+        StashCommand::new(StashBranchAction::Interactive).execute()
+    }
+
+    /// Export stashes to patch files
+    pub fn export(output_dir: String, stash_ref: Option<String>) -> Result<String> {
+        StashCommand::new(StashBranchAction::Export {
+            output_dir,
+            stash_ref,
+        })
+        .execute()
+    }
 }
 
 /// Stash branch actions
@@ -49,6 +63,11 @@ pub enum StashBranchAction {
     ApplyByBranch {
         branch_name: String,
         list_only: bool,
+    },
+    Interactive,
+    Export {
+        output_dir: String,
+        stash_ref: Option<String>,
     },
 }
 
@@ -85,6 +104,11 @@ impl StashCommand {
                 branch_name,
                 list_only,
             } => self.apply_stashes_by_branch(branch_name, *list_only),
+            StashBranchAction::Interactive => self.interactive_stash_management(),
+            StashBranchAction::Export {
+                output_dir,
+                stash_ref,
+            } => self.export_stashes_to_patches(output_dir, stash_ref),
         }
     }
 
@@ -211,6 +235,190 @@ impl StashCommand {
         }
 
         Ok(result)
+    }
+
+    fn interactive_stash_management(&self) -> Result<String> {
+        use dialoguer::{MultiSelect, Select, theme::ColorfulTheme};
+
+        // Get all stashes
+        let stashes = self.get_stash_list_with_branches()?;
+
+        if stashes.is_empty() {
+            return Ok("📝 No stashes found".to_string());
+        }
+
+        // Create display items for selection
+        let stash_display: Vec<String> = stashes
+            .iter()
+            .map(|s| format!("{}: {} (from {})", s.name, s.message, s.branch))
+            .collect();
+
+        // Action selection menu
+        let actions = vec![
+            "Apply selected stash",
+            "Delete selected stashes",
+            "Create branch from stash",
+            "Show stash diff",
+            "List all stashes",
+            "Exit",
+        ];
+
+        let theme = ColorfulTheme::default();
+        let action_selection = Select::with_theme(&theme)
+            .with_prompt("📋 What would you like to do?")
+            .items(&actions)
+            .default(0)
+            .interact();
+
+        match action_selection {
+            Ok(0) => {
+                // Apply selected stash
+                let selection = Select::with_theme(&theme)
+                    .with_prompt("🎯 Select stash to apply")
+                    .items(&stash_display)
+                    .interact()?;
+
+                self.apply_stash(&stashes[selection].name)?;
+                Ok(format!("✅ Applied stash: {}", stashes[selection].name))
+            }
+            Ok(1) => {
+                // Delete selected stashes
+                let selections = MultiSelect::with_theme(&theme)
+                    .with_prompt(
+                        "🗑️ Select stashes to delete (use Space to select, Enter to confirm)",
+                    )
+                    .items(&stash_display)
+                    .interact()?;
+
+                if selections.is_empty() {
+                    return Ok("No stashes selected for deletion".to_string());
+                }
+
+                let mut deleted_count = 0;
+                for &idx in selections.iter().rev() {
+                    // Delete in reverse order to maintain indices
+                    if self.delete_stash(&stashes[idx].name).is_ok() {
+                        deleted_count += 1;
+                    }
+                }
+
+                Ok(format!("✅ Deleted {deleted_count} stash(es)"))
+            }
+            Ok(2) => {
+                // Create branch from stash
+                let selection = Select::with_theme(&theme)
+                    .with_prompt("🌱 Select stash to create branch from")
+                    .items(&stash_display)
+                    .interact()?;
+
+                let branch_name = dialoguer::Input::<String>::with_theme(&theme)
+                    .with_prompt("🌿 Enter new branch name")
+                    .interact()?;
+
+                self.validate_branch_name(&branch_name)?;
+
+                GitOperations::run_status(&[
+                    "stash",
+                    "branch",
+                    &branch_name,
+                    &stashes[selection].name,
+                ])?;
+
+                Ok(format!(
+                    "✅ Created branch '{}' from stash '{}'",
+                    branch_name, stashes[selection].name
+                ))
+            }
+            Ok(3) => {
+                // Show stash diff
+                let selection = Select::with_theme(&theme)
+                    .with_prompt("🔍 Select stash to view diff")
+                    .items(&stash_display)
+                    .interact()?;
+
+                let diff = GitOperations::run(&["stash", "show", "-p", &stashes[selection].name])?;
+                Ok(format!(
+                    "📊 Diff for {}:\n{}",
+                    stashes[selection].name, diff
+                ))
+            }
+            Ok(4) => {
+                // List all stashes
+                let mut result = "📝 All stashes:\n".to_string();
+                for stash in &stashes {
+                    result.push_str(&format!(
+                        "  {}: {} (from {})\n",
+                        stash.name, stash.message, stash.branch
+                    ));
+                }
+                Ok(result)
+            }
+            Ok(_) | Err(_) => Ok("👋 Goodbye!".to_string()),
+        }
+    }
+
+    fn export_stashes_to_patches(
+        &self,
+        output_dir: &str,
+        stash_ref: &Option<String>,
+    ) -> Result<String> {
+        use std::fs;
+        use std::path::Path;
+
+        // Create output directory if it doesn't exist
+        let output_path = Path::new(output_dir);
+        if !output_path.exists() {
+            fs::create_dir_all(output_path)
+                .map_err(|e| GitXError::GitCommand(format!("Failed to create directory: {e}")))?;
+        }
+
+        let stashes = if let Some(specific_stash) = stash_ref {
+            // Export only the specific stash
+            self.validate_stash_exists(specific_stash)?;
+            vec![self.get_stash_info(specific_stash)?]
+        } else {
+            // Export all stashes
+            self.get_stash_list_with_branches()?
+        };
+
+        if stashes.is_empty() {
+            return Ok("📝 No stashes to export".to_string());
+        }
+
+        let mut exported_count = 0;
+        for stash in &stashes {
+            // Generate patch content
+            let patch_content = GitOperations::run(&["stash", "show", "-p", &stash.name])?;
+
+            // Generate filename (sanitize stash name)
+            let safe_name = stash.name.replace(['@', '{', '}'], "");
+            let filename = format!("{safe_name}.patch");
+            let file_path = output_path.join(filename);
+
+            // Write patch file
+            fs::write(&file_path, patch_content)
+                .map_err(|e| GitXError::GitCommand(format!("Failed to write patch file: {e}")))?;
+
+            exported_count += 1;
+        }
+
+        Ok(format!(
+            "✅ Exported {exported_count} stash(es) to patch files in '{output_dir}'"
+        ))
+    }
+
+    fn get_stash_info(&self, stash_ref: &str) -> Result<StashInfo> {
+        let output = GitOperations::run(&["stash", "list", "--pretty=format:%gd|%s", stash_ref])?;
+
+        if let Some(line) = output.lines().next() {
+            if let Some(stash) = self.parse_stash_line_with_branch(line) {
+                return Ok(stash);
+            }
+        }
+
+        Err(GitXError::GitCommand(
+            "Could not get stash information".to_string(),
+        ))
     }
 
     // Helper methods
@@ -380,6 +588,12 @@ impl Destructive for StashCommand {
             StashBranchAction::ApplyByBranch {
                 list_only: false, ..
             } => "This will apply stashes to your working directory".to_string(),
+            StashBranchAction::Interactive => {
+                "Interactive stash management - actions will be confirmed individually".to_string()
+            }
+            StashBranchAction::Export { .. } => {
+                "This will export stashes as patch files to the specified directory".to_string()
+            }
         }
     }
 }

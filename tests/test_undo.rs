@@ -6,8 +6,20 @@ use git_x::core::traits::Command as CommandTrait;
 use predicates::str::contains;
 use std::process::Command;
 
+// Helper to check if we should run potentially destructive tests
+fn should_run_destructive_tests() -> bool {
+    // Only run destructive tests in CI or when explicitly enabled
+    std::env::var("CI").is_ok()
+        || std::env::var("GITHUB_ACTIONS").is_ok()
+        || std::env::var("ENABLE_DESTRUCTIVE_TESTS").is_ok()
+}
+
 #[test]
 fn test_git_undo_soft_resets_last_commit() {
+    if !should_run_destructive_tests() {
+        return;
+    }
+
     let repo = repo_with_commits(2);
 
     repo.run_git_x(&["undo"])
@@ -35,6 +47,10 @@ fn test_git_undo_soft_resets_last_commit() {
 
 #[test]
 fn test_undo_command_direct() {
+    if !should_run_destructive_tests() {
+        return;
+    }
+
     let repo = repo_with_commits(3);
     let original_dir = std::env::current_dir().unwrap();
 

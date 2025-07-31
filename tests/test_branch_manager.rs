@@ -9,6 +9,14 @@ fn get_test_manager() -> Result<BranchManager, git_x::GitXError> {
     Ok(BranchManager::new(repository))
 }
 
+// Helper to check if we should run potentially destructive tests
+fn should_run_destructive_tests() -> bool {
+    // Only run destructive tests in CI or when explicitly enabled
+    std::env::var("CI").is_ok()
+        || std::env::var("GITHUB_ACTIONS").is_ok()
+        || std::env::var("ENABLE_DESTRUCTIVE_TESTS").is_ok()
+}
+
 #[test]
 fn test_branch_manager_new() {
     // Test that we can create a BranchManager
@@ -105,6 +113,10 @@ fn test_branch_manager_create_branch_invalid_base_commit() {
 
 #[test]
 fn test_branch_manager_create_branch_valid_name() {
+    if !should_run_destructive_tests() {
+        return;
+    }
+
     if let Ok(manager) = get_test_manager() {
         let request = CreateBranchRequest {
             name: "feature/valid-branch-name".to_string(),
@@ -134,6 +146,10 @@ fn test_branch_manager_create_branch_valid_name() {
 
 #[test]
 fn test_branch_manager_delete_branches_protected() {
+    if !should_run_destructive_tests() {
+        return;
+    }
+
     if let Ok(manager) = get_test_manager() {
         let request = DeleteBranchesRequest {
             branches: vec![
@@ -266,6 +282,10 @@ fn test_branch_manager_switch_branch_nonexistent() {
 
 #[test]
 fn test_branch_manager_switch_branch_current() {
+    if !should_run_destructive_tests() {
+        return;
+    }
+
     if let Ok(manager) = get_test_manager() {
         // Get current branch first
         let recent_request = RecentBranchesRequest {
@@ -313,6 +333,10 @@ fn test_branch_manager_rename_branch_invalid_name() {
 
 #[test]
 fn test_branch_manager_rename_branch_existing_name() {
+    if !should_run_destructive_tests() {
+        return;
+    }
+
     if let Ok(manager) = get_test_manager() {
         // Try to rename to an existing branch name
         let request = RenameBranchRequest {
@@ -356,6 +380,10 @@ fn test_branch_manager_clean_merged_branches_dry_run() {
 
 #[test]
 fn test_branch_manager_clean_merged_branches_no_confirm() {
+    if !should_run_destructive_tests() {
+        return;
+    }
+
     if let Ok(manager) = get_test_manager() {
         // Set non-interactive mode for testing
         unsafe {
@@ -440,6 +468,10 @@ fn test_branch_manager_clean_request_structure() {
 
 #[test]
 fn test_branch_manager_protected_branch_patterns() {
+    if !should_run_destructive_tests() {
+        return;
+    }
+
     // Test edge cases in protected branch checking
     if let Ok(manager) = get_test_manager() {
         // Test with request using actual struct fields
@@ -487,6 +519,10 @@ fn test_branch_creation_result_properties() {
 // Test validation edge cases
 #[test]
 fn test_branch_manager_create_branch_request_validation() {
+    if !should_run_destructive_tests() {
+        return;
+    }
+
     if let Ok(manager) = get_test_manager() {
         // Test various invalid branch names
         let invalid_names = vec![
@@ -517,6 +553,10 @@ fn test_branch_manager_create_branch_request_validation() {
 
 #[test]
 fn test_branch_manager_rename_branch_request_validation() {
+    if !should_run_destructive_tests() {
+        return;
+    }
+
     if let Ok(manager) = get_test_manager() {
         // Test various invalid new names for rename
         let invalid_names = vec![
