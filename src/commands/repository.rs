@@ -588,8 +588,8 @@ impl Command for NewBranchCommand {
         // Create the new branch
         GitOperations::run_status(&["branch", &self.branch_name, &base_branch])?;
 
-        // Switch to the new branch
-        GitOperations::run_status(&["switch", &self.branch_name])?;
+        // Switch to the new branch (use checkout for better compatibility)
+        GitOperations::run_status(&["checkout", &self.branch_name])?;
 
         output.push(format!(
             "✅ Successfully created and switched to branch '{}'",

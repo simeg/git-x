@@ -13,9 +13,6 @@ pub mod commands;
 // CLI interface
 pub mod cli;
 
-// Test utilities for direct command testing (improves test coverage)
-pub mod test_utils;
-
 // Examples showing architecture migration
 #[cfg(test)]
 pub mod examples;

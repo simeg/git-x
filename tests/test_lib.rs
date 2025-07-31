@@ -77,3 +77,57 @@ fn test_gitx_error_source() {
     let error_trait: &dyn Error = &gitx_error;
     assert!(error_trait.source().is_some());
 }
+
+#[test]
+fn test_gitx_error_source_variants() {
+    use std::error::Error;
+
+    // Test IO error source (should return Some)
+    let io_error = io::Error::other("test");
+    let gitx_io_error = GitXError::Io(io_error);
+    assert!(gitx_io_error.source().is_some());
+
+    // Test GitCommand error source (should return None)
+    let git_error = GitXError::GitCommand("test".to_string());
+    assert!(git_error.source().is_none());
+
+    // Test Parse error source (should return None)
+    let parse_error = GitXError::Parse("test".to_string());
+    assert!(parse_error.source().is_none());
+}
+
+#[test]
+fn test_gitx_error_debug_all_variants() {
+    // Test Debug trait for all error variants
+    let git_error = GitXError::GitCommand("git failed".to_string());
+    let git_debug = format!("{git_error:?}");
+    assert!(git_debug.contains("GitCommand"));
+    assert!(git_debug.contains("git failed"));
+
+    let io_error = GitXError::Io(io::Error::other("io failed"));
+    let io_debug = format!("{io_error:?}");
+    assert!(io_debug.contains("Io"));
+
+    let parse_error = GitXError::Parse("parse failed".to_string());
+    let parse_debug = format!("{parse_error:?}");
+    assert!(parse_debug.contains("Parse"));
+    assert!(parse_debug.contains("parse failed"));
+}
+
+#[test]
+fn test_result_type_alias() {
+    // Test the Result type alias works correctly
+    fn test_function() -> Result<String> {
+        Ok("success".to_string())
+    }
+
+    fn test_function_error() -> Result<String> {
+        Err(GitXError::Parse("test error".to_string()))
+    }
+
+    assert!(test_function().is_ok());
+    assert!(test_function_error().is_err());
+
+    let success_result = test_function().unwrap();
+    assert_eq!(success_result, "success");
+}

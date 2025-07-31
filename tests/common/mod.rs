@@ -206,7 +206,7 @@ pub fn repo_with_merged_branch(feature_branch: &str, main_branch: &str) -> TestR
     let path = temp.path().to_path_buf();
 
     StdCommand::new("git")
-        .arg("init")
+        .args(["init", &format!("--initial-branch={main_branch}")])
         .current_dir(&path)
         .assert()
         .success();
@@ -216,13 +216,6 @@ pub fn repo_with_merged_branch(feature_branch: &str, main_branch: &str) -> TestR
         path: path.clone(),
     };
     repo.configure_git_identity();
-
-    // Create the requested main branch
-    StdCommand::new("git")
-        .args(["checkout", "-b", main_branch])
-        .current_dir(&path)
-        .assert()
-        .success();
 
     // Initial commit
     fs::write(path.join("README.md"), "# test").unwrap();

@@ -255,11 +255,19 @@ fn test_new_branch_command_with_from() {
     // Change to repo directory
     std::env::set_current_dir(&repo_path).unwrap();
 
+    // Generate a unique branch name to avoid conflicts in CI
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    let unique_branch = format!("feature/test-{timestamp}");
+
     // Test with specific base branch
-    let cmd = NewBranchCommand::new("feature/from-main".to_string(), Some(default_branch));
+    let cmd = NewBranchCommand::new(unique_branch, Some(default_branch));
     let result = cmd.execute();
 
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "Command failed: {:?}", result.err());
     let output = result.unwrap();
     assert!(output.contains("Successfully created"));
 
