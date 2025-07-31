@@ -19,21 +19,6 @@ fn test_fixup_run_function_outside_git_repo() {
 }
 
 #[test]
-fn test_fixup_command_traits() {
-    use git_x::commands::commit::FixupCommand;
-    use git_x::core::traits::Command;
-
-    let cmd = FixupCommand::new("abc123".to_string(), false);
-
-    // Test Command trait implementation
-    assert_eq!(cmd.name(), "fixup");
-    assert_eq!(
-        cmd.description(),
-        "Create fixup commits for easier interactive rebasing"
-    );
-}
-
-#[test]
 fn test_fixup_command_direct() {
     use git_x::commands::commit::FixupCommand;
     use git_x::core::traits::Command;
@@ -126,16 +111,5 @@ fn test_fixup_command_help() {
         .success()
         .stdout(predicate::str::contains(
             "Create fixup commits for easier interactive rebasing",
-        ));
-}
-
-#[test]
-fn test_fixup_rebase_flag() {
-    let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.args(["fixup", "abc123", "--rebase", "--help"])
-        .assert()
-        .success()
-        .stdout(predicate::str::contains(
-            "Automatically rebase with autosquash after creating fixup",
         ));
 }

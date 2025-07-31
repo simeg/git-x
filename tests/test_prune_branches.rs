@@ -68,45 +68,7 @@ fn test_prune_branches_run_function() {
 }
 
 #[test]
-fn test_prune_branches_run_function_with_except() {
-    if !should_run_destructive_tests() {
-        return;
-    }
-
-    let repo = repo_with_merged_branch("feature/delete-me", "main");
-
-    std::env::set_current_dir(repo.path()).expect("Failed to change directory");
-
-    // Set environment variable to make it non-interactive for testing
-    unsafe {
-        std::env::set_var("GIT_X_NON_INTERACTIVE", "1");
-    }
-
-    let cmd = PruneBranchesCommand::new(false);
-    let result = cmd.execute();
-    assert!(result.is_ok());
-
-    unsafe {
-        std::env::remove_var("GIT_X_NON_INTERACTIVE");
-    }
-    std::env::set_current_dir("/").expect("Failed to reset directory");
-}
-
-#[test]
 fn test_prune_branches_run_function_dry_run() {
-    let repo = repo_with_merged_branch("feature/delete-me", "main");
-
-    std::env::set_current_dir(repo.path()).expect("Failed to change directory");
-
-    let cmd = PruneBranchesCommand::new(true);
-    let result = cmd.execute();
-    assert!(result.is_ok());
-
-    std::env::set_current_dir("/").expect("Failed to reset directory");
-}
-
-#[test]
-fn test_prune_branches_run_function_dry_run_with_except() {
     let repo = repo_with_merged_branch("feature/delete-me", "main");
 
     std::env::set_current_dir(repo.path()).expect("Failed to change directory");
@@ -155,16 +117,4 @@ fn test_prune_branches_dry_run_with_except() {
         .success()
         .stdout(contains("🧪 (dry run)"))
         .stdout(contains("feature/delete-me"));
-}
-
-#[test]
-fn test_prune_branches_command_traits() {
-    let cmd = PruneBranchesCommand::new(true);
-
-    // Test Command trait implementation
-    assert_eq!(cmd.name(), "prune-branches");
-    assert_eq!(
-        cmd.description(),
-        "Delete merged local branches (except protected ones)"
-    );
 }

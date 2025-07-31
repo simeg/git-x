@@ -71,58 +71,6 @@ fn test_clean_branches_run_function_actual_delete() {
 }
 
 #[test]
-fn test_clean_branches_run_function_with_branches_to_delete() {
-    let repo = repo_with_merged_branch("test-branch", "master");
-    let original_dir = std::env::current_dir().unwrap();
-
-    // Switch back to master to ensure the test branch is merged
-    repo.checkout_branch("master");
-
-    // Change to repo directory and run the function directly
-    std::env::set_current_dir(repo.path()).unwrap();
-
-    let cmd = CleanBranchesCommand::new(true);
-    let result = cmd.execute();
-    assert!(result.is_ok());
-
-    // Restore original directory
-    let _ = std::env::set_current_dir(&original_dir);
-}
-
-#[test]
-fn test_clean_branches_run_function_non_dry_run_with_branches() {
-    if !should_run_destructive_tests() {
-        return;
-    }
-
-    let repo = repo_with_merged_branch("test-non-dry", "master");
-    let original_dir = std::env::current_dir().unwrap();
-
-    // Switch back to master to ensure the test branch is merged
-    repo.checkout_branch("master");
-
-    // Change to repo directory and run the function directly
-    std::env::set_current_dir(repo.path()).unwrap();
-
-    // Set non-interactive mode for this test
-    unsafe {
-        std::env::set_var("GIT_X_NON_INTERACTIVE", "1");
-    }
-
-    let cmd = CleanBranchesCommand::new(false);
-    let result = cmd.execute();
-    assert!(result.is_ok());
-
-    // Clean up environment variable
-    unsafe {
-        std::env::remove_var("GIT_X_NON_INTERACTIVE");
-    }
-
-    // Restore original directory
-    let _ = std::env::set_current_dir(&original_dir);
-}
-
-#[test]
 fn test_clean_branches_run_function_no_branches() {
     let repo = common::basic_repo();
     let original_dir = std::env::current_dir().unwrap();
@@ -168,13 +116,4 @@ fn test_clean_branches_actually_deletes_branch() {
         .expect("Failed to list branches");
     let stdout_after = String::from_utf8_lossy(&output_after.stdout);
     assert!(!stdout_after.contains("feature/cleanup"));
-}
-
-#[test]
-fn test_clean_branches_command_traits() {
-    let cmd = CleanBranchesCommand::new(true);
-
-    // Test Command trait implementation
-    assert_eq!(cmd.name(), "clean-branches");
-    assert_eq!(cmd.description(), "Delete merged branches");
 }

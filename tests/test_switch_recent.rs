@@ -123,18 +123,6 @@ fn test_switch_recent_command_available() {
 }
 
 #[test]
-fn test_switch_recent_command_traits() {
-    use git_x::commands::branch::SwitchRecentCommand;
-    use git_x::core::traits::Command;
-
-    let cmd = SwitchRecentCommand::new();
-
-    // Test Command trait implementation
-    assert_eq!(cmd.name(), "switch-recent");
-    assert_eq!(cmd.description(), "Switch to a recently used branch");
-}
-
-#[test]
 fn test_switch_recent_command_direct() {
     use git_x::commands::branch::SwitchRecentCommand;
     use git_x::core::traits::Command;

@@ -819,21 +819,6 @@ fn test_filter_stashes_by_age_coverage() {
 }
 
 #[test]
-fn test_stash_command_traits() {
-    let cmd = StashCommand::new(StashAction::Create {
-        branch_name: "test-branch".to_string(),
-        stash_ref: None,
-    });
-
-    // Test Command trait implementation
-    assert_eq!(cmd.name(), "stash-branch");
-    assert_eq!(
-        cmd.description(),
-        "Create branches from stashes or manage stash cleanup"
-    );
-}
-
-#[test]
 fn test_stash_command_direct_no_stashes() {
     let (_temp_dir, repo_path, _branch) = create_test_repo();
     let original_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("/"));

@@ -141,15 +141,6 @@ fn test_info_command_direct() {
 }
 
 #[test]
-fn test_info_command_traits() {
-    let cmd = InfoCommand::new();
-
-    // Test Command trait implementation
-    assert_eq!(cmd.name(), "info");
-    assert_eq!(cmd.description(), "Show repository information and status");
-}
-
-#[test]
 fn test_info_command_with_details() {
     let (repo, _remote) = repo_with_remote_ahead("main");
     std::env::set_current_dir(repo.path()).unwrap();

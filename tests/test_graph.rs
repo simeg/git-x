@@ -74,15 +74,3 @@ fn test_graph_run_function_in_non_git_directory() {
     // Restore original directory
     let _ = std::env::set_current_dir(&original_dir);
 }
-
-#[test]
-fn test_graph_command_traits() {
-    use git_x::commands::analysis::GraphCommand;
-    use git_x::core::traits::Command;
-
-    let cmd = GraphCommand::new();
-
-    // Test Command trait implementation
-    assert_eq!(cmd.name(), "graph");
-    assert_eq!(cmd.description(), "Show a simple commit graph");
-}

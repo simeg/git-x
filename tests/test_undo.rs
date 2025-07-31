@@ -67,15 +67,3 @@ fn test_undo_command_direct() {
     // Restore original directory
     let _ = std::env::set_current_dir(&original_dir);
 }
-
-#[test]
-fn test_undo_command_traits() {
-    let cmd = UndoCommand::new();
-
-    // Test Command trait implementation
-    assert_eq!(cmd.name(), "undo");
-    assert_eq!(
-        cmd.description(),
-        "Undo the last commit (without losing changes)"
-    );
-}

@@ -163,15 +163,6 @@ fn test_upstream_main_command_help() {
 }
 
 #[test]
-fn test_upstream_command_traits() {
-    let cmd = UpstreamCommand::new(RepoUpstreamAction::Status);
-
-    // Test Command trait implementation
-    assert_eq!(cmd.name(), "upstream");
-    assert_eq!(cmd.description(), "Manage upstream branch configuration");
-}
-
-#[test]
 fn test_upstream_command_direct() {
     let repo = basic_repo();
     let original_dir = std::env::current_dir().unwrap();

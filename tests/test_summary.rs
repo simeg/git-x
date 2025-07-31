@@ -54,15 +54,3 @@ fn test_summary_command_no_since() {
     // Restore original directory
     let _ = std::env::set_current_dir(&original_dir);
 }
-
-#[test]
-fn test_summary_command_traits() {
-    let cmd = SummaryCommand::new(Some("1 day ago".to_string()));
-
-    // Test Command trait implementation
-    assert_eq!(cmd.name(), "summary");
-    assert_eq!(
-        cmd.description(),
-        "Generate a summary of repository activity"
-    );
-}

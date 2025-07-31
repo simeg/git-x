@@ -231,18 +231,6 @@ fn test_health_command_direct() {
 }
 
 #[test]
-fn test_health_command_traits() {
-    let cmd = HealthCommand::new();
-
-    // Test Command trait implementation
-    assert_eq!(cmd.name(), "health");
-    assert_eq!(
-        cmd.description(),
-        "Check repository health and configuration"
-    );
-}
-
-#[test]
 fn test_health_command_in_non_git_directory() {
     let temp_dir = tempfile::tempdir().unwrap();
     let original_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("/"));

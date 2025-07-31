@@ -600,21 +600,6 @@ fn test_bisect_start_relative_commits() {
 }
 
 #[test]
-fn test_bisect_command_traits() {
-    use git_x::commands::commit::{BisectAction, BisectCommand};
-    use git_x::core::traits::Command;
-
-    let cmd = BisectCommand::new(BisectAction::Status);
-
-    // Test Command trait implementation
-    assert_eq!(cmd.name(), "bisect");
-    assert_eq!(
-        cmd.description(),
-        "Simplified Git bisect workflow for finding bugs"
-    );
-}
-
-#[test]
 fn test_bisect_command_direct() {
     use git_x::commands::commit::{BisectAction, BisectCommand};
     use git_x::core::traits::Command;

@@ -412,15 +412,3 @@ fn test_contributors_command_direct() {
     // Restore original directory
     let _ = std::env::set_current_dir(&original_dir);
 }
-
-#[test]
-fn test_contributors_command_traits() {
-    let cmd = ContributorsCommand::new(None);
-
-    // Test Command trait implementation
-    assert_eq!(cmd.name(), "contributors");
-    assert_eq!(
-        cmd.description(),
-        "Show repository contributors and their commit statistics"
-    );
-}

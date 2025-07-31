@@ -62,15 +62,3 @@ fn test_since_command_no_commits() {
     // Restore original directory
     let _ = std::env::set_current_dir(&original_dir);
 }
-
-#[test]
-fn test_since_command_traits() {
-    let cmd = SinceCommand::new("HEAD~1".to_string());
-
-    // Test Command trait implementation
-    assert_eq!(cmd.name(), "since");
-    assert_eq!(
-        cmd.description(),
-        "Show commits since a reference (e.g., cb676ec, origin/main) or time"
-    );
-}

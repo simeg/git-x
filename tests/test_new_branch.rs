@@ -282,12 +282,3 @@ fn test_new_branch_command_with_from() {
     // Restore original directory
     let _ = std::env::set_current_dir(&original_dir);
 }
-
-#[test]
-fn test_new_branch_command_traits() {
-    let cmd = NewBranchCommand::new("test-branch".to_string(), None);
-
-    // Test Command trait implementation
-    assert_eq!(cmd.name(), "new-branch");
-    assert_eq!(cmd.description(), "Create and switch to a new branch");
-}

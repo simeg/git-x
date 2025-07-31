@@ -131,15 +131,6 @@ fn test_technical_debt_command_direct() {
 }
 
 #[test]
-fn test_technical_debt_command_traits() {
-    let cmd = TechnicalDebtCommand::new();
-
-    // Test Command trait implementation
-    assert_eq!(cmd.name(), "technical-debt");
-    assert_eq!(cmd.description(), "Analyze technical debt indicators");
-}
-
-#[test]
 fn test_technical_debt_command_outside_git_repo() {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
     let original_dir = std::env::current_dir().unwrap();

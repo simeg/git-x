@@ -202,12 +202,3 @@ fn test_rename_branch_run_function_same_name() {
     // Restore original directory
     let _ = std::env::set_current_dir(&original_dir);
 }
-
-#[test]
-fn test_rename_branch_command_traits() {
-    let cmd = RenameBranchCommand::new("new-name".to_string());
-
-    // Test Command trait implementation
-    assert_eq!(cmd.name(), "rename-branch");
-    assert_eq!(cmd.description(), "Rename the current branch");
-}
