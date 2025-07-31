@@ -4,46 +4,7 @@ This document explains how each `git-x` subcommand works under the hood. We aim 
 
 ---
 
-## `bisect`
-
-### What it does:
-- Provides a simplified interface for Git's bisect functionality to find the commit that introduced a bug.
-
-### Under the hood:
-- **Start bisect session:**
-  ```shell
-  git bisect start <bad-commit> <good-commit>
-  ```
-  - Validates commit references exist using `git rev-parse --verify`
-  - Checks if already in bisect mode by checking for `.git/BISECT_START` file existence
-  - Displays current commit info and remaining steps estimate
-
-- **Mark commits:**
-  ```shell
-  git bisect good  # Mark current commit as good
-  git bisect bad   # Mark current commit as bad  
-  git bisect skip  # Skip current commit (untestable)
-  ```
-  - Each command updates bisect state and checks out next commit
-  - Parses output to detect when first bad commit is found
-  - Shows remaining steps using logarithmic calculation
-
-- **Show status:**
-  ```shell
-  git bisect log     # Show bisect history
-  git bisect view    # Count remaining commits
-  ```
-  - Displays current commit, remaining steps, and recent bisect actions
-  - Provides guidance on next steps
-
-- **Reset bisect:**
-  ```shell
-  git bisect reset
-  ```
-  - Returns to original branch and cleans up bisect state
-  - Safe to run even when not in bisect mode
-
----
+## Repository Information & Analysis
 
 ## `info`
 
@@ -64,56 +25,6 @@ This document explains how each `git-x` subcommand works under the hood. We aim 
 - `gh pr status --json currentBranch` → GitHub PR detection (if `gh` CLI available).
 - `git rev-list --left-right --count main...HEAD` → Branch differences against main/master/develop branches.
 - `git for-each-ref --sort=-committerdate refs/heads/ --format='%(refname:short)'` → Recent branches list (detailed mode).
-
----
-
-## `graph`
-
-### What it does:
-- Visual Git log showing commits across branches.
-
-### Under the hood:
-- Executes:
-  ```shell
-  git log --oneline --graph --decorate --all
-  ```
-
----
-
-## `color-graph`
-
-### What it does:
-- Enhanced visual Git log with full color support, showing commits, branches, and author information.
-
-### Under the hood:
-- Executes:
-  ```shell
-  git log --oneline --graph --decorate --all --color=always --pretty=format:"%C(auto)%h%d %s %C(dim)(%an, %ar)%C(reset)"
-  ```
-
----
-
-## `contributors`
-
-### What it does:
-- Shows contributor statistics for the repository, including commit counts, percentages, email addresses, and date ranges.
-
-### Under the hood:
-- Executes:
-  ```shell
-  git log --all --format=%ae|%an|%ad --date=short
-  ```
-- Parses the output to group commits by email address
-- Sorts contributors by commit count (descending)
-- Calculates percentage contributions and date ranges
-- Formats output with ranking icons (🥇🥈🥉👤) and styled text
-
-### Key data processing:
-- Groups commits by contributor email to handle name variations
-- Tracks first and last commit dates for each contributor
-- Sorts by commit count to show most active contributors first
-- Calculates percentages based on total commit count
-- Uses emoji ranking system for top 3 contributors
 
 ---
 
@@ -144,6 +55,46 @@ This document explains how each `git-x` subcommand works under the hood. We aim 
 - `git ls-files *.log *.tmp *.swp *.bak .DS_Store Thumbs.db node_modules/ target/ .vscode/ .idea/` → Check for files that should be ignored
 - Binary file detection using `git diff --no-index /dev/null <file> --numstat` → Identify large binary files with sizes and Git LFS recommendations
 - Progress tracking using `indicatif` crate → Real-time progress bar showing current check being performed
+
+---
+
+## `summary`
+
+### What it does:
+- Generates a short, human-friendly changelog grouped by day.
+
+### Under the hood:
+- `git log --since=<value> --pretty=format:%h|%ad|%s|%an|%cr --date=short`
+- Parses the output, groups by date, adds emojis based on commit messages:
+    - "fix"/"bug" → 🐛
+    - "feat"/"add" → ✨
+    - "remove"/"delete" → 🔥
+    - "refactor" → 🛠
+    - fallback → 🔹
+
+---
+
+## `contributors`
+
+### What it does:
+- Shows contributor statistics for the repository, including commit counts, percentages, email addresses, and date ranges.
+
+### Under the hood:
+- Executes:
+  ```shell
+  git log --all --format=%ae|%an|%ad --date=short
+  ```
+- Parses the output to group commits by email address
+- Sorts contributors by commit count (descending)
+- Calculates percentage contributions and date ranges
+- Formats output with ranking icons (🥇🥈🥉👤) and styled text
+
+### Key data processing:
+- Groups commits by contributor email to handle name variations
+- Tracks first and last commit dates for each contributor
+- Sorts by commit count to show most active contributors first
+- Calculates percentages based on total commit count
+- Uses emoji ranking system for top 3 contributors
 
 ---
 
@@ -202,73 +153,29 @@ This document explains how each `git-x` subcommand works under the hood. We aim 
 
 ---
 
-## `prune-branches`
+## `large-files`
 
 ### What it does:
-- Deletes local branches that are fully merged into the current one, skipping protected branches.
+- Identifies the largest files in repository history to help with cleanup.
 
 ### Under the hood:
-- `git branch --merged` → List merged branches.
-- Filters out current branch and protected ones (`main`, `master`, `develop`, plus any in `--except`).
-- Runs `git branch -d` for each candidate (or just prints in dry-run).
+- `git rev-list --objects --all` → Get all objects in history
+- `git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)'` → Get object sizes
+- Filters for blob objects, sorts by size, formats output
 
 ---
 
-## `since [ref]`
+## Branch Management
+
+## `new`
 
 ### What it does:
-- Lists commits since a given ref (e.g., `cb676ec`, `origin/main`).
+- Creates and switches to a new branch with validation.
 
 ### Under the hood:
-- `git log <ref>..HEAD --oneline`
-
----
-
-## `undo`
-
-### What it does:
-- Soft-resets the last commit, keeping changes in the working directory.
-
-### Under the hood:
-- `git reset --soft HEAD~1`
-
----
-
-## `clean-branches`
-
-### What it does:
-- Deletes fully merged local branches, similar to `x prune-branches`, but doesn't take `--except`.
-
-### Under the hood:
-- Same as `x prune-branches`, minus the exceptions flag.
-
----
-
-## `what [branch]`
-
-### What it does:
-- Compares current branch to another (default: `main`).
-- Shows ahead/behind commit count and file changes.
-
-### Under the hood:
-- `git rev-list --left-right --count HEAD...<other>` → Commit divergence.
-- `git diff --name-status HEAD..<other>` → File-level changes.
-
----
-
-## `summary`
-
-### What it does:
-- Generates a short, human-friendly changelog grouped by day.
-
-### Under the hood:
-- `git log --since=<value> --pretty=format:%h|%ad|%s|%an|%cr --date=short`
-- Parses the output, groups by date, adds emojis based on commit messages:
-    - "fix"/"bug" → 🐛
-    - "feat"/"add" → ✨
-    - "remove"/"delete" → 🔥
-    - "refactor" → 🛠
-    - fallback → 🔹
+- Validates branch name against Git naming rules
+- `git rev-parse --verify <base-branch>` → Verify base branch exists (if --from specified)
+- `git checkout -b <new-branch> [<base-branch>]` → Create and switch to new branch
 
 ---
 
@@ -285,43 +192,124 @@ This document explains how each `git-x` subcommand works under the hood. We aim 
 
 ---
 
-## `sync`
+## `switch-recent`
 
 ### What it does:
-- Synchronizes current branch with its upstream using fetch + rebase/merge.
+- Provides an interactive picker to quickly switch between recently used branches.
 
 ### Under the hood:
-- `git rev-parse --abbrev-ref HEAD` → Get current branch
-- `git rev-parse --abbrev-ref HEAD@{upstream}` → Get upstream branch
-- `git fetch <remote>` → Fetch from remote
-- `git rev-list --left-right --count <upstream>...HEAD` → Check sync status
-- `git rebase <upstream>` or `git merge <upstream>` → Integrate changes
+- `git for-each-ref --sort=-committerdate --format='%(refname:short)' refs/heads/` → Get branches sorted by recent activity
+- `git branch --show-current` → Get current branch to exclude from list
+- Filters out current branch and limits to 10 most recent branches
+- Uses `dialoguer::Select` for interactive terminal UI
+- `git checkout <selected-branch>` → Switch to selected branch
+
+### Features:
+- Shows up to 10 most recently committed branches
+- Excludes current branch from selection
+- Visual indicators (🌟 for most recent, 📁 for others)
+- Cancellable with Esc or Ctrl+C
+- Arrow key navigation with Enter to select
 
 ---
 
-## `new`
+## `clean-branches`
 
 ### What it does:
-- Creates and switches to a new branch with validation.
+- Deletes all fully merged local branches, regardless of which branch they were merged into.
 
 ### Under the hood:
-- Validates branch name against Git naming rules
-- `git rev-parse --verify <base-branch>` → Verify base branch exists (if --from specified)
-- `git checkout -b <new-branch> [<base-branch>]` → Create and switch to new branch
+- `git branch --merged` → List all merged branches
+- Filters out current branch and protected ones (`main`, `master`, `develop`)
+- Runs `git branch -d` for each candidate (or just prints in dry-run)
 
 ---
 
-## `large-files`
+## `prune-branches`
 
 ### What it does:
-- Identifies the largest files in repository history to help with cleanup.
+- Deletes local branches that are fully merged into the current branch, skipping protected branches.
 
 ### Under the hood:
-- `git rev-list --objects --all` → Get all objects in history
-- `git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)'` → Get object sizes
-- Filters for blob objects, sorts by size, formats output
+- `git branch --merged` → List branches merged into current branch
+- Filters out current branch and protected ones (`main`, `master`, `develop`, plus any in `--except`)
+- Runs `git branch -d` for each candidate (or just prints in dry-run)
 
 ---
+
+## `upstream`
+
+### What it does:
+- Manages upstream branch relationships across the repository.
+
+### Under the hood:
+
+**`status` subcommand:**
+- `git for-each-ref --format='%(refname:short) %(upstream:short)' refs/heads/` → List branches with upstreams
+- `git rev-parse --abbrev-ref HEAD` → Identify current branch
+
+**`set` subcommand:**
+- `git rev-parse --verify <upstream>` → Validate upstream exists
+- `git branch --set-upstream-to=<upstream>` → Set upstream for current branch
+
+**`sync-all` subcommand:**
+- `git for-each-ref --format='%(refname:short) %(upstream:short)' refs/heads/` → Find branches with upstreams
+- For each branch: `git checkout <branch> && git fetch && git rebase/merge <upstream>`
+- `git checkout <original-branch>` → Return to original branch
+
+---
+
+## Commit History & Visualization
+
+## `graph`
+
+### What it does:
+- Visual Git log showing commits across branches.
+
+### Under the hood:
+- Executes:
+  ```shell
+  git log --oneline --graph --decorate --all
+  ```
+
+---
+
+## `color-graph`
+
+### What it does:
+- Enhanced visual Git log with full color support, showing commits, branches, and author information.
+
+### Under the hood:
+- Executes:
+  ```shell
+  git log --oneline --graph --decorate --all --color=always --pretty=format:"%C(auto)%h%d %s %C(dim)(%an, %ar)%C(reset)"
+  ```
+
+---
+
+## `since [ref]`
+
+### What it does:
+- Lists commits since a given ref (e.g., `cb676ec`, `origin/main`).
+
+### Under the hood:
+- `git log <ref>..HEAD --oneline`
+
+---
+
+## `what [branch]`
+
+### What it does:
+- Compares current branch to another (default: `main`).
+- Shows ahead/behind commit count and file changes.
+
+### Under the hood:
+- `git rev-list --left-right --count HEAD...<other>` → Commit divergence.
+- `git diff --name-status HEAD..<other>` → File-level changes.
+
+---
+
+## Commit Operations
 
 ## `fixup`
 
@@ -335,6 +323,59 @@ This document explains how each `git-x` subcommand works under the hood. We aim 
 - Optional: `git rebase -i --autosquash <commit-hash>^` → Auto-rebase if --rebase flag
 
 ---
+
+## `undo`
+
+### What it does:
+- Soft-resets the last commit, keeping changes in the working directory.
+
+### Under the hood:
+- `git reset --soft HEAD~1`
+
+---
+
+## `bisect`
+
+### What it does:
+- Provides a simplified interface for Git's bisect functionality to find the commit that introduced a bug.
+
+### Under the hood:
+- **Start bisect session:**
+  ```shell
+  git bisect start <bad-commit> <good-commit>
+  ```
+  - Validates commit references exist using `git rev-parse --verify`
+  - Checks if already in bisect mode by checking for `.git/BISECT_START` file existence
+  - Displays current commit info and remaining steps estimate
+
+- **Mark commits:**
+  ```shell
+  git bisect good  # Mark current commit as good
+  git bisect bad   # Mark current commit as bad  
+  git bisect skip  # Skip current commit (untestable)
+  ```
+  - Each command updates bisect state and checks out next commit
+  - Parses output to detect when first bad commit is found
+  - Shows remaining steps using logarithmic calculation
+
+- **Show status:**
+  ```shell
+  git bisect log     # Show bisect history
+  git bisect view    # Count remaining commits
+  ```
+  - Displays current commit, remaining steps, and recent bisect actions
+  - Provides guidance on next steps
+
+- **Reset bisect:**
+  ```shell
+  git bisect reset
+  ```
+  - Returns to original branch and cleans up bisect state
+  - Safe to run even when not in bisect mode
+
+---
+
+## Stash Management
 
 ## `stash-branch`
 
@@ -373,45 +414,18 @@ This document explains how each `git-x` subcommand works under the hood. We aim 
 
 ---
 
-## `upstream`
+## Synchronization
+
+## `sync`
 
 ### What it does:
-- Manages upstream branch relationships across the repository.
+- Synchronizes current branch with its upstream using fetch + rebase/merge.
 
 ### Under the hood:
-
-**`status` subcommand:**
-- `git for-each-ref --format='%(refname:short) %(upstream:short)' refs/heads/` → List branches with upstreams
-- `git rev-parse --abbrev-ref HEAD` → Identify current branch
-
-**`set` subcommand:**
-- `git rev-parse --verify <upstream>` → Validate upstream exists
-- `git branch --set-upstream-to=<upstream>` → Set upstream for current branch
-
-**`sync-all` subcommand:**
-- `git for-each-ref --format='%(refname:short) %(upstream:short)' refs/heads/` → Find branches with upstreams
-- For each branch: `git checkout <branch> && git fetch && git rebase/merge <upstream>`
-- `git checkout <original-branch>` → Return to original branch
-
----
-
-## `switch-recent`
-
-### What it does:
-- Provides an interactive picker to quickly switch between recently used branches.
-
-### Under the hood:
-- `git for-each-ref --sort=-committerdate --format='%(refname:short)' refs/heads/` → Get branches sorted by recent activity
-- `git branch --show-current` → Get current branch to exclude from list
-- Filters out current branch and limits to 10 most recent branches
-- Uses `dialoguer::Select` for interactive terminal UI
-- `git checkout <selected-branch>` → Switch to selected branch
-
-### Features:
-- Shows up to 10 most recently committed branches
-- Excludes current branch from selection
-- Visual indicators (🌟 for most recent, 📁 for others)
-- Cancellable with Esc or Ctrl+C
-- Arrow key navigation with Enter to select
+- `git rev-parse --abbrev-ref HEAD` → Get current branch
+- `git rev-parse --abbrev-ref HEAD@{upstream}` → Get upstream branch
+- `git fetch <remote>` → Fetch from remote
+- `git rev-list --left-right --count <upstream>...HEAD` → Check sync status
+- `git rebase <upstream>` or `git merge <upstream>` → Integrate changes
 
 ---

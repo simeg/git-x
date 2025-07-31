@@ -13,27 +13,33 @@ It wraps common Git actions in muscle-memory-friendly, no-brainer commands — p
 - [Why Does This Exist?](#why-does-this-exist)
 - [Installation](#installation)
 - [Example Commands](#example-commands)
-    - [`bisect`](#bisect)
-    - [`clean-branches`](#clean-branches)
-    - [`color-graph`](#color-graph)
-    - [`contributors`](#contributors)
-    - [`fixup`](#fixup)
-    - [`graph`](#graph)
-    - [`health`](#health)
-    - [`info`](#info)
-    - [`large-files`](#large-files)
-    - [`new`](#new)
-    - [`prune-branches`](#prune-branches)
-    - [`rename-branch`](#rename-branch)
-    - [`since [ref]`](#since-ref)
-    - [`stash-branch`](#stash-branch)
-    - [`summary`](#summary)
-    - [`switch-recent`](#switch-recent)
-    - [`sync`](#sync)
-    - [`technical-debt`](#technical-debt)
-    - [`undo`](#undo)
-    - [`upstream`](#upstream)
-    - [`what [branch]`](#what-branch)
+    - [Repository Information & Analysis](#repository-information--analysis)
+        - [`info`](#info) - High-level repository overview
+        - [`health`](#health) - Repository health check
+        - [`summary`](#summary) - Commit summary and stats
+        - [`contributors`](#contributors) - Contributor statistics
+        - [`technical-debt`](#technical-debt) - Code complexity analysis
+        - [`large-files`](#large-files) - Find largest files
+    - [Branch Management](#branch-management)
+        - [`new`](#new) - Create and switch to new branch
+        - [`rename-branch`](#rename-branch) - Rename current branch
+        - [`switch-recent`](#switch-recent) - Interactive branch picker
+        - [`clean-branches`](#clean-branches) - Delete all merged branches
+        - [`prune-branches`](#prune-branches) - Delete branches merged into current
+        - [`upstream`](#upstream) - Manage upstream relationships
+    - [Commit History & Visualization](#commit-history--visualization)
+        - [`graph`](#graph) - Pretty commit graph
+        - [`color-graph`](#color-graph) - Colorized commit graph
+        - [`since [ref]`](#since-ref) - Show commits since reference
+        - [`what [branch]`](#what-branch) - Compare branches
+    - [Commit Operations](#commit-operations)
+        - [`fixup`](#fixup) - Create fixup commits
+        - [`undo`](#undo) - Undo last commit safely
+        - [`bisect`](#bisect) - Simplified bisect workflow
+    - [Stash Management](#stash-management)
+        - [`stash-branch`](#stash-branch) - Advanced stash operations
+    - [Synchronization](#synchronization)
+        - [`sync`](#sync) - Sync with upstream
 - [Git Integration: How `git-x` Just Works™](#git-integration-how-git-x-just-works)
 - [What's Under the Hood?](#whats-under-the-hood)
 - [Command Transparency](#command-transparency)
@@ -86,181 +92,47 @@ cargo install --path .
 
 ---
 
-### `bisect`
+## Repository Information & Analysis
 
-> Simplified bisect workflow
+### `info`
 
-```shell
-# Start bisect session
-git x bisect start <good-commit> <bad-commit>
-
-# Mark current commit as good/bad/untestable
-git x bisect good
-git x bisect bad
-git x bisect skip
-
-# Show bisect status
-git x bisect status
-
-# End bisect session
-git x bisect reset
-```
-
-#### Example workflow:
+> Show a high-level overview of the current repo  
+> [🔍 *Git commands*](docs/command-internals.md#info)
 
 ```shell
-# Start bisecting between a known good commit and HEAD
-git x bisect start HEAD HEAD~10
-
-# Git checks out a commit for testing
-# Test your code, then mark the commit:
-git x bisect bad    # if bug is present
-git x bisect good   # if bug is not present
-git x bisect skip   # if commit is untestable
-
-# Repeat until git finds the first bad commit
-git x bisect reset  # return to original branch
+git x info
 ```
 
 #### Output:
 
 ```shell
-🔍 Starting bisect between abc123 (good) and def456 (bad)
-📍 Checked out commit: 789abc Fix user authentication
-⏳ Approximately 3 steps remaining
+🗂️  Repository: git-x
+📍 Current branch: master
+🔗 Upstream: origin/master
+✅ Status: Up to date
+⚠️  Working directory: Has changes
+📋 Staged files: None
+❌ No open PR for current branch
+📊 vs main: 2 ahead, 1 behind
 
-💡 Test this commit and run:
-  git x bisect good if commit is good
-  git x bisect bad if commit is bad
-  git x bisect skip if commit is untestable
+📋 Recent activity:
+   * a1b2c3d Add new feature (2 hours ago) <Alice>
+   * d4e5f6g Fix bug in parser (4 hours ago) <Bob>
+   * g7h8i9j Update documentation (1 day ago) <Charlie>
 ```
 
----
-
-### `clean-branches`
-
-> Delete all fully merged local branches (except protected ones)
-
-```shell
-git x clean-branches
-git x clean-branches --dry-run  # Preview what would be deleted
-```
-
-#### Output:
-
-```shell
-⚠️  Are you sure you want to clean merged branches?
-This will delete 3 merged branches: feature/refactor, bugfix/signup-typo, hotfix/quick-fix
-[y/N]: y
-
-🧹 Deleted 3 merged branches:
-- feature/refactor
-- bugfix/signup-typo
-- hotfix/quick-fix
-```
-
-**Flags:**
-- `--dry-run` — Show which branches would be deleted without actually deleting them
-
-**Note:** This command will prompt for confirmation before deleting branches to prevent accidental deletions.
-
----
-
-### `color-graph`
-
-> Colorized Git log with branches, remotes, HEADs, and author info
-
-```shell
-git x color-graph
-```
-
-#### Output:
-
-Enhanced version of `git x graph` with:
-- **Full color support** for branches, commits, and decorations
-- **Author names and timestamps** for each commit
-- **Rich formatting** that's easy to scan
-
----
-
-### `contributors`
-
-> Show contributor statistics for the repository
-
-```shell
-git x contributors
-```
-
-#### Output:
-
-```shell
-📊 Repository Contributors (15 total commits):
-
-🥇 Alice Smith 10 commits (66.7%)
-   📧 alice@example.com | 📅 2025-01-01 to 2025-01-20
-
-🥈 Bob Jones 3 commits (20.0%)
-   📧 bob@example.com | 📅 2025-01-05 to 2025-01-15
-
-🥉 Charlie Brown 2 commits (13.3%)
-   📧 charlie@example.com | 📅 2025-01-10 to 2025-01-12
-```
-
-Shows repository contributors ranked by commit count with email addresses and date ranges of their contributions.
-
----
-
-### `fixup`
-
-> Create fixup commits for easier interactive rebasing
-
-```shell
-git x fixup abc123
-git x fixup abc123 --rebase
-```
-
-#### Output:
-
-```shell
-🔧 Creating fixup commit for abc123...
-✅ Fixup commit created for abc123
-💡 To squash the fixup commit, run: git rebase -i --autosquash abc123^
-```
-
-**Flags:**
-- `--rebase` — Automatically start interactive rebase with autosquash after creating fixup
-
-Creates a fixup commit that can be automatically squashed during interactive rebase. Requires staged changes.
-
----
-
-### `graph`
-
-> Pretty Git log with branches, remotes, and HEADs
-
-```shell
-git x graph
-```
-
-#### Output:
-
-```shell
-* fc27857 (HEAD -> master, origin/master) Make tests more robust
-* d109d83 Fix remaining test failures with improved git repository detection
-* ded10bb Apply code formatting and linting fixes
-| * 71b448a (feature/auth-improvement) Apply code formatting and linting fixes
-|/  
-* 6c69a03 Fix failing tests on GitHub Actions with robust error handling
-* 4f6565e Fix tests
-* 433788a Update README.md
-* 8594ff0 Implement comprehensive layered architecture for code structure reorganization
-```
+#### Enhanced Features:
+- **Recent activity timeline** - Shows recent commits across all branches with author info
+- **GitHub PR detection** - Automatically detects if current branch has an open pull request (requires `gh` CLI)
+- **Branch comparisons** - Shows ahead/behind status compared to main branches
+- **Detailed view** - Use any git-x command to see additional details
 
 ---
 
 ### `health`
 
-> Check repository health and identify potential issues
+> Check repository health and identify potential issues  
+> [🔍 *Git commands*](docs/command-internals.md#health)
 
 ```shell
 git x health
@@ -319,43 +191,129 @@ Useful for:
 
 ---
 
-### `info`
+### `summary`
 
-> Show a high-level overview of the current repo
+> Show a short, changelog-style summary of recent commits  
+> [🔍 *Git commands*](docs/command-internals.md#summary)
 
 ```shell
-git x info
+git x summary
+git x summary --since "2 days ago"
+```
+
+**Flags:**
+- `--since` — Accepts natural date formats like "2 days ago", "last Monday", or exact dates like "2025-07-01". It uses Git's built-in date parser, so most human-readable expressions work.
+
+#### Output:
+
+**Without `--since` flag (shows repository summary):**
+```shell
+📊 Repository Summary
+==================================================
+🗂️  Repository: git-x
+📍 Current branch: master
+🔗 Upstream: origin/master (up to date)
+📈 Commits (1 month ago): 72
+📁 Files: 63 total
+```
+
+**With `--since` flag (shows changelog-style commit history):**
+```shell
+📅 Commit Summary since 2 days ago:
+==================================================
+
+📆 2025-07-30
+ - 🔹 Big re-architecture (by Simon Egersand, 4 hours ago)
+ - 🐛 Fix remaining test failures (by Alice, 6 hours ago)
+
+📆 2025-07-29
+ - ✨ Add new features (by Bob, 1 day ago)
+ - 🛠 Refactor core components (by Carol, 1 day ago)
+```
+
+- **Default behavior**: Shows repository overview with stats from the last month
+- **With `--since`**: Groups commits by day with commit messages, authors, and timestamps
+- Useful for writing daily stand-ups, changelogs, or review summaries
+- Can be customized using `--since` (e.g. `--since "1 week ago"`)
+- Sorts commits newest-first within each day
+
+---
+
+### `contributors`
+
+> Show contributor statistics for the repository  
+> [🔍 *Git commands*](docs/command-internals.md#contributors)
+
+```shell
+git x contributors
 ```
 
 #### Output:
 
 ```shell
-🗂️  Repository: git-x
-📍 Current branch: master
-🔗 Upstream: origin/master
-✅ Status: Up to date
-⚠️  Working directory: Has changes
-📋 Staged files: None
-❌ No open PR for current branch
-📊 vs main: 2 ahead, 1 behind
+📊 Repository Contributors (15 total commits):
 
-📋 Recent activity:
-   * a1b2c3d Add new feature (2 hours ago) <Alice>
-   * d4e5f6g Fix bug in parser (4 hours ago) <Bob>
-   * g7h8i9j Update documentation (1 day ago) <Charlie>
+🥇 Alice Smith 10 commits (66.7%)
+   📧 alice@example.com | 📅 2025-01-01 to 2025-01-20
+
+🥈 Bob Jones 3 commits (20.0%)
+   📧 bob@example.com | 📅 2025-01-05 to 2025-01-15
+
+🥉 Charlie Brown 2 commits (13.3%)
+   📧 charlie@example.com | 📅 2025-01-10 to 2025-01-12
 ```
 
-#### Enhanced Features:
-- **Recent activity timeline** - Shows recent commits across all branches with author info
-- **GitHub PR detection** - Automatically detects if current branch has an open pull request (requires `gh` CLI)
-- **Branch comparisons** - Shows ahead/behind status compared to main branches
-- **Detailed view** - Use any git-x command to see additional details
+Shows repository contributors ranked by commit count with email addresses and date ranges of their contributions.
+
+---
+
+### `technical-debt`
+
+> Analyze code complexity and technical debt metrics  
+> [🔍 *Git commands*](docs/command-internals.md#technical-debt)
+
+```shell
+git x technical-debt
+```
+
+#### Output:
+
+```shell
+🔍 Technical Debt Analysis
+
+📊 Large Commits (>20 files changed)
+   ✓ No large commits found
+
+🔥 File Hotspots (frequently modified)
+   1. 15 changes | HIGH | src/main.rs
+   2. 8 changes | MED | src/lib.rs
+   3. 6 changes | LOW | README.md
+
+🌿 Long-lived Branches (>30 days)
+   • feature/old-refactor | 3 months ago | Alice Smith
+   • hotfix/legacy-fix | 6 weeks ago | Bob Jones
+
+🔄 Code Churn (high add/delete ratio)
+   1. +245 -189 | HIGH | src/parser.rs
+   2. +156 -98 | MED | src/utils.rs
+
+📦 Binary Files in Repository
+   ! 3 binary files found
+   • assets/logo.png
+   • docs/manual.pdf
+   ...
+
+Analysis complete!
+```
+
+Analyzes repository for technical debt indicators including large commits, file modification hotspots, long-lived branches, code churn patterns, and binary file usage.
 
 ---
 
 ### `large-files`
 
-> Find largest files in repository history
+> Find largest files in repository history  
+> [🔍 *Git commands*](docs/command-internals.md#large-files)
 
 ```shell
 git x large-files
@@ -383,9 +341,12 @@ Useful for identifying large files that may be slowing down your repository.
 
 ---
 
+## Branch Management
+
 ### `new`
 
-> Create and switch to a new branch
+> Create and switch to a new branch  
+> [🔍 *Git commands*](docs/command-internals.md#new)
 
 ```shell
 git x new feature-branch
@@ -406,7 +367,86 @@ Validates branch names and prevents common Git naming issues.
 
 ---
 
+### `rename-branch`
+
+> Rename the current branch locally and on remote  
+> [🔍 *Git commands*](docs/command-internals.md#rename-branch)
+
+```shell
+git x rename-branch new-feature-name
+```
+
+#### Output:
+
+```shell
+🔄 Renaming branch 'old-name' to 'new-feature-name'...
+✅ Branch renamed successfully
+```
+
+Safely renames your current branch by:
+- Renaming the local branch
+- Updating the remote tracking branch
+- Cleaning up old remote references
+
+---
+
+### `switch-recent`
+
+> Interactive picker for recent branches  
+> [🔍 *Git commands*](docs/command-internals.md#switch-recent)
+
+```shell
+git x switch-recent
+```
+
+#### Output:
+
+```shell
+? Select a branch to switch to:
+  🌟 feature/auth-improvement
+  📁 hotfix/login-bug
+  📁 feature/dark-mode
+  📁 main
+```
+
+Shows an interactive menu of your 10 most recently used branches (excluding current branch). Use arrow keys to navigate, Enter to select.
+
+---
+
+### `clean-branches`
+
+> Delete all fully merged local branches (except protected ones)  
+> [🔍 *Git commands*](docs/command-internals.md#clean-branches)
+
+```shell
+git x clean-branches
+git x clean-branches --dry-run  # Preview what would be deleted
+```
+
+#### Output:
+
+```shell
+⚠️  Are you sure you want to clean merged branches?
+This will delete 3 merged branches: feature/refactor, bugfix/signup-typo, hotfix/quick-fix
+[y/N]: y
+
+🧹 Deleted 3 merged branches:
+- feature/refactor
+- bugfix/signup-typo
+- hotfix/quick-fix
+```
+
+**Flags:**
+- `--dry-run` — Show which branches would be deleted without actually deleting them
+
+**Note:** This command will prompt for confirmation before deleting branches to prevent accidental deletions.
+
+---
+
 ### `prune-branches`
+
+> Delete branches merged into current branch  
+> [🔍 *Git commands*](docs/command-internals.md#prune-branches)
 
 Deletes all **local branches** that have already been **merged into the current branch**, while skipping protected ones.
 
@@ -442,31 +482,87 @@ This will delete 2 merged branches: feature/completed-task, hotfix/old-bug
 
 ---
 
-### `rename-branch`
+### `upstream`
 
-> Rename the current branch locally and on remote
+> Manage upstream branch relationships  
+> [🔍 *Git commands*](docs/command-internals.md#upstream)
 
 ```shell
-git x rename-branch new-feature-name
+git x upstream status
+git x upstream set origin/main
+git x upstream sync-all --dry-run
+```
+
+#### Subcommands:
+
+**`status`** — Show upstream status for all branches
+
+```shell
+🔗 Upstream status for all branches:
+* main -> origin/main
+  feature -> (no upstream)
+  hotfix -> origin/hotfix
+```
+
+**`set <upstream>`** — Set upstream for current branch
+
+**`sync-all`** — Sync all local branches with their upstreams
+- `--dry-run` — Show what would be synced without doing it
+- `--merge` — Use merge instead of rebase
+
+Streamlines upstream branch management across your entire repository.
+
+---
+
+## Commit History & Visualization
+
+### `graph`
+
+> Pretty Git log with branches, remotes, and HEADs  
+> [🔍 *Git commands*](docs/command-internals.md#graph)
+
+```shell
+git x graph
 ```
 
 #### Output:
 
 ```shell
-🔄 Renaming branch 'old-name' to 'new-feature-name'...
-✅ Branch renamed successfully
+* fc27857 (HEAD -> master, origin/master) Make tests more robust
+* d109d83 Fix remaining test failures with improved git repository detection
+* ded10bb Apply code formatting and linting fixes
+| * 71b448a (feature/auth-improvement) Apply code formatting and linting fixes
+|/  
+* 6c69a03 Fix failing tests on GitHub Actions with robust error handling
+* 4f6565e Fix tests
+* 433788a Update README.md
+* 8594ff0 Implement comprehensive layered architecture for code structure reorganization
 ```
 
-Safely renames your current branch by:
-- Renaming the local branch
-- Updating the remote tracking branch
-- Cleaning up old remote references
+---
+
+### `color-graph`
+
+> Colorized Git log with branches, remotes, HEADs, and author info  
+> [🔍 *Git commands*](docs/command-internals.md#color-graph)
+
+```shell
+git x color-graph
+```
+
+#### Output:
+
+Enhanced version of `git x graph` with:
+- **Full color support** for branches, commits, and decorations
+- **Author names and timestamps** for each commit
+- **Rich formatting** that's easy to scan
 
 ---
 
 ### `since [ref]`
 
-> Show commits since a reference (e.g., `d926b4b`, my-branch, origin/main)
+> Show commits since a reference (e.g., `d926b4b`, my-branch, origin/main)  
+> [🔍 *Git commands*](docs/command-internals.md#since-ref)
 
 ```shell
 git x since origin/main
@@ -482,9 +578,135 @@ git x since origin/main
 
 ---
 
+### `what [branch]`
+
+> Show what's different between this branch and another (default: main)  
+> [🔍 *Git commands*](docs/command-internals.md#what-branch)
+
+```shell
+git x what
+git x what --target develop
+```
+
+#### Output:
+
+```shell
+Branch: feature/new-ui vs main
++ 4 commits ahead
+- 2 commits behind
+Changes:
+ - + new_ui.js
+ - ~ App.tsx
+ - - old_ui.css
+```
+
+**Flags:**
+- `--target <branch>` — Branch to compare to (default: main)
+
+---
+
+## Commit Operations
+
+### `fixup`
+
+> Create fixup commits for easier interactive rebasing  
+> [🔍 *Git commands*](docs/command-internals.md#fixup)
+
+```shell
+git x fixup abc123
+git x fixup abc123 --rebase
+```
+
+#### Output:
+
+```shell
+🔧 Creating fixup commit for abc123...
+✅ Fixup commit created for abc123
+💡 To squash the fixup commit, run: git rebase -i --autosquash abc123^
+```
+
+**Flags:**
+- `--rebase` — Automatically start interactive rebase with autosquash after creating fixup
+
+Creates a fixup commit that can be automatically squashed during interactive rebase. Requires staged changes.
+
+---
+
+### `undo`
+
+> Undo the last commit (without losing changes)  
+> [🔍 *Git commands*](docs/command-internals.md#undo)
+
+```shell
+git x undo
+```
+
+#### Output:
+
+```shell
+Last commit undone (soft reset). Changes kept in working directory.
+```
+
+---
+
+### `bisect`
+
+> Simplified bisect workflow  
+> [🔍 *Git commands*](docs/command-internals.md#bisect)
+
+```shell
+# Start bisect session
+git x bisect start <good-commit> <bad-commit>
+
+# Mark current commit as good/bad/untestable
+git x bisect good
+git x bisect bad
+git x bisect skip
+
+# Show bisect status
+git x bisect status
+
+# End bisect session
+git x bisect reset
+```
+
+#### Example workflow:
+
+```shell
+# Start bisecting between a known good commit and HEAD
+git x bisect start HEAD HEAD~10
+
+# Git checks out a commit for testing
+# Test your code, then mark the commit:
+git x bisect bad    # if bug is present
+git x bisect good   # if bug is not present
+git x bisect skip   # if commit is untestable
+
+# Repeat until git finds the first bad commit
+git x bisect reset  # return to original branch
+```
+
+#### Output:
+
+```shell
+🔍 Starting bisect between abc123 (good) and def456 (bad)
+📍 Checked out commit: 789abc Fix user authentication
+⏳ Approximately 3 steps remaining
+
+💡 Test this commit and run:
+  git x bisect good if commit is good
+  git x bisect bad if commit is bad
+  git x bisect skip if commit is untestable
+```
+
+---
+
+## Stash Management
+
 ### `stash-branch`
 
-> Advanced stash management with branch integration
+> Advanced stash management with branch integration  
+> [🔍 *Git commands*](docs/command-internals.md#stash-branch)
 
 ```shell
 git x stash-branch create new-feature
@@ -554,78 +776,12 @@ Helps manage stashes more effectively by associating them with branches and prov
 
 ---
 
-### `summary`
-
-> Show a short, changelog-style summary of recent commits
-
-```shell
-git x summary
-git x summary --since "2 days ago"
-```
-
-**Flags:**
-- `--since` — Accepts natural date formats like "2 days ago", "last Monday", or exact dates like "2025-07-01". It uses Git's built-in date parser, so most human-readable expressions work.
-
-#### Output:
-
-**Without `--since` flag (shows repository summary):**
-```shell
-📊 Repository Summary
-==================================================
-🗂️  Repository: git-x
-📍 Current branch: master
-🔗 Upstream: origin/master (up to date)
-📈 Commits (1 month ago): 72
-📁 Files: 63 total
-```
-
-**With `--since` flag (shows changelog-style commit history):**
-```shell
-📅 Commit Summary since 2 days ago:
-==================================================
-
-📆 2025-07-30
- - 🔹 Big re-architecture (by Simon Egersand, 4 hours ago)
- - 🐛 Fix remaining test failures (by Alice, 6 hours ago)
-
-📆 2025-07-29
- - ✨ Add new features (by Bob, 1 day ago)
- - 🛠 Refactor core components (by Carol, 1 day ago)
-```
-
-- **Default behavior**: Shows repository overview with stats from the last month
-- **With `--since`**: Groups commits by day with commit messages, authors, and timestamps
-- Useful for writing daily stand-ups, changelogs, or review summaries
-- Can be customized using `--since` (e.g. `--since "1 week ago"`)
-- Sorts commits newest-first within each day
-
----
-
-### `switch-recent`
-
-> Interactive picker for recent branches
-
-```shell
-git x switch-recent
-```
-
-#### Output:
-
-```shell
-? Select a branch to switch to:
-  🌟 feature/auth-improvement
-  📁 hotfix/login-bug
-  📁 feature/dark-mode
-  📁 main
-```
-
-Shows an interactive menu of your 10 most recently used branches (excluding current branch). Use arrow keys to navigate, Enter to select.
-
----
+## Synchronization
 
 ### `sync`
 
-> Sync current branch with upstream (fetch + rebase/merge)
+> Sync current branch with upstream (fetch + rebase/merge)  
+> [🔍 *Git commands*](docs/command-internals.md#sync)
 
 ```shell
 git x sync
@@ -645,122 +801,6 @@ git x sync --merge
 
 Automatically fetches from remote and integrates upstream changes into your current branch.
 
----
-
-### `technical-debt`
-
-> Analyze code complexity and technical debt metrics
-
-```shell
-git x technical-debt
-```
-
-#### Output:
-
-```shell
-🔍 Technical Debt Analysis
-
-📊 Large Commits (>20 files changed)
-   ✓ No large commits found
-
-🔥 File Hotspots (frequently modified)
-   1. 15 changes | HIGH | src/main.rs
-   2. 8 changes | MED | src/lib.rs
-   3. 6 changes | LOW | README.md
-
-🌿 Long-lived Branches (>30 days)
-   • feature/old-refactor | 3 months ago | Alice Smith
-   • hotfix/legacy-fix | 6 weeks ago | Bob Jones
-
-🔄 Code Churn (high add/delete ratio)
-   1. +245 -189 | HIGH | src/parser.rs
-   2. +156 -98 | MED | src/utils.rs
-
-📦 Binary Files in Repository
-   ! 3 binary files found
-   • assets/logo.png
-   • docs/manual.pdf
-   ...
-
-Analysis complete!
-```
-
-Analyzes repository for technical debt indicators including large commits, file modification hotspots, long-lived branches, code churn patterns, and binary file usage.
-
----
-
-### `undo`
-
-> Undo the last commit (without losing changes)
-
-```shell
-git x undo
-```
-
-#### Output:
-
-```shell
-Last commit undone (soft reset). Changes kept in working directory.
-```
-
----
-
-### `upstream`
-
-> Manage upstream branch relationships
-
-```shell
-git x upstream status
-git x upstream set origin/main
-git x upstream sync-all --dry-run
-```
-
-#### Subcommands:
-
-**`status`** — Show upstream status for all branches
-
-```shell
-🔗 Upstream status for all branches:
-* main -> origin/main
-  feature -> (no upstream)
-  hotfix -> origin/hotfix
-```
-
-**`set <upstream>`** — Set upstream for current branch
-
-**`sync-all`** — Sync all local branches with their upstreams
-- `--dry-run` — Show what would be synced without doing it
-- `--merge` — Use merge instead of rebase
-
-Streamlines upstream branch management across your entire repository.
-
----
-
-### `what [branch]`
-
-> Show what's different between this branch and another (default: main)
-
-```shell
-git x what
-git x what --target develop
-```
-
-#### Output:
-
-```shell
-Branch: feature/new-ui vs main
-+ 4 commits ahead
-- 2 commits behind
-Changes:
- - + new_ui.js
- - ~ App.tsx
- - - old_ui.css
-```
-
-**Flags:**
-- `--target <branch>` — Branch to compare to (default: main)
-
----
 
 ## Command Transparency
 
