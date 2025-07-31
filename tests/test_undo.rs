@@ -7,7 +7,7 @@ use predicates::str::contains;
 use std::process::Command;
 
 #[test]
-fn test_git_xundo_soft_resets_last_commit() {
+fn test_git_undo_soft_resets_last_commit() {
     let repo = repo_with_commits(2);
 
     repo.run_git_x(&["undo"])

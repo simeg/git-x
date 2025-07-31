@@ -3,13 +3,13 @@ mod common;
 use common::basic_repo;
 
 #[test]
-fn test_git_xgraph_runs_without_error() {
+fn test_git_graph_runs_without_error() {
     let repo = basic_repo();
     repo.run_git_x(&["graph"]).success();
 }
 
 #[test]
-fn test_git_xgraph_outputs_graph_symbols() {
+fn test_git_graph_outputs_graph_symbols() {
     use assert_cmd::Command;
 
     let repo = basic_repo();

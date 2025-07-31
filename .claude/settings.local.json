@@ -38,7 +38,10 @@
       "Bash(timeout 10 cargo test test_prune_branches_run_function --test test_prune_branches)",
       "Bash(echo $?)",
       "Bash(git branch:*)",
-      "Bash(./target/debug/git-x stash-branch --help)"
+      "Bash(./target/debug/git-x stash-branch --help)",
+      "Bash(timeout 15 cargo test --test test_interactive)",
+      "Bash(timeout 30 cargo test --test test_interactive -- --test-threads=1)",
+      "Bash(timeout 20 cargo test --test test_interactive -- --test-threads=1)"
     ],
     "deny": []
   }

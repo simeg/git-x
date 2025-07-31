@@ -27,7 +27,7 @@ fn strip_ansi_codes(text: &str) -> String {
 }
 
 #[test]
-fn test_git_xwhat_shows_diff_and_commits() {
+fn test_git_what_shows_diff_and_commits() {
     let repo = repo_with_feature_ahead("feature/test", "main");
 
     repo.run_git_x(&["what"])

@@ -77,3 +77,21 @@ fn test_gitx_error_source() {
     let error_trait: &dyn Error = &gitx_error;
     assert!(error_trait.source().is_some());
 }
+
+#[test]
+fn test_gitx_error_source_variants() {
+    use std::error::Error;
+
+    // Test IO error source (should return Some)
+    let io_error = io::Error::other("test");
+    let gitx_io_error = GitXError::Io(io_error);
+    assert!(gitx_io_error.source().is_some());
+
+    // Test GitCommand error source (should return None)
+    let git_error = GitXError::GitCommand("test".to_string());
+    assert!(git_error.source().is_none());
+
+    // Test Parse error source (should return None)
+    let parse_error = GitXError::Parse("test".to_string());
+    assert!(parse_error.source().is_none());
+}

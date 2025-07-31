@@ -6,7 +6,7 @@ use git_x::core::traits::Command;
 use predicates::str::contains;
 
 #[test]
-fn test_git_xsince_outputs_commits_since_ref() {
+fn test_git_since_outputs_commits_since_ref() {
     let repo = repo_with_commits(2);
 
     repo.run_git_x(&["since", "HEAD~1"])
@@ -16,7 +16,7 @@ fn test_git_xsince_outputs_commits_since_ref() {
 }
 
 #[test]
-fn test_git_xsince_no_new_commits() {
+fn test_git_since_no_new_commits() {
     let repo = repo_with_commits(2);
 
     repo.run_git_x(&["since", "HEAD"])
