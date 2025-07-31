@@ -172,6 +172,14 @@ fn main() {
                     branch_name,
                     list_only,
                 },
+                git_x::cli::StashBranchAction::Interactive => StashAction::Interactive,
+                git_x::cli::StashBranchAction::Export {
+                    output_dir,
+                    stash_ref,
+                } => StashAction::Export {
+                    output_dir,
+                    stash_ref,
+                },
             };
 
             let cmd = StashCommand::new(stash_action);

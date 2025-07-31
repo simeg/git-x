@@ -55,6 +55,93 @@ impl InfoCommand {
         self
     }
 
+    fn get_recent_activity_timeline(limit: usize) -> Result<Vec<String>> {
+        let output = GitOperations::run(&[
+            "log",
+            "--oneline",
+            "--decorate",
+            "--graph",
+            "--all",
+            &format!("--max-count={limit}"),
+            "--pretty=format:%C(auto)%h %s %C(dim)(%cr) %C(bold blue)<%an>%C(reset)",
+        ])?;
+
+        let lines: Vec<String> = output.lines().map(|s| s.to_string()).collect();
+        Ok(lines)
+    }
+
+    fn check_github_pr_status() -> Result<Option<String>> {
+        // Try to detect if GitHub CLI is available and check for PR status
+        match std::process::Command::new("gh")
+            .args(["pr", "status", "--json", "currentBranch"])
+            .output()
+        {
+            Ok(output) if output.status.success() => {
+                let stdout = String::from_utf8_lossy(&output.stdout);
+                if stdout.trim().is_empty() || stdout.contains("null") {
+                    Ok(Some("❌ No open PR for current branch".to_string()))
+                } else {
+                    Ok(Some("✅ Open PR found for current branch".to_string()))
+                }
+            }
+            _ => Ok(None), // GitHub CLI not available or error
+        }
+    }
+
+    fn get_branch_differences(current_branch: &str) -> Result<Vec<String>> {
+        let mut differences = Vec::new();
+
+        // Check against main/master
+        for main_branch in ["main", "master", "develop"] {
+            if current_branch == main_branch {
+                continue;
+            }
+
+            // Check if this main branch exists
+            if GitOperations::run(&[
+                "rev-parse",
+                "--verify",
+                &format!("refs/heads/{main_branch}"),
+            ])
+            .is_ok()
+            {
+                // Get ahead/behind count
+                if let Ok(output) = GitOperations::run(&[
+                    "rev-list",
+                    "--left-right",
+                    "--count",
+                    &format!("{main_branch}...{current_branch}"),
+                ]) {
+                    let parts: Vec<&str> = output.split_whitespace().collect();
+                    if parts.len() == 2 {
+                        let behind: u32 = parts[0].parse().unwrap_or(0);
+                        let ahead: u32 = parts[1].parse().unwrap_or(0);
+
+                        if ahead > 0 || behind > 0 {
+                            let mut status_parts = Vec::new();
+                            if ahead > 0 {
+                                status_parts.push(format!("{ahead} ahead"));
+                            }
+                            if behind > 0 {
+                                status_parts.push(format!("{behind} behind"));
+                            }
+                            differences.push(format!(
+                                "📊 vs {}: {}",
+                                main_branch,
+                                status_parts.join(", ")
+                            ));
+                        } else {
+                            differences.push(format!("✅ vs {main_branch}: Up to date"));
+                        }
+                        break; // Only check the first existing main branch
+                    }
+                }
+            }
+        }
+
+        Ok(differences)
+    }
+
     fn format_branch_info(
         current: &str,
         upstream: Option<&str>,
@@ -128,6 +215,34 @@ impl Command for InfoCommand {
                     output.add_line(format!("   • {file}"));
                 }
             }
+        }
+
+        // Recent activity timeline
+        if self.show_detailed {
+            match Self::get_recent_activity_timeline(8) {
+                Ok(timeline) if !timeline.is_empty() => {
+                    output.add_line("\n📋 Recent activity:".to_string());
+                    for line in timeline {
+                        output.add_line(format!("   {line}"));
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        // GitHub PR status (if available)
+        if let Ok(Some(pr_status)) = Self::check_github_pr_status() {
+            output.add_line(pr_status);
+        }
+
+        // Branch differences
+        match Self::get_branch_differences(&current) {
+            Ok(differences) if !differences.is_empty() => {
+                for diff in differences {
+                    output.add_line(diff);
+                }
+            }
+            _ => {}
         }
 
         // Recent branches
@@ -297,66 +412,334 @@ impl HealthCommand {
 
         issues
     }
+
+    fn check_security_issues() -> Vec<String> {
+        let mut issues = Vec::new();
+
+        // Check for potential credentials in history
+        if let Ok(output) = GitOperations::run(&[
+            "log",
+            "--all",
+            "--full-history",
+            "--grep=password",
+            "--grep=secret",
+            "--grep=key",
+            "--grep=token",
+            "--grep=credential",
+            "--pretty=format:%h %s",
+            "-i",
+        ]) {
+            let suspicious_commits: Vec<_> =
+                output.lines().filter(|l| !l.trim().is_empty()).collect();
+            if !suspicious_commits.is_empty() {
+                issues.push(format!(
+                    "🔒 {} potentially sensitive commit message(s) found:",
+                    suspicious_commits.len()
+                ));
+                for commit in suspicious_commits.iter().take(5) {
+                    issues.push(format!("     • {commit}"));
+                }
+                if suspicious_commits.len() > 5 {
+                    issues.push(format!(
+                        "     • ...and {} more",
+                        suspicious_commits.len() - 5
+                    ));
+                }
+            }
+        }
+
+        // Check for files with potentially sensitive extensions
+        if let Ok(output) =
+            GitOperations::run(&["ls-files", "*.pem", "*.key", "*.p12", "*.pfx", "*.jks"])
+        {
+            let sensitive_files: Vec<_> = output.lines().filter(|l| !l.trim().is_empty()).collect();
+            if !sensitive_files.is_empty() {
+                issues.push(format!(
+                    "🔐 {} potentially sensitive file(s) in repository:",
+                    sensitive_files.len()
+                ));
+                for file in sensitive_files.iter().take(10) {
+                    issues.push(format!("     • {file}"));
+                }
+                if sensitive_files.len() > 10 {
+                    issues.push(format!("     • ...and {} more", sensitive_files.len() - 10));
+                }
+            }
+        }
+
+        // Check for .env files that might contain secrets
+        if let Ok(output) = GitOperations::run(&["ls-files", "*.env*"]) {
+            let env_files: Vec<_> = output.lines().filter(|l| !l.trim().is_empty()).collect();
+            if !env_files.is_empty() {
+                issues.push(format!(
+                    "⚠️  {} environment file(s) found - ensure no secrets are committed:",
+                    env_files.len()
+                ));
+                for file in env_files.iter().take(10) {
+                    issues.push(format!("     • {file}"));
+                }
+                if env_files.len() > 10 {
+                    issues.push(format!("     • ...and {} more", env_files.len() - 10));
+                }
+            }
+        }
+
+        issues
+    }
+
+    fn check_gitignore_effectiveness() -> Vec<String> {
+        let mut issues = Vec::new();
+
+        // Check if .gitignore exists
+        if GitOperations::run(&["ls-files", ".gitignore"]).is_err() {
+            issues.push("📝 No .gitignore file found".to_string());
+            return issues;
+        }
+
+        // Check for common files that should probably be ignored
+        let should_be_ignored = [
+            ("*.log", "log files"),
+            ("*.tmp", "temporary files"),
+            ("*.swp", "swap files"),
+            ("*.bak", "backup files"),
+            (".DS_Store", "macOS system files"),
+            ("Thumbs.db", "Windows system files"),
+            ("node_modules/", "Node.js dependencies"),
+            ("target/", "Rust build artifacts"),
+            (".vscode/", "VS Code settings"),
+            (".idea/", "IntelliJ settings"),
+        ];
+
+        for (pattern, description) in should_be_ignored {
+            if let Ok(output) = GitOperations::run(&["ls-files", pattern]) {
+                let matching_files: Vec<_> =
+                    output.lines().filter(|l| !l.trim().is_empty()).collect();
+                if !matching_files.is_empty() {
+                    issues.push(format!(
+                        "🗂️  {} {} tracked (consider adding to .gitignore):",
+                        matching_files.len(),
+                        description
+                    ));
+                    for file in matching_files.iter().take(5) {
+                        issues.push(format!("     • {file}"));
+                    }
+                    if matching_files.len() > 5 {
+                        issues.push(format!("     • ...and {} more", matching_files.len() - 5));
+                    }
+                }
+            }
+        }
+
+        issues
+    }
+
+    fn check_binary_files() -> Vec<String> {
+        let mut issues = Vec::new();
+
+        // Check for large binary files
+        if let Ok(output) = GitOperations::run(&["ls-files", "-z"]) {
+            let mut binary_count = 0;
+            let mut large_files = Vec::new();
+
+            for file in output.split('\0') {
+                if file.trim().is_empty() {
+                    continue;
+                }
+
+                // Check if file is binary
+                if GitOperations::run(&["diff", "--no-index", "/dev/null", file, "--numstat"])
+                    .is_ok()
+                {
+                    // If numstat shows "-	-" it's likely binary
+                    if let Ok(stat_output) =
+                        GitOperations::run(&["diff", "--no-index", "/dev/null", file, "--numstat"])
+                    {
+                        if stat_output.trim().starts_with("-\t-") {
+                            binary_count += 1;
+
+                            // Check file size (only on systems where wc is available)
+                            if let Ok(size_output) =
+                                std::process::Command::new("wc").args(["-c", file]).output()
+                            {
+                                if size_output.status.success() {
+                                    if let Ok(size_str) = String::from_utf8(size_output.stdout) {
+                                        if let Some(size_part) = size_str.split_whitespace().next()
+                                        {
+                                            if let Ok(size) = size_part.parse::<u64>() {
+                                                if size > 1_000_000 {
+                                                    // > 1MB
+                                                    large_files.push((file.to_string(), size));
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if binary_count > 10 {
+                issues.push(format!(
+                    "📦 {binary_count} binary files tracked (consider Git LFS for large files)"
+                ));
+            }
+
+            if !large_files.is_empty() {
+                issues.push(format!(
+                    "📏 {} large binary file(s) > 1MB found:",
+                    large_files.len()
+                ));
+                for (file, size) in large_files.iter().take(10) {
+                    let size_mb = *size as f64 / 1_000_000.0;
+                    issues.push(format!("     • {file} ({size_mb:.1} MB)"));
+                }
+                if large_files.len() > 10 {
+                    issues.push(format!("     • ...and {} more", large_files.len() - 10));
+                }
+            }
+        }
+
+        issues
+    }
 }
 
 impl Command for HealthCommand {
     fn execute(&self) -> Result<String> {
+        use indicatif::{ProgressBar, ProgressStyle};
+
         let mut output = BufferedOutput::new();
         output.add_line("🏥 Repository Health Check".to_string());
         output.add_line("=".repeat(30));
 
+        // Create progress bar - use hidden progress bar in tests/non-interactive environments
+        let pb = if atty::is(atty::Stream::Stderr)
+            && std::env::var("GIT_X_NON_INTERACTIVE").is_err()
+        {
+            let pb = ProgressBar::new(8);
+            pb.set_style(
+                ProgressStyle::default_bar()
+                    .template(
+                        "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} {msg}",
+                    )
+                    .expect("Failed to set progress style")
+                    .progress_chars("#>-"),
+            );
+            pb
+        } else {
+            ProgressBar::hidden()
+        };
+        pb.set_message("Starting health check...");
+
         let mut all_issues = Vec::new();
+        let mut issue_count = 0;
 
         // Check git configuration
+        pb.set_message("Checking Git configuration...");
         let config_issues = Self::check_git_config();
         if config_issues.is_empty() {
             output.add_line("✅ Git configuration: OK".to_string());
         } else {
             output.add_line("❌ Git configuration: Issues found".to_string());
             all_issues.extend(config_issues);
+            issue_count += 1;
         }
+        pb.inc(1);
 
         // Check remotes
+        pb.set_message("Checking remotes...");
         let remote_issues = Self::check_remotes();
         if remote_issues.is_empty() {
             output.add_line("✅ Remotes: OK".to_string());
         } else {
             output.add_line("⚠️  Remotes: Issues found".to_string());
             all_issues.extend(remote_issues);
+            issue_count += 1;
         }
+        pb.inc(1);
 
         // Check branches
+        pb.set_message("Analyzing branches...");
         let branch_issues = Self::check_branches();
         if branch_issues.is_empty() {
             output.add_line("✅ Branches: OK".to_string());
         } else {
             output.add_line("⚠️  Branches: Issues found".to_string());
             all_issues.extend(branch_issues);
+            issue_count += 1;
         }
+        pb.inc(1);
 
         // Check working directory
+        pb.set_message("Checking working directory...");
         let wd_issues = Self::check_working_directory();
         if wd_issues.is_empty() {
             output.add_line("✅ Working directory: Clean".to_string());
         } else {
             output.add_line("ℹ️  Working directory: Has notes".to_string());
             all_issues.extend(wd_issues);
+            issue_count += 1;
         }
+        pb.inc(1);
 
         // Check repository size
+        pb.set_message("Analyzing repository size...");
         let size_issues = Self::check_repository_size();
         if size_issues.is_empty() {
             output.add_line("✅ Repository size: OK".to_string());
         } else {
             output.add_line("⚠️  Repository size: Large".to_string());
             all_issues.extend(size_issues);
+            issue_count += 1;
         }
+        pb.inc(1);
+
+        // Check security issues
+        pb.set_message("Scanning for security issues...");
+        let security_issues = Self::check_security_issues();
+        if security_issues.is_empty() {
+            output.add_line("✅ Security: No obvious issues found".to_string());
+        } else {
+            output.add_line("⚠️  Security: Potential issues found".to_string());
+            all_issues.extend(security_issues);
+            issue_count += 1;
+        }
+        pb.inc(1);
+
+        // Check .gitignore effectiveness
+        pb.set_message("Validating .gitignore...");
+        let gitignore_issues = Self::check_gitignore_effectiveness();
+        if gitignore_issues.is_empty() {
+            output.add_line("✅ .gitignore: Looks good".to_string());
+        } else {
+            output.add_line("⚠️  .gitignore: Suggestions available".to_string());
+            all_issues.extend(gitignore_issues);
+            issue_count += 1;
+        }
+        pb.inc(1);
+
+        // Check binary files
+        pb.set_message("Analyzing binary files...");
+        let binary_issues = Self::check_binary_files();
+        if binary_issues.is_empty() {
+            output.add_line("✅ Binary files: OK".to_string());
+        } else {
+            output.add_line("⚠️  Binary files: Review recommended".to_string());
+            all_issues.extend(binary_issues);
+            issue_count += 1;
+        }
+        pb.inc(1);
+
+        // Finish progress bar
+        pb.set_message("Health check complete!");
+        pb.finish_and_clear();
 
         // Summary
         if all_issues.is_empty() {
             output.add_line("\n🎉 Repository is healthy!".to_string());
         } else {
-            output.add_line(format!("\n🔧 Found {} issue(s):", all_issues.len()));
+            output.add_line(format!("\n🔧 Found {issue_count} issue(s):"));
             for issue in all_issues {
                 output.add_line(format!("   {issue}"));
             }

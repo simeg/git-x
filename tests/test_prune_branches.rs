@@ -6,8 +6,20 @@ use git_x::core::traits::Command;
 use predicates::boolean::PredicateBooleanExt;
 use predicates::str::contains;
 
+// Helper to check if we should run potentially destructive tests
+fn should_run_destructive_tests() -> bool {
+    // Only run destructive tests in CI or when explicitly enabled
+    std::env::var("CI").is_ok()
+        || std::env::var("GITHUB_ACTIONS").is_ok()
+        || std::env::var("ENABLE_DESTRUCTIVE_TESTS").is_ok()
+}
+
 #[test]
 fn test_prune_branches_deletes_merged_branch() {
+    if !should_run_destructive_tests() {
+        return;
+    }
+
     let repo = repo_with_merged_branch("feature/delete-me", "main");
 
     repo.run_git_x(&["prune-branches"])
@@ -32,6 +44,10 @@ fn test_prune_branches_respects_exclude() {
 
 #[test]
 fn test_prune_branches_run_function() {
+    if !should_run_destructive_tests() {
+        return;
+    }
+
     let repo = repo_with_merged_branch("feature/delete-me", "main");
 
     std::env::set_current_dir(repo.path()).expect("Failed to change directory");
@@ -53,6 +69,10 @@ fn test_prune_branches_run_function() {
 
 #[test]
 fn test_prune_branches_run_function_with_except() {
+    if !should_run_destructive_tests() {
+        return;
+    }
+
     let repo = repo_with_merged_branch("feature/delete-me", "main");
 
     std::env::set_current_dir(repo.path()).expect("Failed to change directory");

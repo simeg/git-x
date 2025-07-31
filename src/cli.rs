@@ -138,6 +138,18 @@ pub enum StashBranchAction {
         #[clap(long = "list", help = "List stashes instead of applying", action = clap::ArgAction::SetTrue)]
         list_only: bool,
     },
+    #[clap(about = "Interactive stash management with fuzzy search")]
+    Interactive,
+    #[clap(about = "Export stashes to patch files")]
+    Export {
+        #[clap(help = "Output directory for patch files")]
+        output_dir: String,
+        #[clap(
+            long = "stash",
+            help = "Specific stash to export (default: all stashes)"
+        )]
+        stash_ref: Option<String>,
+    },
 }
 
 #[derive(clap::Subcommand)]

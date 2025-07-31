@@ -230,18 +230,26 @@ fn test_new_branch_command_help() {
 #[test]
 fn test_new_branch_command_direct() {
     let (_temp_dir, repo_path, _default_branch) = create_test_repo();
-    let original_dir = std::env::current_dir().unwrap();
+    let original_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("/"));
 
     std::env::set_current_dir(&repo_path).unwrap();
 
-    let cmd = NewBranchCommand::new("feature/test".to_string(), None);
+    // Generate a unique branch name to avoid conflicts in CI
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    let unique_branch = format!("feature/test-{timestamp}");
+
+    let cmd = NewBranchCommand::new(unique_branch.clone(), None);
     let result = cmd.execute();
 
     // Should succeed and return formatted output
     assert!(result.is_ok());
     let output = result.unwrap();
     assert!(output.contains("Creating new branch"));
-    assert!(output.contains("feature/test"));
+    assert!(output.contains(&unique_branch));
 
     // Restore original directory
     let _ = std::env::set_current_dir(&original_dir);
@@ -250,7 +258,7 @@ fn test_new_branch_command_direct() {
 #[test]
 fn test_new_branch_command_with_from() {
     let (_temp_dir, repo_path, default_branch) = create_test_repo();
-    let original_dir = std::env::current_dir().unwrap();
+    let original_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("/"));
 
     // Change to repo directory
     std::env::set_current_dir(&repo_path).unwrap();

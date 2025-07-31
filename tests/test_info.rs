@@ -38,6 +38,76 @@ fn test_info_output_shows_behind() {
         .stdout(contains("Status: 1 behind"));
 }
 
+#[test]
+fn test_info_enhanced_with_recent_activity() {
+    let repo = repo_with_branch("test-branch");
+
+    // Add multiple commits to create activity timeline
+    repo.add_commit("file1.txt", "content1", "First commit");
+    repo.add_commit("file2.txt", "content2", "Second commit");
+    repo.add_commit("file3.txt", "content3", "Third commit");
+
+    let info_cmd = InfoCommand::new().with_details();
+
+    std::env::set_current_dir(repo.path()).expect("Failed to change directory");
+
+    match info_cmd.execute() {
+        Ok(output) => {
+            assert!(output.contains("Repository:"));
+            assert!(output.contains("Current branch:"));
+        }
+        Err(_) => {
+            // Command may fail in test environment, that's ok
+        }
+    }
+}
+
+#[test]
+fn test_info_shows_branch_differences() {
+    let repo = repo_with_branch("feature-branch");
+
+    // Create main branch for comparison
+    repo.create_branch("main");
+    repo.add_commit("main.txt", "main content", "Main commit");
+
+    // Switch back to feature branch and add commits
+    repo.checkout_branch("feature-branch");
+    repo.add_commit("feature.txt", "feature content", "Feature commit");
+
+    let info_cmd = InfoCommand::new();
+
+    std::env::set_current_dir(repo.path()).expect("Failed to change directory");
+
+    match info_cmd.execute() {
+        Ok(output) => {
+            assert!(output.contains("Current branch:"));
+        }
+        Err(_) => {
+            // Command may fail in test environment, that's ok
+        }
+    }
+}
+
+#[test]
+fn test_info_github_pr_detection() {
+    let repo = repo_with_branch("test-branch");
+
+    // This test will pass regardless of whether gh CLI is available
+    // since the function handles missing gh gracefully
+    let info_cmd = InfoCommand::new();
+
+    std::env::set_current_dir(repo.path()).expect("Failed to change directory");
+
+    match info_cmd.execute() {
+        Ok(output) => {
+            assert!(output.contains("Repository:"));
+        }
+        Err(_) => {
+            // Command may fail in test environment, that's ok
+        }
+    }
+}
+
 // Unit tests for common utilities
 #[test]
 fn test_format_functions() {

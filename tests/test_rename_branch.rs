@@ -158,6 +158,7 @@ fn test_rename_branch_push_failure() {
 #[test]
 fn test_rename_branch_run_function_successful_case() {
     let repo = repo_with_branch("test-branch");
+    let original_dir = std::env::current_dir().unwrap();
 
     std::env::set_current_dir(repo.path()).expect("Failed to change directory");
 
@@ -174,12 +175,14 @@ fn test_rename_branch_run_function_successful_case() {
         }
     }
 
-    std::env::set_current_dir("/").expect("Failed to reset directory");
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
 }
 
 #[test]
 fn test_rename_branch_run_function_same_name() {
     let repo = repo_with_branch("test-branch");
+    let original_dir = std::env::current_dir().unwrap();
 
     std::env::set_current_dir(repo.path()).expect("Failed to change directory");
 
@@ -196,7 +199,8 @@ fn test_rename_branch_run_function_same_name() {
         }
     }
 
-    std::env::set_current_dir("/").expect("Failed to reset directory");
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
 }
 
 #[test]

@@ -48,14 +48,22 @@ This document explains how each `git-x` subcommand works under the hood. We aim 
 ## `info`
 
 ### What it does:
-- Displays a high-level overview of the current repository.
+- Displays a comprehensive overview of the current repository including recent activity, branch comparisons, and PR status.
 
 ### Under the hood:
-- `git rev-parse --show-toplevel` → Get the repo root.
+**Basic repository info:**
+- `git rev-parse --show-toplevel` → Get the repo root and repository name.
 - `git rev-parse --abbrev-ref HEAD` → Get current branch name.
 - `git for-each-ref --format='%(upstream:short)'` → Find tracking branch.
-- `git rev-list --left-right --count HEAD...@{upstream}` → Ahead/behind counts.
-- `git log -1 --pretty=format:"%s (%cr)"` → Most recent commit summary.
+- `git rev-list --left-right --count HEAD...@{upstream}` → Ahead/behind counts with upstream.
+- `git diff --cached --name-only` → List staged files.
+- `git status --porcelain` → Check working directory cleanliness.
+
+**Enhanced features:**
+- `git log --oneline --decorate --graph --all --max-count=8 --pretty=format:'%C(auto)%h %s %C(dim)(%cr) %C(bold blue)<%an>%C(reset)'` → Recent activity timeline with author info.
+- `gh pr status --json currentBranch` → GitHub PR detection (if `gh` CLI available).
+- `git rev-list --left-right --count main...HEAD` → Branch differences against main/master/develop branches.
+- `git for-each-ref --sort=-committerdate refs/heads/ --format='%(refname:short)'` → Recent branches list (detailed mode).
 
 ---
 
@@ -112,15 +120,30 @@ This document explains how each `git-x` subcommand works under the hood. We aim 
 ## `health`
 
 ### What it does:
-- Performs a comprehensive repository health check to identify potential issues and maintenance needs.
+- Performs a comprehensive repository health check with real-time progress indicators and detailed security reporting.
 
 ### Under the hood:
+**Core health checks:**
 - `git rev-parse --git-dir` → Verify we're in a Git repository
+- `git config user.name` → Check Git user configuration
+- `git config user.email` → Check Git email configuration
+- `git remote` → Verify remote repositories are configured
 - `git status --porcelain` → Check working directory status
 - `git ls-files --others --exclude-standard` → Count untracked files
 - `git for-each-ref --format='%(refname:short) %(committerdate:relative)' refs/heads/` → Identify stale branches
-- `du -sh .git` → Check repository size
+- `git count-objects -vH` → Check repository size with human-readable output
 - `git diff --cached --name-only` → Check for staged changes
+
+**Security checks with detailed reporting:**
+- `git log --all --full-history --grep=password --grep=secret --grep=key --grep=token --grep=credential --pretty=format:'%h %s' -i` → Scan for potential credentials in commit messages with commit hashes and messages
+- `git ls-files *.pem *.key *.p12 *.pfx *.jks` → Find potentially sensitive files and list specific filenames
+- `git ls-files *.env*` → Find environment files that might contain secrets and show which files
+
+**Repository optimization checks:**
+- `git ls-files .gitignore` → Verify .gitignore exists
+- `git ls-files *.log *.tmp *.swp *.bak .DS_Store Thumbs.db node_modules/ target/ .vscode/ .idea/` → Check for files that should be ignored
+- Binary file detection using `git diff --no-index /dev/null <file> --numstat` → Identify large binary files with sizes and Git LFS recommendations
+- Progress tracking using `indicatif` crate → Real-time progress bar showing current check being performed
 
 ---
 
@@ -333,6 +356,20 @@ This document explains how each `git-x` subcommand works under the hood. We aim 
 - `git stash list --format="%gd %gt %gs"` → List all stashes
 - Filters stashes by branch name pattern
 - `git stash apply <stash-ref>` → Apply matching stashes
+
+**`interactive` subcommand:**
+- `git stash list --pretty=format:'%gd|%s'` → Get stash list for interactive menu
+- Uses `dialoguer` crate for interactive TUI with fuzzy selection
+- Supports multiple actions: apply, delete, create branch, show diff, list
+- `git stash apply/drop/branch/show -p <stash-ref>` → Execute selected action
+- Multi-select for batch operations (delete multiple stashes)
+
+**`export` subcommand:**
+- `git stash list --pretty=format:'%gd|%s'` → Get list of stashes to export
+- `git stash show -p <stash-ref>` → Generate patch content for each stash
+- Creates `.patch` files in specified output directory
+- Sanitizes stash names for safe filenames (removes special characters)
+- Supports exporting all stashes or a specific stash reference
 
 ---
 
