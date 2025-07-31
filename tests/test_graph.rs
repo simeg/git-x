@@ -10,21 +10,26 @@ fn test_git_graph_runs_without_error() {
 
 #[test]
 fn test_git_graph_outputs_graph_symbols() {
-    use assert_cmd::Command;
+    use git_x::commands::analysis::GraphCommand;
+    use git_x::core::traits::Command;
 
     let repo = basic_repo();
-    let output = Command::cargo_bin("git-x")
-        .unwrap()
-        .arg("graph")
-        .current_dir(repo.path())
-        .output()
-        .unwrap();
+    let original_dir = std::env::current_dir().unwrap();
 
-    let stdout = String::from_utf8_lossy(&output.stdout);
+    std::env::set_current_dir(repo.path()).unwrap();
+
+    let cmd = GraphCommand::new();
+    let result = cmd.execute();
+
+    assert!(result.is_ok());
+    let stdout = result.unwrap();
     assert!(
         stdout.contains("*") || stdout.contains("|"),
         "Expected ASCII graph symbols in output"
     );
+
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
 }
 
 // Unit tests now handled by common module tests

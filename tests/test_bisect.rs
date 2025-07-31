@@ -501,10 +501,6 @@ fn test_bisect_start_same_commits() {
     // Git will handle this case - it's a valid scenario where no bisect is needed
 }
 
-// Unit tests for helper functions (these test the internal logic)
-
-// Error handling tests
-
 #[test]
 fn test_bisect_start_with_tags() {
     let (_temp_dir, repo_path) = create_test_repo();

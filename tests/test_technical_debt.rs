@@ -12,13 +12,19 @@ use git_x::core::traits::Command as CommandTrait;
 #[test]
 fn test_technical_debt_in_non_git_repo() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let original_dir = std::env::current_dir().unwrap();
 
-    let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.current_dir(temp_dir.path())
-        .arg("technical-debt")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("Technical Debt Analysis"));
+    std::env::set_current_dir(temp_dir.path()).unwrap();
+
+    let cmd = TechnicalDebtCommand::new();
+    let result = cmd.execute();
+
+    assert!(result.is_ok());
+    let output = result.unwrap();
+    assert!(output.contains("Technical Debt Analysis"));
+
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
 }
 
 #[test]
@@ -45,12 +51,18 @@ fn test_technical_debt_in_empty_git_repo() {
         .output()
         .expect("Failed to configure git");
 
-    let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.current_dir(temp_dir.path())
-        .arg("technical-debt")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("Technical Debt Analysis"));
+    let original_dir = std::env::current_dir().unwrap();
+    std::env::set_current_dir(temp_dir.path()).unwrap();
+
+    let cmd = TechnicalDebtCommand::new();
+    let result = cmd.execute();
+
+    assert!(result.is_ok());
+    let output = result.unwrap();
+    assert!(output.contains("Technical Debt Analysis"));
+
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
 }
 
 #[test]
@@ -85,12 +97,18 @@ fn test_technical_debt_with_files() {
         .output()
         .expect("Failed to commit files");
 
-    let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.current_dir(repo.path())
-        .arg("technical-debt")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("Technical Debt Analysis"));
+    let original_dir = std::env::current_dir().unwrap();
+    std::env::set_current_dir(repo.path()).unwrap();
+
+    let cmd = TechnicalDebtCommand::new();
+    let result = cmd.execute();
+
+    assert!(result.is_ok());
+    let output = result.unwrap();
+    assert!(output.contains("Technical Debt Analysis"));
+
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
 }
 
 #[test]

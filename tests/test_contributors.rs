@@ -8,14 +8,22 @@ mod common;
 
 #[test]
 fn test_contributors_in_non_git_repo() {
-    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    use git_x::commands::analysis::ContributorsCommand;
+    use git_x::core::traits::Command as CommandTrait;
 
-    let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.current_dir(temp_dir.path())
-        .arg("contributors")
-        .assert()
-        .success()
-        .stderr(predicate::str::contains("Git command failed"));
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let original_dir = std::env::current_dir().unwrap();
+
+    std::env::set_current_dir(temp_dir.path()).unwrap();
+
+    let cmd = ContributorsCommand::new(None);
+    let result = cmd.execute();
+
+    // Should fail in non-git directory
+    assert!(result.is_err());
+
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
 }
 
 #[test]
@@ -42,12 +50,18 @@ fn test_contributors_in_empty_git_repo() {
         .output()
         .expect("Failed to set git user email");
 
-    let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.current_dir(temp_dir.path())
-        .arg("contributors")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("No contributors found"));
+    let original_dir = std::env::current_dir().unwrap();
+    std::env::set_current_dir(temp_dir.path()).unwrap();
+
+    let cmd = git_x::commands::analysis::ContributorsCommand::new(None);
+    let result = cmd.execute();
+
+    assert!(result.is_ok());
+    let output = result.unwrap();
+    assert!(output.contains("No contributors found"));
+
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
 }
 
 #[test]
@@ -88,17 +102,24 @@ fn test_contributors_with_single_contributor() {
         .output()
         .expect("Failed to commit");
 
-    let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.current_dir(temp_dir.path())
-        .arg("contributors")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("Repository Contributors"))
-        .stdout(predicate::str::contains("Alice Smith"))
-        .stdout(predicate::str::contains("alice@example.com"))
-        .stdout(predicate::str::contains("🥇"))
-        .stdout(predicate::str::contains("1 commits"))
-        .stdout(predicate::str::contains("100.0%"));
+    let original_dir = std::env::current_dir().unwrap();
+    std::env::set_current_dir(temp_dir.path()).unwrap();
+
+    let cmd = git_x::commands::analysis::ContributorsCommand::new(None);
+    let result = cmd.execute();
+
+    assert!(result.is_ok());
+    let output = result.unwrap();
+    assert!(output.contains("Repository Contributors"));
+    assert!(output.contains("Alice Smith"));
+    assert!(output.contains("alice@example.com"));
+    assert!(output.contains("🥇"));
+    assert!(output.contains("1 commits"));
+
+    assert!(output.contains("100.0%"));
+
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
 }
 
 #[test]
@@ -192,21 +213,28 @@ fn test_contributors_with_multiple_contributors() {
         .output()
         .expect("Failed to commit");
 
-    let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.current_dir(temp_dir.path())
-        .arg("contributors")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("Repository Contributors"))
-        .stdout(predicate::str::contains("3 total commits"))
-        .stdout(predicate::str::contains("Alice Smith"))
-        .stdout(predicate::str::contains("Bob Jones"))
-        .stdout(predicate::str::contains("🥇")) // Alice should be first with 2 commits
-        .stdout(predicate::str::contains("🥈")) // Bob should be second with 1 commit
-        .stdout(predicate::str::contains("2 commits"))
-        .stdout(predicate::str::contains("1 commits"))
-        .stdout(predicate::str::contains("66.7%")) // Alice: 2/3 commits
-        .stdout(predicate::str::contains("33.3%")); // Bob: 1/3 commits
+    let original_dir = std::env::current_dir().unwrap();
+    std::env::set_current_dir(temp_dir.path()).unwrap();
+
+    let cmd = git_x::commands::analysis::ContributorsCommand::new(None);
+    let result = cmd.execute();
+
+    assert!(result.is_ok());
+    let output = result.unwrap();
+    assert!(output.contains("Repository Contributors"));
+    assert!(output.contains("3 total commits"));
+    assert!(output.contains("Alice Smith"));
+    assert!(output.contains("Bob Jones"));
+    assert!(output.contains("🥇")); // Alice should be first with 2 commits
+    assert!(output.contains("🥈")); // Bob should be second with 1 commit
+    assert!(output.contains("2 commits"));
+    assert!(output.contains("1 commits"));
+
+    assert!(output.contains("66.7%")); // Alice: 2/3 commits
+    assert!(output.contains("33.3%")); // Bob: 1/3 commits
+
+    // Restore original directory
+    let _ = std::env::set_current_dir(&original_dir);
 }
 
 #[test]
