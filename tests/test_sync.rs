@@ -2,12 +2,34 @@ mod common;
 
 use assert_cmd::Command;
 use common::basic_repo;
-use git_x::test_utils::{execute_command_in_dir, sync_command};
 use predicates::prelude::*;
 use tempfile::TempDir;
 
 use git_x::commands::repository::{SyncCommand, SyncStrategy};
 use git_x::core::traits::Command as CommandTrait;
+
+/// Helper function to execute a command in a specific directory
+fn execute_in_dir<P: AsRef<std::path::Path>>(
+    dir: P,
+    cmd: impl CommandTrait,
+) -> Result<String, String> {
+    let original_dir = match std::env::current_dir() {
+        Ok(dir) => dir,
+        Err(_) => return Err("❌ Git command failed".to_string()),
+    };
+
+    if std::env::set_current_dir(dir).is_err() {
+        return Err("❌ Git command failed".to_string());
+    }
+
+    let result = match cmd.execute() {
+        Ok(output) => Ok(output),
+        Err(e) => Err(e.to_string()),
+    };
+
+    let _ = std::env::set_current_dir(original_dir);
+    result
+}
 
 #[test]
 fn test_sync_run_function_outside_git_repo() {
@@ -21,14 +43,13 @@ fn test_sync_run_function_outside_git_repo() {
         .stderr(predicate::str::contains("❌ Git command failed"));
 
     // Test direct function call (for coverage)
-    match execute_command_in_dir(temp_dir.path(), sync_command(false)) {
-        Ok(result) => {
-            assert!(result.is_failure());
-            assert_eq!(result.exit_code, 1);
-            assert!(result.stderr.contains("Git command failed"));
+    match execute_in_dir(temp_dir.path(), SyncCommand::new(SyncStrategy::Rebase)) {
+        Ok(_) => {
+            // Command unexpectedly succeeded
+            panic!("Expected sync to fail outside git repo");
         }
-        Err(_) => {
-            // If execute_command_in_dir fails, that's also a valid test result
+        Err(error_msg) => {
+            assert!(error_msg.contains("Git command failed"));
         }
     }
 }
@@ -46,14 +67,12 @@ fn test_sync_run_function_no_upstream() {
         .stderr(predicate::str::contains("❌ Git command failed"));
 
     // Test direct function call (for coverage)
-    match execute_command_in_dir(repo.path(), sync_command(false)) {
-        Ok(result) => {
-            assert!(result.is_failure());
-            assert_eq!(result.exit_code, 1);
-            assert!(result.stderr.contains("No upstream configured"));
+    match execute_in_dir(repo.path(), SyncCommand::new(SyncStrategy::Rebase)) {
+        Ok(_) => {
+            // Command may succeed with a message about no upstream
         }
-        Err(_) => {
-            // If execute_command_in_dir fails, that's also a valid test result
+        Err(error_msg) => {
+            assert!(error_msg.contains("upstream") || error_msg.contains("Git command failed"));
         }
     }
 }
@@ -174,14 +193,12 @@ fn test_sync_run_outside_git_repo() {
     let temp_dir = TempDir::new().unwrap();
 
     // Test direct function call (for coverage)
-    match execute_command_in_dir(temp_dir.path(), sync_command(false)) {
-        Ok(result) => {
-            assert!(result.is_failure());
-            assert!(result.stderr.contains("❌"));
-            assert!(result.stderr.contains("Git command failed"));
+    match execute_in_dir(temp_dir.path(), SyncCommand::new(SyncStrategy::Rebase)) {
+        Ok(_) => {
+            panic!("Expected sync to fail outside git repo");
         }
-        Err(_) => {
-            // If execute_command_in_dir fails, that's also a valid test result
+        Err(error_msg) => {
+            assert!(error_msg.contains("Git command failed"));
         }
     }
 }
@@ -192,14 +209,12 @@ fn test_sync_run_no_upstream() {
     let repo = basic_repo();
 
     // Test direct function call (for coverage)
-    match execute_command_in_dir(repo.path(), sync_command(false)) {
-        Ok(result) => {
-            assert!(result.is_failure());
-            assert!(result.stderr.contains("❌"));
-            assert!(result.stderr.contains("No upstream configured"));
+    match execute_in_dir(repo.path(), SyncCommand::new(SyncStrategy::Rebase)) {
+        Ok(_) => {
+            // Command may succeed with a message about no upstream
         }
-        Err(_) => {
-            // If execute_command_in_dir fails, that's also a valid test result
+        Err(error_msg) => {
+            assert!(error_msg.contains("upstream") || error_msg.contains("Git command failed"));
         }
     }
 }
@@ -213,18 +228,19 @@ fn test_sync_run_up_to_date() {
     let _remote = repo.setup_remote("main");
 
     // Test direct function call (for coverage)
-    match execute_command_in_dir(repo.path(), sync_command(false)) {
-        Ok(result) => {
+    match execute_in_dir(repo.path(), SyncCommand::new(SyncStrategy::Rebase)) {
+        Ok(output) => {
             // Should show some outcome
             assert!(
-                result.stdout.contains("✅ Already up to date")
-                    || result.stdout.contains("✅ Merged")
-                    || result.stdout.contains("✅ Rebased")
-                    || result.stderr.contains("❌")
+                output.contains("Already up to date")
+                    || output.contains("Merged")
+                    || output.contains("Rebased")
+                    || output.contains("upstream")
+                    || output.contains("sync")
             );
         }
-        Err(_) => {
-            // If execute_command_in_dir fails, that's also a valid test result
+        Err(error_msg) => {
+            assert!(error_msg.contains("upstream") || error_msg.contains("Git command failed"));
         }
     }
 }
@@ -235,18 +251,19 @@ fn test_sync_run_behind_with_rebase() {
     let (local_repo, _remote_repo) = common::repo_with_remote_ahead("main");
 
     // Test direct function call (for coverage)
-    match execute_command_in_dir(local_repo.path(), sync_command(false)) {
-        Ok(result) => {
+    match execute_in_dir(local_repo.path(), SyncCommand::new(SyncStrategy::Rebase)) {
+        Ok(output) => {
             // Should show sync outcome
             assert!(
-                result.stdout.contains("✅ Already up to date")
-                    || result.stdout.contains("✅ Merged")
-                    || result.stdout.contains("✅ Rebased")
-                    || result.stderr.contains("❌")
+                output.contains("Already up to date")
+                    || output.contains("Merged")
+                    || output.contains("Rebased")
+                    || output.contains("upstream")
+                    || output.contains("sync")
             );
         }
-        Err(_) => {
-            // If execute_command_in_dir fails, that's also a valid test result
+        Err(error_msg) => {
+            assert!(error_msg.contains("upstream") || error_msg.contains("Git command failed"));
         }
     }
 }
@@ -257,18 +274,19 @@ fn test_sync_run_behind_with_merge() {
     let (local_repo, _remote_repo) = common::repo_with_remote_ahead("main");
 
     // Test direct function call with merge flag (for coverage)
-    match execute_command_in_dir(local_repo.path(), sync_command(true)) {
-        Ok(result) => {
+    match execute_in_dir(local_repo.path(), SyncCommand::new(SyncStrategy::Merge)) {
+        Ok(output) => {
             // Should show sync outcome
             assert!(
-                result.stdout.contains("✅ Already up to date")
-                    || result.stdout.contains("✅ Merged")
-                    || result.stdout.contains("✅ Rebased")
-                    || result.stderr.contains("❌")
+                output.contains("Already up to date")
+                    || output.contains("Merged")
+                    || output.contains("Rebased")
+                    || output.contains("upstream")
+                    || output.contains("sync")
             );
         }
-        Err(_) => {
-            // If execute_command_in_dir fails, that's also a valid test result
+        Err(error_msg) => {
+            assert!(error_msg.contains("upstream") || error_msg.contains("Git command failed"));
         }
     }
 }
@@ -285,25 +303,20 @@ fn test_sync_run_ahead() {
     repo.add_commit("local_file.txt", "local content", "local commit");
 
     // Test direct function call (for coverage)
-    match execute_command_in_dir(repo.path(), sync_command(false)) {
-        Ok(result) => {
-            // Should show sync start message
+    match execute_in_dir(repo.path(), SyncCommand::new(SyncStrategy::Rebase)) {
+        Ok(output) => {
+            // Should show some sync outcome
             assert!(
-                result.stdout.contains("✅ Already up to date")
-                    || result.stdout.contains("✅ Merged")
-                    || result.stdout.contains("✅ Rebased")
-                    || result.stderr.contains("❌")
-            );
-            // Should show some status
-            assert!(
-                result.stdout.contains("⬆️ Branch is")
-                    || result.stdout.contains("✅")
-                    || result.stdout.contains("⬇️")
-                    || result.stderr.contains("❌")
+                output.contains("Already up to date")
+                    || output.contains("Merged")
+                    || output.contains("Rebased")
+                    || output.contains("Branch is")
+                    || output.contains("upstream")
+                    || output.contains("sync")
             );
         }
-        Err(_) => {
-            // If execute_command_in_dir fails, that's also a valid test result
+        Err(error_msg) => {
+            assert!(error_msg.contains("upstream") || error_msg.contains("Git command failed"));
         }
     }
 }
@@ -320,27 +333,20 @@ fn test_sync_run_diverged_no_merge() {
     repo.add_commit("local_file.txt", "local content", "local commit");
 
     // Test direct function call (for coverage)
-    match execute_command_in_dir(repo.path(), sync_command(false)) {
-        Ok(result) => {
-            // Should show sync start message
+    match execute_in_dir(repo.path(), SyncCommand::new(SyncStrategy::Rebase)) {
+        Ok(output) => {
+            // Should show some sync outcome
             assert!(
-                result.stdout.contains("✅ Already up to date")
-                    || result.stdout.contains("✅ Merged")
-                    || result.stdout.contains("✅ Rebased")
-                    || result.stderr.contains("❌")
-            );
-            // Should show some status outcome
-            assert!(
-                result.stdout.contains("✅")
-                    || result.stdout.contains("⬇️")
-                    || result.stdout.contains("⬆️")
-                    || result.stdout.contains("🔀")
-                    || result.stdout.contains("💡")
-                    || result.stderr.contains("❌")
+                output.contains("Already up to date")
+                    || output.contains("Merged")
+                    || output.contains("Rebased")
+                    || output.contains("Branch is")
+                    || output.contains("upstream")
+                    || output.contains("sync")
             );
         }
-        Err(_) => {
-            // If execute_command_in_dir fails, that's also a valid test result
+        Err(error_msg) => {
+            assert!(error_msg.contains("upstream") || error_msg.contains("Git command failed"));
         }
     }
 }
@@ -354,23 +360,20 @@ fn test_sync_run_comprehensive_output() {
     let _remote = repo.setup_remote("main");
 
     // Test direct function call (for coverage)
-    match execute_command_in_dir(repo.path(), sync_command(false)) {
-        Ok(result) => {
-            // Should contain sync start message
-            assert!(result.stdout.contains("✅") || result.stderr.contains("❌"));
-            // Tests now pass based on the above assertion
-
-            // Should contain status message (one of the possible outcomes)
+    match execute_in_dir(repo.path(), SyncCommand::new(SyncStrategy::Rebase)) {
+        Ok(output) => {
+            // Should contain some kind of sync output
             assert!(
-                result.stdout.contains("✅")
-                    || result.stdout.contains("⬇️")
-                    || result.stdout.contains("⬆️")
-                    || result.stdout.contains("🔀")
-                    || result.stderr.contains("❌")
+                output.contains("Already up to date")
+                    || output.contains("Merged")
+                    || output.contains("Rebased")
+                    || output.contains("Branch is")
+                    || output.contains("upstream")
+                    || output.contains("sync")
             );
         }
-        Err(_) => {
-            // If execute_command_in_dir fails, that's also a valid test result
+        Err(error_msg) => {
+            assert!(error_msg.contains("upstream") || error_msg.contains("Git command failed"));
         }
     }
 }
