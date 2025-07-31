@@ -1,5 +1,4 @@
 use assert_cmd::Command;
-use git_x::test_utils::{execute_command_in_dir, large_files_command};
 use predicates::prelude::*;
 use std::fs;
 use std::path::PathBuf;
@@ -9,6 +8,29 @@ use tempfile::TempDir;
 
 use git_x::commands::analysis::LargeFilesCommand;
 use git_x::core::traits::Command as CommandTrait;
+
+/// Helper function to execute a command in a specific directory
+fn execute_in_dir<P: AsRef<std::path::Path>>(
+    dir: P,
+    cmd: impl CommandTrait,
+) -> Result<String, String> {
+    let original_dir = match std::env::current_dir() {
+        Ok(dir) => dir,
+        Err(_) => return Err("❌ Git command failed".to_string()),
+    };
+
+    if std::env::set_current_dir(dir).is_err() {
+        return Err("❌ Git command failed".to_string());
+    }
+
+    let result = match cmd.execute() {
+        Ok(output) => Ok(output),
+        Err(e) => Err(e.to_string()),
+    };
+
+    let _ = std::env::set_current_dir(original_dir);
+    result
+}
 
 fn create_test_repo_with_files() -> (TempDir, PathBuf) {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
@@ -77,13 +99,12 @@ fn test_large_files_run_function_outside_git_repo() {
         .stderr(predicate::str::contains("❌ Git command failed"));
 
     // Test direct function call (for coverage)
-    match execute_command_in_dir(temp_dir.path(), large_files_command(10, None)) {
-        Ok(result) => {
-            assert!(result.is_failure());
-            assert!(result.stderr.contains("Git command failed"));
+    match execute_in_dir(temp_dir.path(), LargeFilesCommand::new(None, Some(10))) {
+        Ok(_) => {
+            panic!("Expected large-files to fail outside git repo");
         }
-        Err(_) => {
-            // If execute_command_in_dir fails, that's also a valid test result
+        Err(error_msg) => {
+            assert!(error_msg.contains("Git command failed"));
         }
     }
 }
@@ -188,14 +209,12 @@ fn test_large_files_run_outside_git_repo() {
     let temp_dir = TempDir::new().unwrap();
 
     // Test direct function call (for coverage)
-    match execute_command_in_dir(temp_dir.path(), large_files_command(10, None)) {
-        Ok(result) => {
-            assert!(result.is_failure());
-            assert!(result.stderr.contains("❌"));
-            assert!(result.stderr.contains("Git command failed"));
+    match execute_in_dir(temp_dir.path(), LargeFilesCommand::new(None, Some(10))) {
+        Ok(_) => {
+            panic!("Expected large-files to fail outside git repo");
         }
-        Err(_) => {
-            // If execute_command_in_dir fails, that's also a valid test result
+        Err(error_msg) => {
+            assert!(error_msg.contains("Git command failed"));
         }
     }
 }
@@ -226,13 +245,18 @@ fn test_large_files_run_empty_repo() {
         .success();
 
     // Test direct function call (for coverage)
-    match execute_command_in_dir(&repo_path, large_files_command(10, None)) {
-        Ok(result) => {
-            // Should succeed but show no files
-            assert!(result.is_success() || result.stderr.contains("❌"));
+    match execute_in_dir(&repo_path, LargeFilesCommand::new(None, Some(10))) {
+        Ok(output) => {
+            // Should succeed but show no files or some files
+            assert!(
+                output.contains("MB")
+                    || output.contains("No files")
+                    || output.contains("Files larger than")
+            );
         }
-        Err(_) => {
-            // If execute_command_in_dir fails, that's also a valid test result
+        Err(error_msg) => {
+            // Command may fail in test environment, which is acceptable
+            assert!(error_msg.contains("Git command failed"));
         }
     }
 }
@@ -242,13 +266,18 @@ fn test_large_files_run_with_small_files_and_threshold() {
     let (temp_dir, repo_path) = create_test_repo_with_files();
 
     // Test with high threshold (should find no files)
-    match execute_command_in_dir(&repo_path, large_files_command(10, Some(100.0))) {
-        Ok(result) => {
-            // Should succeed
-            assert!(result.is_success() || result.stderr.contains("❌"));
+    match execute_in_dir(&repo_path, LargeFilesCommand::new(Some(100.0), Some(10))) {
+        Ok(output) => {
+            // Should succeed and show appropriate output
+            assert!(
+                output.contains("MB")
+                    || output.contains("No files")
+                    || output.contains("Files larger than")
+            );
         }
-        Err(_) => {
-            // If execute_command_in_dir fails, that's also a valid test result
+        Err(error_msg) => {
+            // Command may fail in test environment, which is acceptable
+            assert!(error_msg.contains("Git command failed"));
         }
     }
 
@@ -260,13 +289,18 @@ fn test_large_files_run_success_with_files() {
     let (temp_dir, repo_path) = create_test_repo_with_files();
 
     // Test with low threshold (should find files)
-    match execute_command_in_dir(&repo_path, large_files_command(10, Some(0.1))) {
-        Ok(result) => {
+    match execute_in_dir(&repo_path, LargeFilesCommand::new(Some(0.1), Some(10))) {
+        Ok(output) => {
             // Should succeed and find files
-            assert!(result.is_success() || result.stderr.contains("❌"));
+            assert!(
+                output.contains("MB")
+                    || output.contains("No files")
+                    || output.contains("Files larger than")
+            );
         }
-        Err(_) => {
-            // If execute_command_in_dir fails, that's also a valid test result
+        Err(error_msg) => {
+            // Command may fail in test environment, which is acceptable
+            assert!(error_msg.contains("Git command failed"));
         }
     }
 
@@ -278,13 +312,18 @@ fn test_large_files_run_with_limit() {
     let (temp_dir, repo_path) = create_test_repo_with_files();
 
     // Test with small limit
-    match execute_command_in_dir(&repo_path, large_files_command(1, None)) {
-        Ok(result) => {
+    match execute_in_dir(&repo_path, LargeFilesCommand::new(None, Some(1))) {
+        Ok(output) => {
             // Should succeed
-            assert!(result.is_success() || result.stderr.contains("❌"));
+            assert!(
+                output.contains("MB")
+                    || output.contains("No files")
+                    || output.contains("Files larger than")
+            );
         }
-        Err(_) => {
-            // If execute_command_in_dir fails, that's also a valid test result
+        Err(error_msg) => {
+            // Command may fail in test environment, which is acceptable
+            assert!(error_msg.contains("Git command failed"));
         }
     }
 
@@ -296,13 +335,18 @@ fn test_large_files_run_with_threshold_success() {
     let (temp_dir, repo_path) = create_test_repo_with_files();
 
     // Test with reasonable threshold
-    match execute_command_in_dir(&repo_path, large_files_command(10, Some(0.5))) {
-        Ok(result) => {
+    match execute_in_dir(&repo_path, LargeFilesCommand::new(Some(0.5), Some(10))) {
+        Ok(output) => {
             // Should succeed
-            assert!(result.is_success() || result.stderr.contains("❌"));
+            assert!(
+                output.contains("MB")
+                    || output.contains("No files")
+                    || output.contains("Files larger than")
+            );
         }
-        Err(_) => {
-            // If execute_command_in_dir fails, that's also a valid test result
+        Err(error_msg) => {
+            // Command may fail in test environment, which is acceptable
+            assert!(error_msg.contains("Git command failed"));
         }
     }
 
@@ -314,18 +358,18 @@ fn test_large_files_run_comprehensive_output() {
     let (temp_dir, repo_path) = create_test_repo_with_files();
 
     // Test comprehensive output
-    match execute_command_in_dir(&repo_path, large_files_command(10, None)) {
-        Ok(result) => {
+    match execute_in_dir(&repo_path, LargeFilesCommand::new(None, Some(10))) {
+        Ok(output) => {
             // Should contain some kind of output
             assert!(
-                result.stdout.contains("MB")
-                    || result.stdout.contains("No files")
-                    || result.stdout.contains("Files larger than")
-                    || result.stderr.contains("❌")
+                output.contains("MB")
+                    || output.contains("No files")
+                    || output.contains("Files larger than")
             );
         }
-        Err(_) => {
-            // If execute_command_in_dir fails, that's also a valid test result
+        Err(error_msg) => {
+            // Command may fail in test environment, which is acceptable
+            assert!(error_msg.contains("Git command failed"));
         }
     }
 
