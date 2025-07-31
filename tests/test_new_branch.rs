@@ -164,7 +164,9 @@ fn test_new_branch_invalid_name_dash() {
         .current_dir(&repo_path)
         .assert()
         .success() // The command succeeds but shows validation error
-        .stderr(predicate::str::contains("unknown switch"));
+        .stderr(predicate::str::contains(
+            "Branch name cannot start with a dash",
+        ));
 }
 
 #[test]
@@ -176,7 +178,7 @@ fn test_new_branch_invalid_name_double_dot() {
         .current_dir(&repo_path)
         .assert()
         .success() // The command succeeds but shows validation error
-        .stderr(predicate::str::contains("not a valid branch name"));
+        .stderr(predicate::str::contains("Branch name cannot contain '..'"));
 }
 
 #[test]
@@ -188,7 +190,9 @@ fn test_new_branch_invalid_name_spaces() {
         .current_dir(&repo_path)
         .assert()
         .success() // The command succeeds but shows validation error
-        .stderr(predicate::str::contains("not a valid branch name"));
+        .stderr(predicate::str::contains(
+            "Branch name cannot contain spaces",
+        ));
 }
 
 #[test]

@@ -934,11 +934,7 @@ impl NewBranchCommand {
 impl Command for NewBranchCommand {
     fn execute(&self) -> Result<String> {
         // Validate branch name format and safety
-        if self.branch_name.is_empty() {
-            return Err(GitXError::GitCommand(
-                "Branch name cannot be empty".to_string(),
-            ));
-        }
+        crate::commands::stash::utils::validate_branch_name(&self.branch_name)?;
 
         // Check if branch already exists
         if self.branch_exists(&self.branch_name) {
@@ -968,11 +964,8 @@ impl Command for NewBranchCommand {
             Format::bold(&base_branch)
         ));
 
-        // Create the new branch
-        GitOperations::run_status(&["branch", &self.branch_name, &base_branch])?;
-
-        // Switch to the new branch (use checkout for better compatibility)
-        GitOperations::run_status(&["checkout", &self.branch_name])?;
+        // Create and switch to the new branch in one atomic operation
+        GitOperations::run_status(&["checkout", "-b", &self.branch_name, &base_branch])?;
 
         output.push(format!(
             "✅ Successfully created and switched to branch '{}'",
