@@ -1,3 +1,4 @@
+use serial_test::serial;
 mod common;
 
 use common::repo_with_merged_branch;
@@ -15,6 +16,7 @@ fn should_run_destructive_tests() -> bool {
 }
 
 #[test]
+#[serial]
 fn test_clean_branches_dry_run_outputs_expected() {
     let repo = repo_with_merged_branch("feature/cleanup", "master");
 
@@ -25,6 +27,7 @@ fn test_clean_branches_dry_run_outputs_expected() {
 }
 
 #[test]
+#[serial]
 fn test_clean_branches_run_function_dry_run() {
     let repo = repo_with_merged_branch("feature/test", "master");
     let original_dir = std::env::current_dir().unwrap();
@@ -41,6 +44,7 @@ fn test_clean_branches_run_function_dry_run() {
 }
 
 #[test]
+#[serial]
 fn test_clean_branches_run_function_actual_delete() {
     if !should_run_destructive_tests() {
         return;
@@ -71,6 +75,7 @@ fn test_clean_branches_run_function_actual_delete() {
 }
 
 #[test]
+#[serial]
 fn test_clean_branches_run_function_no_branches() {
     let repo = common::basic_repo();
     let original_dir = std::env::current_dir().unwrap();
@@ -87,6 +92,7 @@ fn test_clean_branches_run_function_no_branches() {
 }
 
 #[test]
+#[serial]
 fn test_clean_branches_actually_deletes_branch() {
     if !should_run_destructive_tests() {
         return;

@@ -13,6 +13,7 @@
 //   ENABLE_DESTRUCTIVE_TESTS=1 cargo test test_cli_handlers
 //
 // Tests that don't modify git state (method signatures, factories, etc.) run normally.
+use serial_test::serial;
 
 use git_x::adapters::cli_handlers::{BranchCliHandler, CliHandlerFactory, RepositoryCliHandler};
 
@@ -36,6 +37,7 @@ fn get_test_repository_handler() -> git_x::Result<RepositoryCliHandler> {
 // Tests for BranchCliHandler
 
 #[test]
+#[serial]
 fn test_branch_cli_handler_new() {
     // Test that we can create a BranchCliHandler (conditional on being in a git repo)
     let result = BranchCliHandler::new();
@@ -54,6 +56,7 @@ fn test_branch_cli_handler_new() {
 }
 
 #[test]
+#[serial]
 fn test_branch_cli_handler_handle_new_branch_simple() {
     if !should_run_destructive_tests() {
         return;
@@ -79,6 +82,7 @@ fn test_branch_cli_handler_handle_new_branch_simple() {
 }
 
 #[test]
+#[serial]
 fn test_branch_cli_handler_handle_new_branch_with_from() {
     if !should_run_destructive_tests() {
         return;
@@ -102,6 +106,7 @@ fn test_branch_cli_handler_handle_new_branch_with_from() {
 }
 
 #[test]
+#[serial]
 fn test_branch_cli_handler_handle_clean_branches_dry_run() {
     // Test handle_clean_branches in dry run mode
     if let Ok(handler) = get_test_branch_handler() {
@@ -124,6 +129,7 @@ fn test_branch_cli_handler_handle_clean_branches_dry_run() {
 }
 
 #[test]
+#[serial]
 fn test_branch_cli_handler_handle_clean_branches_actual() {
     if !should_run_destructive_tests() {
         return;
@@ -146,6 +152,7 @@ fn test_branch_cli_handler_handle_clean_branches_actual() {
 }
 
 #[test]
+#[serial]
 fn test_branch_cli_handler_handle_switch_recent() {
     if !should_run_destructive_tests() {
         return;
@@ -185,6 +192,7 @@ fn test_branch_cli_handler_handle_switch_recent() {
 // Tests for RepositoryCliHandler
 
 #[test]
+#[serial]
 fn test_repository_cli_handler_new() {
     // Test that we can create a RepositoryCliHandler
     let result = RepositoryCliHandler::new();
@@ -203,6 +211,7 @@ fn test_repository_cli_handler_new() {
 }
 
 #[test]
+#[serial]
 fn test_repository_cli_handler_handle_info_basic() {
     // Test handle_info method in basic mode
     if let Ok(handler) = get_test_repository_handler() {
@@ -221,6 +230,7 @@ fn test_repository_cli_handler_handle_info_basic() {
 }
 
 #[test]
+#[serial]
 fn test_repository_cli_handler_handle_info_detailed() {
     // Test handle_info method in detailed mode
     if let Ok(handler) = get_test_repository_handler() {
@@ -240,6 +250,7 @@ fn test_repository_cli_handler_handle_info_detailed() {
 }
 
 #[test]
+#[serial]
 fn test_repository_cli_handler_handle_health() {
     // Test handle_health method
     if let Ok(handler) = get_test_repository_handler() {
@@ -260,6 +271,7 @@ fn test_repository_cli_handler_handle_health() {
 // Tests for CliHandlerFactory
 
 #[test]
+#[serial]
 fn test_cli_handler_factory_create_branch_handler() {
     // Test factory method for creating branch handler
     let result = CliHandlerFactory::create_branch_handler();
@@ -275,6 +287,7 @@ fn test_cli_handler_factory_create_branch_handler() {
 }
 
 #[test]
+#[serial]
 fn test_cli_handler_factory_create_repository_handler() {
     // Test factory method for creating repository handler
     let result = CliHandlerFactory::create_repository_handler();
@@ -292,6 +305,7 @@ fn test_cli_handler_factory_create_repository_handler() {
 // Tests for error conditions
 
 #[test]
+#[serial]
 fn test_branch_cli_handler_creation_outside_git_repo() {
     // Test behavior when not in a git repository
     // We can't force this condition, but we can test the error handling
@@ -328,6 +342,7 @@ fn test_branch_cli_handler_creation_outside_git_repo() {
 }
 
 #[test]
+#[serial]
 fn test_repository_cli_handler_creation_outside_git_repo() {
     // Test behavior when not in a git repository
     let current_dir = std::env::current_dir().unwrap();
@@ -359,6 +374,7 @@ fn test_repository_cli_handler_creation_outside_git_repo() {
 // Integration tests for method interactions
 
 #[test]
+#[serial]
 fn test_branch_cli_handler_method_chaining() {
     if !should_run_destructive_tests() {
         return;
@@ -386,6 +402,7 @@ fn test_branch_cli_handler_method_chaining() {
 }
 
 #[test]
+#[serial]
 fn test_repository_cli_handler_method_chaining() {
     // Test that we can call multiple methods on the same handler instance
     if let Ok(handler) = get_test_repository_handler() {
@@ -401,6 +418,7 @@ fn test_repository_cli_handler_method_chaining() {
 // Tests for edge cases
 
 #[test]
+#[serial]
 fn test_branch_cli_handler_empty_branch_name() {
     if !should_run_destructive_tests() {
         return;
@@ -429,6 +447,7 @@ fn test_branch_cli_handler_empty_branch_name() {
 }
 
 #[test]
+#[serial]
 fn test_branch_cli_handler_invalid_base_branch() {
     if !should_run_destructive_tests() {
         return;
@@ -463,6 +482,7 @@ fn test_branch_cli_handler_invalid_base_branch() {
 // Tests to ensure all public methods are covered
 
 #[test]
+#[serial]
 fn test_all_branch_cli_handler_methods_exist() {
     // Verify all expected methods exist by referencing them
     let _new_fn = BranchCliHandler::new;
@@ -476,6 +496,7 @@ fn test_all_branch_cli_handler_methods_exist() {
 }
 
 #[test]
+#[serial]
 fn test_all_repository_cli_handler_methods_exist() {
     // Verify all expected methods exist by referencing them
     let _new_fn = RepositoryCliHandler::new;
@@ -487,6 +508,7 @@ fn test_all_repository_cli_handler_methods_exist() {
 }
 
 #[test]
+#[serial]
 fn test_all_cli_handler_factory_methods_exist() {
     // Verify all factory methods exist
     let _create_branch_fn = CliHandlerFactory::create_branch_handler;

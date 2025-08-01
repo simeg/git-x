@@ -1,3 +1,4 @@
+use serial_test::serial;
 mod common;
 
 use common::{basic_repo, repo_with_branch};
@@ -7,6 +8,7 @@ use predicates::str::contains;
 use tempfile::TempDir;
 
 #[test]
+#[serial]
 fn test_health_command_runs_successfully() {
     let repo = basic_repo();
 
@@ -17,6 +19,7 @@ fn test_health_command_runs_successfully() {
 }
 
 #[test]
+#[serial]
 fn test_health_shows_clean_working_directory() {
     let repo = basic_repo();
 
@@ -26,6 +29,7 @@ fn test_health_shows_clean_working_directory() {
 }
 
 #[test]
+#[serial]
 fn test_health_shows_dirty_working_directory() {
     let repo = basic_repo();
 
@@ -38,6 +42,7 @@ fn test_health_shows_dirty_working_directory() {
 }
 
 #[test]
+#[serial]
 fn test_health_shows_no_untracked_files_when_clean() {
     let repo = basic_repo();
 
@@ -47,6 +52,7 @@ fn test_health_shows_no_untracked_files_when_clean() {
 }
 
 #[test]
+#[serial]
 fn test_health_security_checks() {
     let repo = basic_repo();
 
@@ -70,6 +76,7 @@ fn test_health_security_checks() {
 }
 
 #[test]
+#[serial]
 fn test_health_gitignore_validation() {
     let repo = basic_repo();
 
@@ -95,6 +102,7 @@ fn test_health_gitignore_validation() {
 }
 
 #[test]
+#[serial]
 fn test_health_binary_file_detection() {
     let repo = basic_repo();
 
@@ -118,6 +126,7 @@ fn test_health_binary_file_detection() {
 }
 
 #[test]
+#[serial]
 fn test_health_credential_detection() {
     let repo = basic_repo();
 
@@ -139,6 +148,7 @@ fn test_health_credential_detection() {
 }
 
 #[test]
+#[serial]
 fn test_health_shows_no_staged_changes() {
     let repo = basic_repo();
 
@@ -148,6 +158,7 @@ fn test_health_shows_no_staged_changes() {
 }
 
 #[test]
+#[serial]
 fn test_health_shows_staged_changes() {
     let repo = basic_repo();
 
@@ -165,6 +176,7 @@ fn test_health_shows_staged_changes() {
 }
 
 #[test]
+#[serial]
 fn test_health_shows_repository_size() {
     let repo = basic_repo();
 
@@ -174,6 +186,7 @@ fn test_health_shows_repository_size() {
 }
 
 #[test]
+#[serial]
 fn test_health_shows_no_stale_branches() {
     let repo = repo_with_branch("feature");
 
@@ -183,6 +196,7 @@ fn test_health_shows_no_stale_branches() {
 }
 
 #[test]
+#[serial]
 fn test_health_fails_outside_git_repo() {
     let temp_dir = tempfile::tempdir().unwrap();
 
@@ -204,6 +218,7 @@ fn test_health_fails_outside_git_repo() {
 }
 
 #[test]
+#[serial]
 fn test_health_command_direct() {
     let repo = basic_repo();
     let original_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("/"));
@@ -231,6 +246,7 @@ fn test_health_command_direct() {
 }
 
 #[test]
+#[serial]
 fn test_health_command_in_non_git_directory() {
     let temp_dir = tempfile::tempdir().unwrap();
     let original_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("/"));
@@ -264,6 +280,7 @@ use assert_cmd::Command as AssertCommand;
 use std::process::Command as StdCommand;
 
 #[test]
+#[serial]
 fn test_health_run_outside_git_repo() {
     // Test error path: not in a git repository
     let temp_dir = TempDir::new().unwrap();
@@ -283,6 +300,7 @@ fn test_health_run_outside_git_repo() {
 }
 
 #[test]
+#[serial]
 fn test_health_run_clean_repo() {
     // Test success path: clean repository
     let repo = basic_repo();
@@ -302,6 +320,7 @@ fn test_health_run_clean_repo() {
 }
 
 #[test]
+#[serial]
 fn test_health_run_dirty_repo() {
     // Test path: repository with changes
     let repo = basic_repo();
@@ -324,6 +343,7 @@ fn test_health_run_dirty_repo() {
 }
 
 #[test]
+#[serial]
 fn test_health_run_with_untracked_files() {
     // Test path: repository with untracked files
     let repo = basic_repo();
@@ -346,6 +366,7 @@ fn test_health_run_with_untracked_files() {
 }
 
 #[test]
+#[serial]
 fn test_health_run_with_staged_changes() {
     // Test path: repository with staged changes
     let repo = basic_repo();
@@ -381,6 +402,7 @@ fn test_health_run_with_staged_changes() {
 }
 
 #[test]
+#[serial]
 fn test_health_run_repo_size_check() {
     // Test path: repository size check
     let repo = basic_repo();
@@ -400,6 +422,7 @@ fn test_health_run_repo_size_check() {
 }
 
 #[test]
+#[serial]
 fn test_health_run_comprehensive_output() {
     // Test that all output components are present in success case
     let repo = basic_repo();
@@ -424,6 +447,7 @@ fn test_health_run_comprehensive_output() {
 }
 
 #[test]
+#[serial]
 fn test_health_run_mixed_states() {
     // Test comprehensive scenario with multiple states
     let repo = basic_repo();

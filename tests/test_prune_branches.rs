@@ -1,3 +1,4 @@
+use serial_test::serial;
 mod common;
 
 use common::repo_with_merged_branch;
@@ -15,6 +16,7 @@ fn should_run_destructive_tests() -> bool {
 }
 
 #[test]
+#[serial]
 fn test_prune_branches_deletes_merged_branch() {
     if !should_run_destructive_tests() {
         return;
@@ -28,6 +30,7 @@ fn test_prune_branches_deletes_merged_branch() {
 }
 
 #[test]
+#[serial]
 fn test_prune_branches_respects_exclude() {
     let repo = repo_with_merged_branch("feature/delete-me", "main");
 
@@ -43,6 +46,7 @@ fn test_prune_branches_respects_exclude() {
 }
 
 #[test]
+#[serial]
 fn test_prune_branches_run_function() {
     if !should_run_destructive_tests() {
         return;
@@ -68,6 +72,7 @@ fn test_prune_branches_run_function() {
 }
 
 #[test]
+#[serial]
 fn test_prune_branches_run_function_dry_run() {
     let repo = repo_with_merged_branch("feature/delete-me", "main");
 
@@ -81,6 +86,7 @@ fn test_prune_branches_run_function_dry_run() {
 }
 
 #[test]
+#[serial]
 fn test_prune_branches_run_function_error_handling() {
     // Test error handling outside of git repository
     let temp_dir = tempfile::tempdir().expect("Failed to create temp directory");
@@ -95,6 +101,7 @@ fn test_prune_branches_run_function_error_handling() {
 
 // Test dry-run CLI integration
 #[test]
+#[serial]
 fn test_prune_branches_dry_run_flag() {
     let repo = repo_with_merged_branch("feature/delete-me", "main");
 
@@ -105,6 +112,7 @@ fn test_prune_branches_dry_run_flag() {
 }
 
 #[test]
+#[serial]
 fn test_prune_branches_dry_run_with_except() {
     let repo = repo_with_merged_branch("feature/delete-me", "main");
 

@@ -1,3 +1,4 @@
+use serial_test::serial;
 mod common;
 
 use common::{repo_with_branch, repo_with_remote_ahead};
@@ -7,6 +8,7 @@ use git_x::core::traits::Command;
 use predicates::str::contains;
 
 #[test]
+#[serial]
 fn test_info_output_contains_expected_lines() {
     let repo = repo_with_branch("test-branch");
 
@@ -17,6 +19,7 @@ fn test_info_output_contains_expected_lines() {
 }
 
 #[test]
+#[serial]
 fn test_info_output_includes_ahead_behind() {
     let repo = repo_with_branch("test-branch");
     let _remote = repo.setup_remote("test-branch");
@@ -30,6 +33,7 @@ fn test_info_output_includes_ahead_behind() {
 }
 
 #[test]
+#[serial]
 fn test_info_output_shows_behind() {
     let (repo, _remote) = repo_with_remote_ahead("test-branch");
 
@@ -39,6 +43,7 @@ fn test_info_output_shows_behind() {
 }
 
 #[test]
+#[serial]
 fn test_info_enhanced_with_recent_activity() {
     let repo = repo_with_branch("test-branch");
 
@@ -63,6 +68,7 @@ fn test_info_enhanced_with_recent_activity() {
 }
 
 #[test]
+#[serial]
 fn test_info_shows_branch_differences() {
     let repo = repo_with_branch("feature-branch");
 
@@ -89,6 +95,7 @@ fn test_info_shows_branch_differences() {
 }
 
 #[test]
+#[serial]
 fn test_info_github_pr_detection() {
     let repo = repo_with_branch("test-branch");
 
@@ -110,6 +117,7 @@ fn test_info_github_pr_detection() {
 
 // Unit tests for common utilities
 #[test]
+#[serial]
 fn test_format_functions() {
     let error_msg = Format::error("Test error");
     assert!(error_msg.contains("❌"));
@@ -125,6 +133,7 @@ fn test_format_functions() {
 }
 
 #[test]
+#[serial]
 fn test_info_command_direct() {
     let (repo, _remote) = repo_with_remote_ahead("main");
 
@@ -141,6 +150,7 @@ fn test_info_command_direct() {
 }
 
 #[test]
+#[serial]
 fn test_info_command_with_details() {
     let (repo, _remote) = repo_with_remote_ahead("main");
     std::env::set_current_dir(repo.path()).unwrap();

@@ -1,5 +1,6 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
+use serial_test::serial;
 use std::fs;
 use std::path::PathBuf;
 use tempfile::TempDir;
@@ -59,6 +60,7 @@ fn create_test_repo() -> (TempDir, PathBuf, String) {
 }
 
 #[test]
+#[serial]
 fn test_new_branch_run_function_outside_git_repo() {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
 
@@ -71,6 +73,7 @@ fn test_new_branch_run_function_outside_git_repo() {
 }
 
 #[test]
+#[serial]
 fn test_new_branch_creates_and_switches() {
     let (_temp_dir, repo_path, _default_branch) = create_test_repo();
 
@@ -92,6 +95,7 @@ fn test_new_branch_creates_and_switches() {
 }
 
 #[test]
+#[serial]
 fn test_new_branch_with_from_option() {
     let (_temp_dir, repo_path, default_branch) = create_test_repo();
 
@@ -144,6 +148,7 @@ fn test_new_branch_with_from_option() {
 }
 
 #[test]
+#[serial]
 fn test_new_branch_invalid_name_empty() {
     let (_temp_dir, repo_path, _default_branch) = create_test_repo();
 
@@ -156,6 +161,7 @@ fn test_new_branch_invalid_name_empty() {
 }
 
 #[test]
+#[serial]
 fn test_new_branch_invalid_name_dash() {
     let (_temp_dir, repo_path, _default_branch) = create_test_repo();
 
@@ -170,6 +176,7 @@ fn test_new_branch_invalid_name_dash() {
 }
 
 #[test]
+#[serial]
 fn test_new_branch_invalid_name_double_dot() {
     let (_temp_dir, repo_path, _default_branch) = create_test_repo();
 
@@ -182,6 +189,7 @@ fn test_new_branch_invalid_name_double_dot() {
 }
 
 #[test]
+#[serial]
 fn test_new_branch_invalid_name_spaces() {
     let (_temp_dir, repo_path, _default_branch) = create_test_repo();
 
@@ -196,6 +204,7 @@ fn test_new_branch_invalid_name_spaces() {
 }
 
 #[test]
+#[serial]
 fn test_new_branch_existing_branch() {
     let (_temp_dir, repo_path, default_branch) = create_test_repo();
 
@@ -209,6 +218,7 @@ fn test_new_branch_existing_branch() {
 }
 
 #[test]
+#[serial]
 fn test_new_branch_invalid_base() {
     let (_temp_dir, repo_path, _default_branch) = create_test_repo();
 
@@ -221,6 +231,7 @@ fn test_new_branch_invalid_base() {
 }
 
 #[test]
+#[serial]
 fn test_new_branch_command_help() {
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["new", "--help"])
@@ -232,6 +243,7 @@ fn test_new_branch_command_help() {
 }
 
 #[test]
+#[serial]
 fn test_new_branch_command_direct() {
     let (_temp_dir, repo_path, _default_branch) = create_test_repo();
     let original_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("/"));
@@ -260,6 +272,7 @@ fn test_new_branch_command_direct() {
 }
 
 #[test]
+#[serial]
 fn test_new_branch_command_with_from() {
     let (_temp_dir, repo_path, default_branch) = create_test_repo();
     let original_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("/"));

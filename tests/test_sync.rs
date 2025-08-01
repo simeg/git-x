@@ -1,3 +1,4 @@
+use serial_test::serial;
 mod common;
 
 use assert_cmd::Command;
@@ -32,6 +33,7 @@ fn execute_in_dir<P: AsRef<std::path::Path>>(
 }
 
 #[test]
+#[serial]
 fn test_sync_run_function_outside_git_repo() {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
 
@@ -55,6 +57,7 @@ fn test_sync_run_function_outside_git_repo() {
 }
 
 #[test]
+#[serial]
 fn test_sync_run_function_no_upstream() {
     let repo = basic_repo();
 
@@ -79,6 +82,7 @@ fn test_sync_run_function_no_upstream() {
 
 // Keep these as CLI integration tests since they test help text
 #[test]
+#[serial]
 fn test_sync_command_help() {
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["sync", "--help"])
@@ -90,6 +94,7 @@ fn test_sync_command_help() {
 }
 
 #[test]
+#[serial]
 fn test_sync_merge_flag() {
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["sync", "--merge", "--help"])
@@ -99,6 +104,7 @@ fn test_sync_merge_flag() {
 }
 
 #[test]
+#[serial]
 fn test_sync_command_direct() {
     let repo = basic_repo();
     let original_dir = std::env::current_dir().unwrap();
@@ -120,6 +126,7 @@ fn test_sync_command_direct() {
 }
 
 #[test]
+#[serial]
 fn test_sync_command_with_merge_strategy() {
     let repo = basic_repo();
     let original_dir = std::env::current_dir().unwrap();
@@ -143,6 +150,7 @@ fn test_sync_command_with_merge_strategy() {
 }
 
 #[test]
+#[serial]
 fn test_sync_command_with_rebase_strategy() {
     let repo = basic_repo();
     let original_dir = std::env::current_dir().unwrap();

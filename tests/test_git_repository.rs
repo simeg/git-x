@@ -1,4 +1,5 @@
 use git_x::domain::{GitRepository, HealthLevel, RepositoryInfo};
+use serial_test::serial;
 
 // Helper function to get a repository instance
 fn get_test_repository() -> Result<GitRepository, git_x::GitXError> {
@@ -6,6 +7,7 @@ fn get_test_repository() -> Result<GitRepository, git_x::GitXError> {
 }
 
 #[test]
+#[serial]
 fn test_git_repository_open() {
     // Test that we can open a repository
     // This will fail if not in a git repo, which is expected
@@ -20,6 +22,7 @@ fn test_git_repository_open() {
 }
 
 #[test]
+#[serial]
 fn test_git_repository_info() {
     if let Ok(repository) = get_test_repository() {
         let result = repository.info();
@@ -74,6 +77,7 @@ fn test_git_repository_info() {
 }
 
 #[test]
+#[serial]
 fn test_git_repository_health() {
     if let Ok(repository) = get_test_repository() {
         let result = repository.health();
@@ -126,6 +130,7 @@ fn test_git_repository_health() {
 }
 
 #[test]
+#[serial]
 fn test_git_repository_validate_for_operation_general() {
     if let Ok(repository) = get_test_repository() {
         // Test general operation validation (should pass basic git repo check)
@@ -145,6 +150,7 @@ fn test_git_repository_validate_for_operation_general() {
 }
 
 #[test]
+#[serial]
 fn test_git_repository_validate_for_operation_destructive() {
     if let Ok(repository) = get_test_repository() {
         // Test destructive operation validation
@@ -167,6 +173,7 @@ fn test_git_repository_validate_for_operation_destructive() {
 }
 
 #[test]
+#[serial]
 fn test_git_repository_validate_for_operation_commit() {
     if let Ok(repository) = get_test_repository() {
         // Test commit operation validation
@@ -189,6 +196,7 @@ fn test_git_repository_validate_for_operation_commit() {
 }
 
 #[test]
+#[serial]
 fn test_git_repository_root_path() {
     if let Ok(repository) = get_test_repository() {
         let root_path = repository.root_path();
@@ -202,6 +210,7 @@ fn test_git_repository_root_path() {
 // Test RepositoryInfo helper methods with constructed data
 
 #[test]
+#[serial]
 fn test_repository_info_is_in_sync_true() {
     let info = RepositoryInfo {
         name: "test-repo".to_string(),
@@ -218,6 +227,7 @@ fn test_repository_info_is_in_sync_true() {
 }
 
 #[test]
+#[serial]
 fn test_repository_info_is_in_sync_false_ahead() {
     let info = RepositoryInfo {
         name: "test-repo".to_string(),
@@ -234,6 +244,7 @@ fn test_repository_info_is_in_sync_false_ahead() {
 }
 
 #[test]
+#[serial]
 fn test_repository_info_is_in_sync_false_behind() {
     let info = RepositoryInfo {
         name: "test-repo".to_string(),
@@ -250,6 +261,7 @@ fn test_repository_info_is_in_sync_false_behind() {
 }
 
 #[test]
+#[serial]
 fn test_repository_info_has_local_changes_clean() {
     let info = RepositoryInfo {
         name: "test-repo".to_string(),
@@ -266,6 +278,7 @@ fn test_repository_info_has_local_changes_clean() {
 }
 
 #[test]
+#[serial]
 fn test_repository_info_has_local_changes_dirty() {
     let info = RepositoryInfo {
         name: "test-repo".to_string(),
@@ -282,6 +295,7 @@ fn test_repository_info_has_local_changes_dirty() {
 }
 
 #[test]
+#[serial]
 fn test_repository_info_has_local_changes_staged() {
     let info = RepositoryInfo {
         name: "test-repo".to_string(),
@@ -298,6 +312,7 @@ fn test_repository_info_has_local_changes_staged() {
 }
 
 #[test]
+#[serial]
 fn test_repository_info_status_description_in_sync_clean() {
     let info = RepositoryInfo {
         name: "test-repo".to_string(),
@@ -316,6 +331,7 @@ fn test_repository_info_status_description_in_sync_clean() {
 }
 
 #[test]
+#[serial]
 fn test_repository_info_status_description_ahead_behind() {
     let info = RepositoryInfo {
         name: "test-repo".to_string(),
@@ -335,6 +351,7 @@ fn test_repository_info_status_description_ahead_behind() {
 }
 
 #[test]
+#[serial]
 fn test_repository_info_status_description_no_upstream() {
     let info = RepositoryInfo {
         name: "test-repo".to_string(),
@@ -353,6 +370,7 @@ fn test_repository_info_status_description_no_upstream() {
 }
 
 #[test]
+#[serial]
 fn test_repository_info_status_description_only_ahead() {
     let info = RepositoryInfo {
         name: "test-repo".to_string(),
@@ -372,6 +390,7 @@ fn test_repository_info_status_description_only_ahead() {
 }
 
 #[test]
+#[serial]
 fn test_repository_info_status_description_only_behind() {
     let info = RepositoryInfo {
         name: "test-repo".to_string(),
@@ -393,6 +412,7 @@ fn test_repository_info_status_description_only_behind() {
 // Test HealthStatus helper methods with constructed data
 
 #[test]
+#[serial]
 fn test_health_status_is_healthy_true() {
     let health = git_x::domain::HealthStatus {
         level: HealthLevel::Healthy,
@@ -404,6 +424,7 @@ fn test_health_status_is_healthy_true() {
 }
 
 #[test]
+#[serial]
 fn test_health_status_is_healthy_false_warning() {
     let health = git_x::domain::HealthStatus {
         level: HealthLevel::Warning,
@@ -415,6 +436,7 @@ fn test_health_status_is_healthy_false_warning() {
 }
 
 #[test]
+#[serial]
 fn test_health_status_is_healthy_false_unhealthy() {
     let health = git_x::domain::HealthStatus {
         level: HealthLevel::Unhealthy,
@@ -426,6 +448,7 @@ fn test_health_status_is_healthy_false_unhealthy() {
 }
 
 #[test]
+#[serial]
 fn test_health_status_summary_healthy() {
     let health = git_x::domain::HealthStatus {
         level: HealthLevel::Healthy,
@@ -437,6 +460,7 @@ fn test_health_status_summary_healthy() {
 }
 
 #[test]
+#[serial]
 fn test_health_status_summary_warning() {
     let health = git_x::domain::HealthStatus {
         level: HealthLevel::Warning,
@@ -448,6 +472,7 @@ fn test_health_status_summary_warning() {
 }
 
 #[test]
+#[serial]
 fn test_health_status_summary_unhealthy() {
     let health = git_x::domain::HealthStatus {
         level: HealthLevel::Unhealthy,
@@ -463,6 +488,7 @@ fn test_health_status_summary_unhealthy() {
 }
 
 #[test]
+#[serial]
 fn test_health_status_all_problems() {
     let health = git_x::domain::HealthStatus {
         level: HealthLevel::Unhealthy,
@@ -486,6 +512,7 @@ fn test_health_status_all_problems() {
 }
 
 #[test]
+#[serial]
 fn test_health_status_all_problems_empty() {
     let health = git_x::domain::HealthStatus {
         level: HealthLevel::Healthy,
@@ -498,6 +525,7 @@ fn test_health_status_all_problems_empty() {
 }
 
 #[test]
+#[serial]
 fn test_health_level_partial_eq() {
     // Test PartialEq implementation for HealthLevel
     assert_eq!(HealthLevel::Healthy, HealthLevel::Healthy);
@@ -511,6 +539,7 @@ fn test_health_level_partial_eq() {
 
 // Integration test that exercises multiple repository methods
 #[test]
+#[serial]
 fn test_git_repository_integration() {
     if let Ok(repository) = get_test_repository() {
         // Test that we can call multiple methods on the same repository instance

@@ -1,5 +1,6 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
+use serial_test::serial;
 use std::fs;
 use std::process::Command as StdCommand;
 use tempfile::TempDir;
@@ -7,6 +8,7 @@ use tempfile::TempDir;
 mod common;
 
 #[test]
+#[serial]
 fn test_switch_recent_in_non_git_repo() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
 
@@ -19,6 +21,7 @@ fn test_switch_recent_in_non_git_repo() {
 }
 
 #[test]
+#[serial]
 fn test_switch_recent_in_empty_git_repo() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
 
@@ -51,6 +54,7 @@ fn test_switch_recent_in_empty_git_repo() {
 }
 
 #[test]
+#[serial]
 fn test_switch_recent_with_branches() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
 
@@ -114,6 +118,7 @@ fn test_switch_recent_with_branches() {
 }
 
 #[test]
+#[serial]
 fn test_switch_recent_command_available() {
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.arg("--help")
@@ -123,6 +128,7 @@ fn test_switch_recent_command_available() {
 }
 
 #[test]
+#[serial]
 fn test_switch_recent_command_direct() {
     use git_x::commands::branch::SwitchRecentCommand;
     use git_x::core::traits::Command;

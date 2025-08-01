@@ -1,5 +1,6 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
+use serial_test::serial;
 use std::fs;
 use std::path::PathBuf;
 use std::thread::sleep;
@@ -65,6 +66,7 @@ fn create_test_repo_with_files() -> (TempDir, PathBuf) {
 }
 
 #[test]
+#[serial]
 fn test_large_files_run_function_outside_git_repo() {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
 
@@ -77,6 +79,7 @@ fn test_large_files_run_function_outside_git_repo() {
 }
 
 #[test]
+#[serial]
 fn test_large_files_command_help() {
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["large-files", "--help"])
@@ -88,6 +91,7 @@ fn test_large_files_command_help() {
 }
 
 #[test]
+#[serial]
 fn test_large_files_with_limit() {
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["large-files", "--limit", "5", "--help"])
@@ -97,6 +101,7 @@ fn test_large_files_with_limit() {
 }
 
 #[test]
+#[serial]
 fn test_large_files_with_threshold() {
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["large-files", "--threshold", "1.5", "--help"])
@@ -106,6 +111,7 @@ fn test_large_files_with_threshold() {
 }
 
 #[test]
+#[serial]
 fn test_large_files_default_limit() {
     let (temp_dir, repo_path) = create_test_repo_with_files();
 
@@ -122,6 +128,7 @@ fn test_large_files_default_limit() {
 }
 
 #[test]
+#[serial]
 fn test_large_files_command_direct() {
     let (temp_dir, repo_path) = create_test_repo_with_files();
     let original_dir = std::env::current_dir().unwrap();
@@ -142,6 +149,7 @@ fn test_large_files_command_direct() {
 }
 
 #[test]
+#[serial]
 fn test_large_files_command_with_threshold() {
     let (temp_dir, repo_path) = create_test_repo_with_files();
     let original_dir = std::env::current_dir().unwrap();

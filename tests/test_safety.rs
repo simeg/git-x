@@ -1,3 +1,4 @@
+use serial_test::serial;
 // Safety module tests
 //
 // WARNING: Many tests in this module perform DESTRUCTIVE git operations including:
@@ -37,6 +38,7 @@ where
 // Tests for Safety::create_backup_branch
 
 #[test]
+#[serial]
 fn test_safety_create_backup_branch() {
     if !should_run_destructive_tests() {
         // Skip destructive test in local development
@@ -66,6 +68,7 @@ fn test_safety_create_backup_branch() {
 }
 
 #[test]
+#[serial]
 fn test_safety_create_backup_branch_with_prefix() {
     if !should_run_destructive_tests() {
         return;
@@ -93,6 +96,7 @@ fn test_safety_create_backup_branch_with_prefix() {
 // Tests for Safety::ensure_clean_working_directory
 
 #[test]
+#[serial]
 fn test_safety_ensure_clean_working_directory() {
     let result = Safety::ensure_clean_working_directory();
 
@@ -115,6 +119,7 @@ fn test_safety_ensure_clean_working_directory() {
 // Tests for Safety::confirm_destructive_operation
 
 #[test]
+#[serial]
 fn test_safety_confirm_destructive_operation_non_interactive() {
     // Set non-interactive environment
     unsafe {
@@ -147,6 +152,7 @@ fn test_safety_confirm_destructive_operation_non_interactive() {
 // Tests for Safety::is_test_environment (private method, tested indirectly)
 
 #[test]
+#[serial]
 fn test_safety_is_test_environment_indirect() {
     // This test verifies that we're correctly detecting the test environment
     // In a test environment, cfg!(test) should be true
@@ -163,6 +169,7 @@ fn test_safety_is_test_environment_indirect() {
 // Tests for Safety::create_checkpoint
 
 #[test]
+#[serial]
 fn test_safety_create_checkpoint() {
     if !should_run_destructive_tests() {
         return;
@@ -187,6 +194,7 @@ fn test_safety_create_checkpoint() {
 }
 
 #[test]
+#[serial]
 fn test_safety_create_checkpoint_with_message() {
     if !should_run_destructive_tests() {
         return;
@@ -213,6 +221,7 @@ fn test_safety_create_checkpoint_with_message() {
 // Tests for Safety::restore_checkpoint
 
 #[test]
+#[serial]
 fn test_safety_restore_checkpoint() {
     if !should_run_destructive_tests() {
         return;
@@ -239,6 +248,7 @@ fn test_safety_restore_checkpoint() {
 // Tests for Safety::list_backup_branches
 
 #[test]
+#[serial]
 fn test_safety_list_backup_branches() {
     let result = Safety::list_backup_branches();
 
@@ -264,6 +274,7 @@ fn test_safety_list_backup_branches() {
 // Tests for Safety::cleanup_old_backups
 
 #[test]
+#[serial]
 fn test_safety_cleanup_old_backups_dry_run() {
     let result = Safety::cleanup_old_backups(30, true);
 
@@ -293,6 +304,7 @@ fn test_safety_cleanup_old_backups_dry_run() {
 }
 
 #[test]
+#[serial]
 fn test_safety_cleanup_old_backups_actual() {
     if !should_run_destructive_tests() {
         return;
@@ -328,6 +340,7 @@ fn test_safety_cleanup_old_backups_actual() {
 // Tests for SafetyBuilder
 
 #[test]
+#[serial]
 fn test_safety_builder_new() {
     let builder = SafetyBuilder::new("test operation");
 
@@ -336,6 +349,7 @@ fn test_safety_builder_new() {
 }
 
 #[test]
+#[serial]
 fn test_safety_builder_fluent_interface() {
     let builder = SafetyBuilder::new("complex operation")
         .with_backup()
@@ -348,6 +362,7 @@ fn test_safety_builder_fluent_interface() {
 }
 
 #[test]
+#[serial]
 fn test_safety_builder_execute_simple() {
     // Set non-interactive mode to avoid hanging
     unsafe {
@@ -378,6 +393,7 @@ fn test_safety_builder_execute_simple() {
 }
 
 #[test]
+#[serial]
 fn test_safety_builder_execute_with_backup() {
     if !should_run_destructive_tests() {
         return;
@@ -413,6 +429,7 @@ fn test_safety_builder_execute_with_backup() {
 }
 
 #[test]
+#[serial]
 fn test_safety_builder_execute_with_checkpoint() {
     if !should_run_destructive_tests() {
         return;
@@ -447,6 +464,7 @@ fn test_safety_builder_execute_with_checkpoint() {
 }
 
 #[test]
+#[serial]
 fn test_safety_builder_execute_with_confirmation() {
     unsafe {
         std::env::set_var("GIT_X_NON_INTERACTIVE", "1");
@@ -477,6 +495,7 @@ fn test_safety_builder_execute_with_confirmation() {
 }
 
 #[test]
+#[serial]
 fn test_safety_builder_execute_with_clean_directory() {
     unsafe {
         std::env::set_var("GIT_X_NON_INTERACTIVE", "1");
@@ -507,6 +526,7 @@ fn test_safety_builder_execute_with_clean_directory() {
 }
 
 #[test]
+#[serial]
 fn test_safety_builder_execute_failing_operation() {
     if !should_run_destructive_tests() {
         return;
@@ -549,6 +569,7 @@ fn test_safety_builder_execute_failing_operation() {
 }
 
 #[test]
+#[serial]
 fn test_safety_builder_execute_all_options() {
     if !should_run_destructive_tests() {
         return;
@@ -591,6 +612,7 @@ fn test_safety_builder_execute_all_options() {
 // Tests for user cancellation scenario
 
 #[test]
+#[serial]
 fn test_safety_builder_user_cancellation_simulation() {
     // We can't easily test actual user cancellation in automated tests,
     // but we can test the cancellation message handling
@@ -605,6 +627,7 @@ fn test_safety_builder_user_cancellation_simulation() {
 // Error handling tests
 
 #[test]
+#[serial]
 fn test_safety_error_handling() {
     if !should_run_destructive_tests() {
         return;
@@ -627,6 +650,7 @@ fn test_safety_error_handling() {
 // Integration tests
 
 #[test]
+#[serial]
 fn test_safety_operations_integration() {
     // Test that multiple safety operations can be performed in sequence
 
@@ -640,6 +664,7 @@ fn test_safety_operations_integration() {
 // Edge case tests
 
 #[test]
+#[serial]
 fn test_safety_edge_cases() {
     if !should_run_destructive_tests() {
         return;
@@ -674,6 +699,7 @@ fn test_safety_edge_cases() {
 // Test method availability and signatures
 
 #[test]
+#[serial]
 fn test_safety_method_signatures() {
     // Verify all expected methods exist by referencing them
     let _create_backup = Safety::create_backup_branch;
@@ -704,6 +730,7 @@ fn test_safety_method_signatures() {
 // Test builder pattern completion
 
 #[test]
+#[serial]
 fn test_safety_builder_pattern_variations() {
     // Test different combinations of builder options
 

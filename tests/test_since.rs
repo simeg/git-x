@@ -1,3 +1,4 @@
+use serial_test::serial;
 mod common;
 
 use common::repo_with_commits;
@@ -6,6 +7,7 @@ use git_x::core::traits::Command;
 use predicates::str::contains;
 
 #[test]
+#[serial]
 fn test_git_since_outputs_commits_since_ref() {
     let repo = repo_with_commits(2);
 
@@ -16,6 +18,7 @@ fn test_git_since_outputs_commits_since_ref() {
 }
 
 #[test]
+#[serial]
 fn test_git_since_no_new_commits() {
     let repo = repo_with_commits(2);
 
@@ -25,6 +28,7 @@ fn test_git_since_no_new_commits() {
 }
 
 #[test]
+#[serial]
 fn test_since_command_direct() {
     let repo = repo_with_commits(3);
     let original_dir = std::env::current_dir().unwrap();
@@ -44,6 +48,7 @@ fn test_since_command_direct() {
 }
 
 #[test]
+#[serial]
 fn test_since_command_no_commits() {
     let repo = common::basic_repo();
     let original_dir = std::env::current_dir().unwrap();

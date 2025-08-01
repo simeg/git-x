@@ -1,3 +1,5 @@
+use serial_test::serial;
+
 use git_x::domain::{
     BranchManager, CleanBranchesRequest, CreateBranchRequest, DeleteBranchesRequest, GitRepository,
     RecentBranchesRequest, RenameBranchRequest, SwitchBranchRequest,
@@ -18,6 +20,7 @@ fn should_run_destructive_tests() -> bool {
 }
 
 #[test]
+#[serial]
 fn test_branch_manager_new() {
     // Test that we can create a BranchManager
     // This will fail if not in a git repo, which is expected
@@ -32,6 +35,7 @@ fn test_branch_manager_new() {
 }
 
 #[test]
+#[serial]
 fn test_branch_manager_create_branch_invalid_name_empty() {
     if let Ok(manager) = get_test_manager() {
         let request = CreateBranchRequest {
@@ -51,6 +55,7 @@ fn test_branch_manager_create_branch_invalid_name_empty() {
 }
 
 #[test]
+#[serial]
 fn test_branch_manager_create_branch_invalid_name_dash() {
     if let Ok(manager) = get_test_manager() {
         let request = CreateBranchRequest {
@@ -65,6 +70,7 @@ fn test_branch_manager_create_branch_invalid_name_dash() {
 }
 
 #[test]
+#[serial]
 fn test_branch_manager_create_branch_invalid_name_spaces() {
     if let Ok(manager) = get_test_manager() {
         let request = CreateBranchRequest {
@@ -79,6 +85,7 @@ fn test_branch_manager_create_branch_invalid_name_spaces() {
 }
 
 #[test]
+#[serial]
 fn test_branch_manager_create_branch_invalid_name_dots() {
     if let Ok(manager) = get_test_manager() {
         let request = CreateBranchRequest {
@@ -93,6 +100,7 @@ fn test_branch_manager_create_branch_invalid_name_dots() {
 }
 
 #[test]
+#[serial]
 fn test_branch_manager_create_branch_invalid_base_commit() {
     if let Ok(manager) = get_test_manager() {
         let request = CreateBranchRequest {
@@ -112,6 +120,7 @@ fn test_branch_manager_create_branch_invalid_base_commit() {
 }
 
 #[test]
+#[serial]
 fn test_branch_manager_create_branch_valid_name() {
     if !should_run_destructive_tests() {
         return;
@@ -145,6 +154,7 @@ fn test_branch_manager_create_branch_valid_name() {
 }
 
 #[test]
+#[serial]
 fn test_branch_manager_delete_branches_protected() {
     if !should_run_destructive_tests() {
         return;
@@ -176,6 +186,7 @@ fn test_branch_manager_delete_branches_protected() {
 }
 
 #[test]
+#[serial]
 fn test_branch_manager_delete_branches_dry_run() {
     if let Ok(manager) = get_test_manager() {
         let request = DeleteBranchesRequest {
@@ -198,6 +209,7 @@ fn test_branch_manager_delete_branches_dry_run() {
 }
 
 #[test]
+#[serial]
 fn test_branch_manager_get_recent_branches_basic() {
     if let Ok(manager) = get_test_manager() {
         let request = RecentBranchesRequest {
@@ -219,6 +231,7 @@ fn test_branch_manager_get_recent_branches_basic() {
 }
 
 #[test]
+#[serial]
 fn test_branch_manager_get_recent_branches_exclude_current() {
     if let Ok(manager) = get_test_manager() {
         let request = RecentBranchesRequest {
@@ -242,6 +255,7 @@ fn test_branch_manager_get_recent_branches_exclude_current() {
 }
 
 #[test]
+#[serial]
 fn test_branch_manager_get_recent_branches_exclude_protected() {
     if let Ok(manager) = get_test_manager() {
         let request = RecentBranchesRequest {
@@ -263,6 +277,7 @@ fn test_branch_manager_get_recent_branches_exclude_protected() {
 }
 
 #[test]
+#[serial]
 fn test_branch_manager_switch_branch_nonexistent() {
     if let Ok(manager) = get_test_manager() {
         let request = SwitchBranchRequest {
@@ -281,6 +296,7 @@ fn test_branch_manager_switch_branch_nonexistent() {
 }
 
 #[test]
+#[serial]
 fn test_branch_manager_switch_branch_current() {
     if !should_run_destructive_tests() {
         return;
@@ -319,6 +335,7 @@ fn test_branch_manager_switch_branch_current() {
 }
 
 #[test]
+#[serial]
 fn test_branch_manager_rename_branch_invalid_name() {
     if let Ok(manager) = get_test_manager() {
         let request = RenameBranchRequest {
@@ -332,6 +349,7 @@ fn test_branch_manager_rename_branch_invalid_name() {
 }
 
 #[test]
+#[serial]
 fn test_branch_manager_rename_branch_existing_name() {
     if !should_run_destructive_tests() {
         return;
@@ -359,6 +377,7 @@ fn test_branch_manager_rename_branch_existing_name() {
 }
 
 #[test]
+#[serial]
 fn test_branch_manager_clean_merged_branches_dry_run() {
     if let Ok(manager) = get_test_manager() {
         let request = CleanBranchesRequest {
@@ -379,6 +398,7 @@ fn test_branch_manager_clean_merged_branches_dry_run() {
 }
 
 #[test]
+#[serial]
 fn test_branch_manager_clean_merged_branches_no_confirm() {
     if !should_run_destructive_tests() {
         return;
@@ -413,6 +433,7 @@ fn test_branch_manager_clean_merged_branches_no_confirm() {
 
 // Test the summary method on CleanBranchesResult
 #[test]
+#[serial]
 fn test_clean_branches_result_summary_dry_run() {
     use git_x::domain::CleanBranchesResult;
 
@@ -427,6 +448,7 @@ fn test_clean_branches_result_summary_dry_run() {
 }
 
 #[test]
+#[serial]
 fn test_clean_branches_result_summary_actual() {
     use git_x::domain::CleanBranchesResult;
 
@@ -441,6 +463,7 @@ fn test_clean_branches_result_summary_actual() {
 }
 
 #[test]
+#[serial]
 fn test_clean_branches_result_summary_no_failures() {
     use git_x::domain::CleanBranchesResult;
 
@@ -455,6 +478,7 @@ fn test_clean_branches_result_summary_no_failures() {
 }
 
 #[test]
+#[serial]
 fn test_branch_manager_clean_request_structure() {
     // Test the CleanBranchesRequest structure
     let request = CleanBranchesRequest {
@@ -467,6 +491,7 @@ fn test_branch_manager_clean_request_structure() {
 }
 
 #[test]
+#[serial]
 fn test_branch_manager_protected_branch_patterns() {
     if !should_run_destructive_tests() {
         return;
@@ -499,6 +524,7 @@ fn test_branch_manager_protected_branch_patterns() {
 }
 
 #[test]
+#[serial]
 fn test_branch_creation_result_properties() {
     use git_x::domain::BranchCreationResult;
 
@@ -518,6 +544,7 @@ fn test_branch_creation_result_properties() {
 
 // Test validation edge cases
 #[test]
+#[serial]
 fn test_branch_manager_create_branch_request_validation() {
     if !should_run_destructive_tests() {
         return;
@@ -552,6 +579,7 @@ fn test_branch_manager_create_branch_request_validation() {
 }
 
 #[test]
+#[serial]
 fn test_branch_manager_rename_branch_request_validation() {
     if !should_run_destructive_tests() {
         return;

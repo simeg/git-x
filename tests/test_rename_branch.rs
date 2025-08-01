@@ -1,3 +1,4 @@
+use serial_test::serial;
 mod common;
 
 use assert_cmd::Command as AssertCmd;
@@ -11,6 +12,7 @@ use std::process::Command as StdCommand;
 use tempfile::TempDir;
 
 #[test]
+#[serial]
 fn test_rename_branch_in_isolated_repo() {
     let repo = repo_with_branch("test-branch");
 
@@ -76,6 +78,7 @@ fn create_test_repo() -> (TempDir, PathBuf) {
 }
 
 #[test]
+#[serial]
 fn test_rename_branch_run_outside_git_repo() {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
 
@@ -88,6 +91,7 @@ fn test_rename_branch_run_outside_git_repo() {
 }
 
 #[test]
+#[serial]
 fn test_rename_branch_same_name() {
     let (_temp_dir, repo_path) = create_test_repo();
 
@@ -109,6 +113,7 @@ fn test_rename_branch_same_name() {
 }
 
 #[test]
+#[serial]
 fn test_rename_branch_local_rename_failure() {
     let (_temp_dir, repo_path) = create_test_repo();
 
@@ -123,6 +128,7 @@ fn test_rename_branch_local_rename_failure() {
 }
 
 #[test]
+#[serial]
 fn test_rename_branch_command_help() {
     let mut cmd = AssertCmd::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["rename-branch", "--help"])
@@ -132,6 +138,7 @@ fn test_rename_branch_command_help() {
 }
 
 #[test]
+#[serial]
 fn test_rename_branch_push_failure() {
     let (_temp_dir, repo_path) = create_test_repo();
 
@@ -156,6 +163,7 @@ fn test_rename_branch_push_failure() {
 }
 
 #[test]
+#[serial]
 fn test_rename_branch_run_function_successful_case() {
     let repo = repo_with_branch("test-branch");
     let original_dir = std::env::current_dir().unwrap();
@@ -180,6 +188,7 @@ fn test_rename_branch_run_function_successful_case() {
 }
 
 #[test]
+#[serial]
 fn test_rename_branch_run_function_same_name() {
     let repo = repo_with_branch("test-branch");
     let original_dir = std::env::current_dir().unwrap();

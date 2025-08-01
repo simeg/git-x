@@ -1,5 +1,6 @@
 use git_x::core::traits::*;
 use git_x::{GitXError, Result};
+use serial_test::serial;
 
 // Mock implementations for testing traits
 
@@ -317,6 +318,7 @@ impl Configurable for MockConfigurableCommand {
 // Tests for Command trait
 
 #[test]
+#[serial]
 fn test_command_trait_basic() {
     let cmd = MockCommand::new("test", "Test command");
 
@@ -329,6 +331,7 @@ fn test_command_trait_basic() {
 }
 
 #[test]
+#[serial]
 fn test_command_trait_failure() {
     let cmd = MockCommand::new_failing("fail-test", "Failing test command");
 
@@ -349,6 +352,7 @@ fn test_command_trait_failure() {
 // Tests for DryRunnable trait
 
 #[test]
+#[serial]
 fn test_dry_runnable_trait() {
     let cmd = MockDryRunnableCommand::new("dry-test", "Dry run test", true);
 
@@ -364,6 +368,7 @@ fn test_dry_runnable_trait() {
 }
 
 #[test]
+#[serial]
 fn test_dry_runnable_trait_not_dry_run() {
     let cmd = MockDryRunnableCommand::new("normal-test", "Normal test", false);
 
@@ -377,6 +382,7 @@ fn test_dry_runnable_trait_not_dry_run() {
 // Tests for Destructive trait
 
 #[test]
+#[serial]
 fn test_destructive_trait() {
     let cmd = MockDestructiveCommand::new(
         "destroy-test",
@@ -395,6 +401,7 @@ fn test_destructive_trait() {
 }
 
 #[test]
+#[serial]
 fn test_destructive_trait_default_backup() {
     struct DefaultDestructiveCommand {
         base: MockCommand,
@@ -433,6 +440,7 @@ fn test_destructive_trait_default_backup() {
 // Tests for Interactive trait
 
 #[test]
+#[serial]
 fn test_interactive_trait() {
     let cmd = MockInteractiveCommand::new("interactive-test", "Interactive test");
 
@@ -452,6 +460,7 @@ fn test_interactive_trait() {
 // Tests for Formatter trait
 
 #[test]
+#[serial]
 fn test_formatter_trait() {
     let formatter = MockFormatter;
 
@@ -465,6 +474,7 @@ fn test_formatter_trait() {
 // Tests for Validator trait
 
 #[test]
+#[serial]
 fn test_validator_trait_valid_input() {
     let validator = MockValidator::new(3);
 
@@ -476,6 +486,7 @@ fn test_validator_trait_valid_input() {
 }
 
 #[test]
+#[serial]
 fn test_validator_trait_invalid_input() {
     let validator = MockValidator::new(5);
 
@@ -493,6 +504,7 @@ fn test_validator_trait_invalid_input() {
 }
 
 #[test]
+#[serial]
 fn test_validator_trait_validation_rules() {
     let validator = MockValidator::new(1);
 
@@ -505,6 +517,7 @@ fn test_validator_trait_validation_rules() {
 // Tests for Optimizable trait
 
 #[test]
+#[serial]
 fn test_optimizable_trait() {
     let cmd = MockOptimizableCommand::new("opt-test", "Optimizable test");
 
@@ -520,6 +533,7 @@ fn test_optimizable_trait() {
 // Tests for MultiFormat trait
 
 #[test]
+#[serial]
 fn test_multi_format_trait() {
     let cmd = MockMultiFormatCommand::new("format-test", "Multi-format test");
 
@@ -543,6 +557,7 @@ fn test_multi_format_trait() {
 }
 
 #[test]
+#[serial]
 fn test_multi_format_trait_unsupported() {
     let cmd = MockMultiFormatCommand::new("format-test", "Multi-format test");
 
@@ -560,6 +575,7 @@ fn test_multi_format_trait_unsupported() {
 // Tests for Configurable trait
 
 #[test]
+#[serial]
 fn test_configurable_trait() {
     let cmd = MockConfigurableCommand::new("config-test", "Configurable test");
 
@@ -570,6 +586,7 @@ fn test_configurable_trait() {
 }
 
 #[test]
+#[serial]
 fn test_configurable_trait_with_config() {
     let cmd = MockConfigurableCommand::new("config-test", "Configurable test");
     let config = MockConfig {
@@ -590,6 +607,7 @@ fn test_configurable_trait_with_config() {
 // Test trait combinations
 
 #[test]
+#[serial]
 fn test_trait_combination() {
     // Test that we can implement multiple traits on the same struct
     struct CombinedCommand {

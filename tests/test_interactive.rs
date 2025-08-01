@@ -1,6 +1,8 @@
 use git_x::core::interactive::{Interactive, InteractiveBuilder, InteractiveResults};
+use serial_test::serial;
 
 #[test]
+#[serial]
 fn test_interactive_is_interactive_detection() {
     unsafe {
         std::env::set_var("GIT_X_NON_INTERACTIVE", "1");
@@ -29,6 +31,7 @@ fn test_interactive_is_interactive_detection() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_is_interactive_with_env_vars() {
     // Test with explicit non-interactive environment variable
     unsafe {
@@ -47,6 +50,7 @@ fn test_interactive_is_interactive_with_env_vars() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_is_interactive_ci_environment() {
     // Test CI environment detection
     unsafe {
@@ -62,6 +66,7 @@ fn test_interactive_is_interactive_ci_environment() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_is_interactive_github_actions() {
     // Test GitHub Actions environment detection
     unsafe {
@@ -77,6 +82,7 @@ fn test_interactive_is_interactive_github_actions() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_fuzzy_select_empty_items() {
     // Test fuzzy_select with empty items list
     let items: Vec<String> = vec![];
@@ -105,6 +111,7 @@ fn test_interactive_fuzzy_select_empty_items() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_select_or_first_with_items() {
     unsafe {
         std::env::set_var("GIT_X_NON_INTERACTIVE", "1");
@@ -134,6 +141,7 @@ fn test_interactive_select_or_first_with_items() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_branch_picker_empty() {
     // Test branch_picker validation logic for empty branches
     let branches: Vec<String> = vec![];
@@ -152,6 +160,7 @@ fn test_interactive_branch_picker_empty() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_branch_picker_validation() {
     // Test branch_picker validation logic without calling the interactive function
     let empty_branches: Vec<String> = vec![];
@@ -178,6 +187,7 @@ fn test_interactive_branch_picker_validation() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_branch_picker_default_prompt() {
     // Test branch_picker prompt handling logic
     let empty_branches: Vec<String> = vec![];
@@ -198,6 +208,7 @@ fn test_interactive_branch_picker_default_prompt() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_text_input_validation() {
     // Test text_input API exists and can be called with valid parameters
     // We don't actually call it to avoid hanging in non-interactive mode
@@ -224,6 +235,7 @@ fn test_interactive_text_input_validation() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_text_input_with_default() {
     // Test that text_input accepts default values (API test only)
     let _fn_ref = Interactive::text_input;
@@ -237,6 +249,7 @@ fn test_interactive_text_input_with_default() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_text_input_validator_function() {
     // Test that validator function is properly typed and can be created
     fn validate_non_empty(input: &str) -> git_x::Result<()> {
@@ -266,6 +279,7 @@ fn test_interactive_text_input_validator_function() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_confirm_basic() {
     // Test confirm API exists and accepts parameters correctly
     let _fn_ref = Interactive::confirm;
@@ -278,6 +292,7 @@ fn test_interactive_confirm_basic() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_confirm_default_false() {
     // Test confirm with default false (API test only)
     let _fn_ref = Interactive::confirm;
@@ -290,6 +305,7 @@ fn test_interactive_confirm_default_false() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_fuzzy_find_empty() {
     unsafe {
         std::env::set_var("GIT_X_NON_INTERACTIVE", "1");
@@ -307,6 +323,7 @@ fn test_interactive_fuzzy_find_empty() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_fuzzy_find_basic() {
     unsafe {
         std::env::set_var("GIT_X_NON_INTERACTIVE", "1");
@@ -338,6 +355,7 @@ fn test_interactive_fuzzy_find_basic() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_fuzzy_find_exact_match() {
     unsafe {
         std::env::set_var("GIT_X_NON_INTERACTIVE", "1");
@@ -359,6 +377,7 @@ fn test_interactive_fuzzy_find_exact_match() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_fuzzy_find_with_limit() {
     unsafe {
         std::env::set_var("GIT_X_NON_INTERACTIVE", "1");
@@ -376,6 +395,7 @@ fn test_interactive_fuzzy_find_with_limit() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_fuzzy_find_no_matches() {
     unsafe {
         std::env::set_var("GIT_X_NON_INTERACTIVE", "1");
@@ -393,6 +413,7 @@ fn test_interactive_fuzzy_find_no_matches() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_select_or_first_empty() {
     unsafe {
         std::env::set_var("GIT_X_NON_INTERACTIVE", "1");
@@ -414,6 +435,7 @@ fn test_interactive_select_or_first_empty() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_select_or_first_with_multiple_items() {
     unsafe {
         std::env::set_var("GIT_X_NON_INTERACTIVE", "1");
@@ -446,6 +468,7 @@ fn test_interactive_select_or_first_with_multiple_items() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_confirm_or_accept_default_true() {
     // Ensure we're in non-interactive mode for testing
     unsafe {
@@ -473,6 +496,7 @@ fn test_interactive_confirm_or_accept_default_true() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_confirm_or_accept_default_false() {
     // Ensure we're in non-interactive mode for testing
     unsafe {
@@ -502,6 +526,7 @@ fn test_interactive_confirm_or_accept_default_false() {
 // Test InteractiveBuilder
 
 #[test]
+#[serial]
 fn test_interactive_builder_new() {
     let builder = InteractiveBuilder::new();
     // Just verify it can be created
@@ -509,12 +534,14 @@ fn test_interactive_builder_new() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_builder_default() {
     let builder = InteractiveBuilder::default();
     drop(builder);
 }
 
 #[test]
+#[serial]
 fn test_interactive_builder_confirm_step() {
     let builder = InteractiveBuilder::new().confirm("Continue?", true);
 
@@ -537,6 +564,7 @@ fn test_interactive_builder_confirm_step() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_builder_select_step() {
     let builder = InteractiveBuilder::new().select(
         "Choose option",
@@ -561,6 +589,7 @@ fn test_interactive_builder_select_step() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_builder_input_step() {
     let builder = InteractiveBuilder::new().input("Enter text", Some("default".to_string()));
 
@@ -582,6 +611,7 @@ fn test_interactive_builder_input_step() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_builder_input_step_no_default() {
     let builder = InteractiveBuilder::new().input("Enter text", None);
 
@@ -601,6 +631,7 @@ fn test_interactive_builder_input_step_no_default() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_builder_multiple_steps() {
     let builder = InteractiveBuilder::new()
         .confirm("Continue?", true)
@@ -627,6 +658,7 @@ fn test_interactive_builder_multiple_steps() {
 // Test InteractiveResults
 
 #[test]
+#[serial]
 fn test_interactive_results_new() {
     let results = InteractiveResults {
         confirmations: vec![true, false],
@@ -651,6 +683,7 @@ fn test_interactive_results_new() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_results_empty() {
     let results = InteractiveResults {
         confirmations: vec![],
@@ -666,6 +699,7 @@ fn test_interactive_results_empty() {
 // Test edge cases and error conditions
 
 #[test]
+#[serial]
 fn test_interactive_fuzzy_find_case_sensitivity() {
     unsafe {
         std::env::set_var("GIT_X_NON_INTERACTIVE", "1");
@@ -689,6 +723,7 @@ fn test_interactive_fuzzy_find_case_sensitivity() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_fuzzy_find_special_characters() {
     unsafe {
         std::env::set_var("GIT_X_NON_INTERACTIVE", "1");
@@ -712,6 +747,7 @@ fn test_interactive_fuzzy_find_special_characters() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_fuzzy_find_empty_query() {
     unsafe {
         std::env::set_var("GIT_X_NON_INTERACTIVE", "1");
@@ -732,6 +768,7 @@ fn test_interactive_fuzzy_find_empty_query() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_builder_fluent_interface() {
     // Test that the fluent interface works correctly
     let builder = InteractiveBuilder::new()
@@ -758,6 +795,7 @@ fn test_interactive_builder_fluent_interface() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_select_or_first_string_types() {
     unsafe {
         std::env::set_var("GIT_X_NON_INTERACTIVE", "1");
@@ -794,6 +832,7 @@ fn test_interactive_select_or_first_string_types() {
 }
 
 #[test]
+#[serial]
 fn test_interactive_select_or_first_different_types() {
     unsafe {
         std::env::set_var("GIT_X_NON_INTERACTIVE", "1");

@@ -1,7 +1,9 @@
 use clap::Parser;
 use git_x::cli::{Cli, Commands};
+use serial_test::serial;
 
 #[test]
+#[serial]
 fn test_cli_parse_rename_branch() {
     let cli = Cli::try_parse_from(["git-x", "rename-branch", "new-name"]).unwrap();
     match cli.command {
@@ -13,6 +15,7 @@ fn test_cli_parse_rename_branch() {
 }
 
 #[test]
+#[serial]
 fn test_cli_parse_prune_branches() {
     let cli = Cli::try_parse_from(["git-x", "prune-branches"]).unwrap();
     match cli.command {
@@ -25,6 +28,7 @@ fn test_cli_parse_prune_branches() {
 }
 
 #[test]
+#[serial]
 fn test_cli_parse_prune_branches_with_except() {
     let cli = Cli::try_parse_from(["git-x", "prune-branches", "--except", "main,develop"]).unwrap();
     match cli.command {
@@ -37,6 +41,7 @@ fn test_cli_parse_prune_branches_with_except() {
 }
 
 #[test]
+#[serial]
 fn test_cli_parse_prune_branches_with_dry_run() {
     let cli = Cli::try_parse_from(["git-x", "prune-branches", "--dry-run"]).unwrap();
     match cli.command {
@@ -49,6 +54,7 @@ fn test_cli_parse_prune_branches_with_dry_run() {
 }
 
 #[test]
+#[serial]
 fn test_cli_parse_prune_branches_with_except_and_dry_run() {
     let cli =
         Cli::try_parse_from(["git-x", "prune-branches", "--except", "main", "--dry-run"]).unwrap();
@@ -62,6 +68,7 @@ fn test_cli_parse_prune_branches_with_except_and_dry_run() {
 }
 
 #[test]
+#[serial]
 fn test_cli_parse_info() {
     let cli = Cli::try_parse_from(["git-x", "info"]).unwrap();
     match cli.command {
@@ -71,6 +78,7 @@ fn test_cli_parse_info() {
 }
 
 #[test]
+#[serial]
 fn test_cli_parse_graph() {
     let cli = Cli::try_parse_from(["git-x", "graph"]).unwrap();
     match cli.command {
@@ -80,6 +88,7 @@ fn test_cli_parse_graph() {
 }
 
 #[test]
+#[serial]
 fn test_cli_parse_color_graph() {
     let cli = Cli::try_parse_from(["git-x", "color-graph"]).unwrap();
     match cli.command {
@@ -89,6 +98,7 @@ fn test_cli_parse_color_graph() {
 }
 
 #[test]
+#[serial]
 fn test_cli_parse_health() {
     let cli = Cli::try_parse_from(["git-x", "health"]).unwrap();
     match cli.command {
@@ -98,6 +108,7 @@ fn test_cli_parse_health() {
 }
 
 #[test]
+#[serial]
 fn test_cli_parse_since() {
     let cli = Cli::try_parse_from(["git-x", "since", "main"]).unwrap();
     match cli.command {
@@ -109,6 +120,7 @@ fn test_cli_parse_since() {
 }
 
 #[test]
+#[serial]
 fn test_cli_parse_undo() {
     let cli = Cli::try_parse_from(["git-x", "undo"]).unwrap();
     match cli.command {
@@ -118,6 +130,7 @@ fn test_cli_parse_undo() {
 }
 
 #[test]
+#[serial]
 fn test_cli_parse_clean_branches() {
     let cli = Cli::try_parse_from(["git-x", "clean-branches"]).unwrap();
     match cli.command {
@@ -129,6 +142,7 @@ fn test_cli_parse_clean_branches() {
 }
 
 #[test]
+#[serial]
 fn test_cli_parse_clean_branches_dry_run() {
     let cli = Cli::try_parse_from(["git-x", "clean-branches", "--dry-run"]).unwrap();
     match cli.command {
@@ -140,6 +154,7 @@ fn test_cli_parse_clean_branches_dry_run() {
 }
 
 #[test]
+#[serial]
 fn test_cli_parse_what() {
     let cli = Cli::try_parse_from(["git-x", "what"]).unwrap();
     match cli.command {
@@ -151,6 +166,7 @@ fn test_cli_parse_what() {
 }
 
 #[test]
+#[serial]
 fn test_cli_parse_what_with_target() {
     let cli = Cli::try_parse_from(["git-x", "what", "--target", "develop"]).unwrap();
     match cli.command {
@@ -162,6 +178,7 @@ fn test_cli_parse_what_with_target() {
 }
 
 #[test]
+#[serial]
 fn test_cli_parse_summary() {
     let cli = Cli::try_parse_from(["git-x", "summary", "--since", "3 days ago"]).unwrap();
     match cli.command {

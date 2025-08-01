@@ -2,6 +2,7 @@ use assert_cmd::Command;
 use git_x::commands::stash::{StashBranchAction as StashAction, StashCommand, StashInfo, utils::*};
 use git_x::core::traits::Command as NewCommand;
 use predicates::prelude::*;
+use serial_test::serial;
 use std::fs;
 use std::path::PathBuf;
 use tempfile::TempDir;
@@ -66,6 +67,7 @@ fn create_test_repo() -> (TempDir, PathBuf, String) {
 }
 
 #[test]
+#[serial]
 fn test_stash_export_functionality() {
     let (temp_dir, repo_path, _) = create_test_repo();
     let original_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("/"));
@@ -109,6 +111,7 @@ fn test_stash_export_functionality() {
 }
 
 #[test]
+#[serial]
 fn test_stash_interactive_command_exists() {
     let (_temp_dir, repo_path, _) = create_test_repo();
     let original_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("/"));
@@ -148,6 +151,7 @@ fn create_stash(repo_path: &PathBuf, filename: &str, content: &str, message: &st
 }
 
 #[test]
+#[serial]
 fn test_stash_branch_create_command_help() {
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["stash-branch", "create", "--help"])
@@ -157,6 +161,7 @@ fn test_stash_branch_create_command_help() {
 }
 
 #[test]
+#[serial]
 fn test_stash_branch_clean_command_help() {
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["stash-branch", "clean", "--help"])
@@ -166,6 +171,7 @@ fn test_stash_branch_clean_command_help() {
 }
 
 #[test]
+#[serial]
 fn test_stash_branch_apply_command_help() {
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["stash-branch", "apply-by-branch", "--help"])
@@ -177,6 +183,7 @@ fn test_stash_branch_apply_command_help() {
 }
 
 #[test]
+#[serial]
 fn test_stash_branch_create_invalid_branch_name() {
     let (_temp_dir, repo_path, _default_branch) = create_test_repo();
     create_stash(&repo_path, "test.txt", "test content", "Test stash");
@@ -220,6 +227,7 @@ fn test_stash_branch_create_invalid_branch_name() {
 }
 
 #[test]
+#[serial]
 fn test_stash_branch_create_existing_branch() {
     let (_temp_dir, repo_path, default_branch) = create_test_repo();
     create_stash(&repo_path, "test.txt", "test content", "Test stash");
@@ -249,6 +257,7 @@ fn test_stash_branch_create_existing_branch() {
 }
 
 #[test]
+#[serial]
 fn test_stash_branch_create_no_stash() {
     let (_temp_dir, repo_path, _default_branch) = create_test_repo();
 
@@ -262,6 +271,7 @@ fn test_stash_branch_create_no_stash() {
 }
 
 #[test]
+#[serial]
 fn test_stash_branch_create_success() {
     let (_temp_dir, repo_path, _default_branch) = create_test_repo();
     create_stash(&repo_path, "test.txt", "test content", "Test stash");
@@ -275,6 +285,7 @@ fn test_stash_branch_create_success() {
 }
 
 #[test]
+#[serial]
 fn test_stash_branch_create_with_stash_ref() {
     let (_temp_dir, repo_path, _default_branch) = create_test_repo();
     create_stash(&repo_path, "test1.txt", "test content 1", "Test stash 1");
@@ -295,6 +306,7 @@ fn test_stash_branch_create_with_stash_ref() {
 }
 
 #[test]
+#[serial]
 fn test_stash_branch_clean_no_stashes() {
     let (_temp_dir, repo_path, _default_branch) = create_test_repo();
 
@@ -307,6 +319,7 @@ fn test_stash_branch_clean_no_stashes() {
 }
 
 #[test]
+#[serial]
 fn test_stash_branch_clean_dry_run() {
     let (_temp_dir, repo_path, _default_branch) = create_test_repo();
     create_stash(&repo_path, "test1.txt", "test content 1", "Test stash 1");
@@ -321,6 +334,7 @@ fn test_stash_branch_clean_dry_run() {
 }
 
 #[test]
+#[serial]
 fn test_stash_branch_clean_with_age_filter() {
     if !should_run_destructive_tests() {
         return;
@@ -338,6 +352,7 @@ fn test_stash_branch_clean_with_age_filter() {
 }
 
 #[test]
+#[serial]
 fn test_stash_branch_apply_by_branch_no_stashes() {
     let (_temp_dir, repo_path, _default_branch) = create_test_repo();
 
@@ -350,6 +365,7 @@ fn test_stash_branch_apply_by_branch_no_stashes() {
 }
 
 #[test]
+#[serial]
 fn test_stash_branch_apply_by_branch_list_only() {
     let (_temp_dir, repo_path, _default_branch) = create_test_repo();
 
@@ -376,6 +392,7 @@ fn test_stash_branch_apply_by_branch_list_only() {
 }
 
 #[test]
+#[serial]
 fn test_stash_branch_command_outside_git_repo() {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
 
@@ -388,6 +405,7 @@ fn test_stash_branch_command_outside_git_repo() {
 }
 
 #[test]
+#[serial]
 fn test_stash_branch_main_command_help() {
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["stash-branch", "--help"])
@@ -401,6 +419,7 @@ fn test_stash_branch_main_command_help() {
 // Unit tests for core logic functions
 
 #[test]
+#[serial]
 fn test_validate_branch_name_valid() {
     assert!(validate_branch_name("feature/test").is_ok());
     assert!(validate_branch_name("hotfix-123").is_ok());
@@ -409,6 +428,7 @@ fn test_validate_branch_name_valid() {
 }
 
 #[test]
+#[serial]
 fn test_validate_branch_name_invalid() {
     assert!(validate_branch_name("").is_err());
     assert!(validate_branch_name("-starts-with-dash").is_err());
@@ -417,6 +437,7 @@ fn test_validate_branch_name_invalid() {
 }
 
 #[test]
+#[serial]
 fn test_validate_stash_exists_invalid() {
     let (_temp_dir, repo_path, _branch) = create_test_repo();
     let original_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("/"));
@@ -434,6 +455,7 @@ fn test_validate_stash_exists_invalid() {
 }
 
 #[test]
+#[serial]
 fn test_parse_stash_line_with_date_valid() {
     let line = "stash@{0}|WIP on main: 1234567 Initial commit|2023-01-01 12:00:00 +0000";
     let result = parse_stash_line_with_date(line);
@@ -446,6 +468,7 @@ fn test_parse_stash_line_with_date_valid() {
 }
 
 #[test]
+#[serial]
 fn test_parse_stash_line_with_date_invalid() {
     assert!(parse_stash_line_with_date("").is_none());
     assert!(parse_stash_line_with_date("invalid line").is_none());
@@ -453,6 +476,7 @@ fn test_parse_stash_line_with_date_invalid() {
 }
 
 #[test]
+#[serial]
 fn test_parse_stash_line_with_branch_valid() {
     let line = "stash@{1}|On feature-branch: WIP changes";
     let result = parse_stash_line_with_branch(line);
@@ -465,6 +489,7 @@ fn test_parse_stash_line_with_branch_valid() {
 }
 
 #[test]
+#[serial]
 fn test_parse_stash_line_with_branch_wip_format() {
     let line = "stash@{0}|WIP on main: 1234567 Some commit";
     let result = parse_stash_line_with_branch(line);
@@ -477,6 +502,7 @@ fn test_parse_stash_line_with_branch_wip_format() {
 }
 
 #[test]
+#[serial]
 fn test_extract_branch_from_message_wip() {
     assert_eq!(extract_branch_from_message("WIP on main: commit"), "main");
     assert_eq!(
@@ -490,6 +516,7 @@ fn test_extract_branch_from_message_wip() {
 }
 
 #[test]
+#[serial]
 fn test_extract_branch_from_message_on() {
     assert_eq!(extract_branch_from_message("On main: some changes"), "main");
     assert_eq!(
@@ -503,6 +530,7 @@ fn test_extract_branch_from_message_on() {
 }
 
 #[test]
+#[serial]
 fn test_extract_branch_from_message_unknown() {
     assert_eq!(extract_branch_from_message("Random message"), "unknown");
     assert_eq!(extract_branch_from_message(""), "unknown");
@@ -510,6 +538,7 @@ fn test_extract_branch_from_message_unknown() {
 }
 
 #[test]
+#[serial]
 fn test_filter_stashes_by_age_invalid_format() {
     let stashes = vec![];
 
@@ -522,6 +551,7 @@ fn test_filter_stashes_by_age_invalid_format() {
 }
 
 #[test]
+#[serial]
 fn test_filter_stashes_by_age_valid_format() {
     let stashes = vec![StashInfo {
         name: "stash@{0}".to_string(),
@@ -539,6 +569,7 @@ fn test_filter_stashes_by_age_valid_format() {
 // Additional tests for better coverage of main logic paths
 
 #[test]
+#[serial]
 fn test_stash_branch_create_with_custom_stash_ref() {
     let (_temp_dir, repo_path, _branch) = create_test_repo();
 
@@ -571,6 +602,7 @@ fn test_stash_branch_create_with_custom_stash_ref() {
 }
 
 #[test]
+#[serial]
 fn test_stash_branch_clean_with_specific_age() {
     if !should_run_destructive_tests() {
         return;
@@ -588,6 +620,7 @@ fn test_stash_branch_clean_with_specific_age() {
 }
 
 #[test]
+#[serial]
 fn test_stash_branch_apply_specific_branch() {
     let (_temp_dir, repo_path, _branch) = create_test_repo();
 
@@ -602,6 +635,7 @@ fn test_stash_branch_apply_specific_branch() {
 // Direct run() function tests for maximum coverage
 
 #[test]
+#[serial]
 fn test_stash_branch_run_create_function() {
     if !should_run_destructive_tests() {
         return;
@@ -624,6 +658,7 @@ fn test_stash_branch_run_create_function() {
 }
 
 #[test]
+#[serial]
 fn test_stash_branch_run_create_function_invalid_branch() {
     if !should_run_destructive_tests() {
         return;
@@ -646,6 +681,7 @@ fn test_stash_branch_run_create_function_invalid_branch() {
 }
 
 #[test]
+#[serial]
 fn test_stash_branch_run_create_function_no_stash() {
     let (_temp_dir, repo_path, _branch) = create_test_repo();
     let original_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("/"));
@@ -663,6 +699,7 @@ fn test_stash_branch_run_create_function_no_stash() {
 }
 
 #[test]
+#[serial]
 fn test_stash_branch_run_clean_function() {
     if !should_run_destructive_tests() {
         return;
@@ -688,6 +725,7 @@ fn test_stash_branch_run_clean_function() {
 }
 
 #[test]
+#[serial]
 fn test_stash_branch_run_clean_function_with_age() {
     if !should_run_destructive_tests() {
         return;
@@ -720,6 +758,7 @@ fn test_stash_branch_run_clean_function_with_age() {
 }
 
 #[test]
+#[serial]
 fn test_stash_branch_run_apply_function() {
     let (_temp_dir, repo_path, _branch) = create_test_repo();
 
@@ -737,6 +776,7 @@ fn test_stash_branch_run_apply_function() {
 }
 
 #[test]
+#[serial]
 fn test_stash_branch_run_apply_function_no_list() {
     let (_temp_dir, repo_path, _branch) = create_test_repo();
 
@@ -756,6 +796,7 @@ fn test_stash_branch_run_apply_function_no_list() {
 // Additional tests for stash_branch.rs to increase coverage
 
 #[test]
+#[serial]
 fn test_extract_branch_from_message_coverage() {
     // Test different message formats
     assert_eq!(extract_branch_from_message("On main: some changes"), "main");
@@ -782,6 +823,7 @@ fn test_extract_branch_from_message_coverage() {
 }
 
 #[test]
+#[serial]
 fn test_filter_stashes_by_age_coverage() {
     let sample_stashes = vec![
         StashInfo {
@@ -819,6 +861,7 @@ fn test_filter_stashes_by_age_coverage() {
 }
 
 #[test]
+#[serial]
 fn test_stash_command_direct_no_stashes() {
     let (_temp_dir, repo_path, _branch) = create_test_repo();
     let original_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("/"));
@@ -846,6 +889,7 @@ fn test_stash_command_direct_no_stashes() {
 }
 
 #[test]
+#[serial]
 fn test_stash_command_apply_by_branch_no_stashes() {
     let (_temp_dir, repo_path, _branch) = create_test_repo();
     let original_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("/"));

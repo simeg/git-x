@@ -3,10 +3,12 @@ use git_x::core::traits::Validator;
 use git_x::core::validation::{
     BranchNameValidator, CommitHashValidator, RemoteNameValidator, Validate,
 };
+use serial_test::serial;
 
 // Tests for Validate::commit_exists
 
 #[test]
+#[serial]
 fn test_validate_commit_exists_may_fail() {
     // This test may fail if not in a git repo, so we handle both cases
     let result = Validate::commit_exists("HEAD");
@@ -28,6 +30,7 @@ fn test_validate_commit_exists_may_fail() {
 }
 
 #[test]
+#[serial]
 fn test_validate_commit_exists_invalid() {
     // Test with obviously invalid commit hash
     let result = Validate::commit_exists("invalid-commit-hash-123");
@@ -50,6 +53,7 @@ fn test_validate_commit_exists_invalid() {
 // Tests for Validate::in_git_repo
 
 #[test]
+#[serial]
 fn test_validate_in_git_repo() {
     let result = Validate::in_git_repo();
 
@@ -68,6 +72,7 @@ fn test_validate_in_git_repo() {
 // Tests for Validate::branch_name
 
 #[test]
+#[serial]
 fn test_validate_branch_name_valid() {
     assert!(Validate::branch_name("main").is_ok());
     assert!(Validate::branch_name("feature/test").is_ok());
@@ -80,6 +85,7 @@ fn test_validate_branch_name_valid() {
 }
 
 #[test]
+#[serial]
 fn test_validate_branch_name_empty() {
     let result = Validate::branch_name("");
     assert!(result.is_err());
@@ -93,6 +99,7 @@ fn test_validate_branch_name_empty() {
 }
 
 #[test]
+#[serial]
 fn test_validate_branch_name_invalid_characters() {
     let invalid_names = [
         "feature branch", // space
@@ -120,6 +127,7 @@ fn test_validate_branch_name_invalid_characters() {
 }
 
 #[test]
+#[serial]
 fn test_validate_branch_name_reserved() {
     let result = Validate::branch_name("HEAD");
     assert!(result.is_err());
@@ -134,6 +142,7 @@ fn test_validate_branch_name_reserved() {
 }
 
 #[test]
+#[serial]
 fn test_validate_branch_name_starts_with_dash() {
     let result = Validate::branch_name("-invalid");
     assert!(result.is_err());
@@ -149,6 +158,7 @@ fn test_validate_branch_name_starts_with_dash() {
 // Tests for Validate::commit_hash
 
 #[test]
+#[serial]
 fn test_validate_commit_hash_valid() {
     // Full hash
     assert!(Validate::commit_hash("1234567890abcdef1234567890abcdef12345678").is_ok());
@@ -164,6 +174,7 @@ fn test_validate_commit_hash_valid() {
 }
 
 #[test]
+#[serial]
 fn test_validate_commit_hash_empty() {
     let result = Validate::commit_hash("");
     assert!(result.is_err());
@@ -177,6 +188,7 @@ fn test_validate_commit_hash_empty() {
 }
 
 #[test]
+#[serial]
 fn test_validate_commit_hash_too_short() {
     let result = Validate::commit_hash("123");
     assert!(result.is_err());
@@ -191,6 +203,7 @@ fn test_validate_commit_hash_too_short() {
 }
 
 #[test]
+#[serial]
 fn test_validate_commit_hash_too_long() {
     let result = Validate::commit_hash("1234567890abcdef1234567890abcdef123456789");
     assert!(result.is_err());
@@ -205,6 +218,7 @@ fn test_validate_commit_hash_too_long() {
 }
 
 #[test]
+#[serial]
 fn test_validate_commit_hash_invalid_characters() {
     let invalid_hashes = ["123g", "abcxyz", "123-456", "abc.def", "123 456"];
 
@@ -224,6 +238,7 @@ fn test_validate_commit_hash_invalid_characters() {
 // Tests for Validate::remote_name
 
 #[test]
+#[serial]
 fn test_validate_remote_name_valid() {
     assert!(Validate::remote_name("origin").is_ok());
     assert!(Validate::remote_name("upstream").is_ok());
@@ -234,6 +249,7 @@ fn test_validate_remote_name_valid() {
 }
 
 #[test]
+#[serial]
 fn test_validate_remote_name_empty() {
     let result = Validate::remote_name("");
     assert!(result.is_err());
@@ -247,6 +263,7 @@ fn test_validate_remote_name_empty() {
 }
 
 #[test]
+#[serial]
 fn test_validate_remote_name_invalid_characters() {
     let invalid_names = [
         "origin/branch", // slash
@@ -277,6 +294,7 @@ fn test_validate_remote_name_invalid_characters() {
 }
 
 #[test]
+#[serial]
 fn test_validate_remote_name_invalid_patterns() {
     let invalid_names = ["-origin", "origin-", "origin..test"];
 
@@ -296,6 +314,7 @@ fn test_validate_remote_name_invalid_patterns() {
 // Tests for Validate::file_path
 
 #[test]
+#[serial]
 fn test_validate_file_path_valid() {
     assert!(Validate::file_path("file.txt").is_ok());
     assert!(Validate::file_path("src/main.rs").is_ok());
@@ -305,6 +324,7 @@ fn test_validate_file_path_valid() {
 }
 
 #[test]
+#[serial]
 fn test_validate_file_path_empty() {
     let result = Validate::file_path("");
     assert!(result.is_err());
@@ -318,6 +338,7 @@ fn test_validate_file_path_empty() {
 }
 
 #[test]
+#[serial]
 fn test_validate_file_path_dangerous() {
     let dangerous_paths = [
         "../etc/passwd",
@@ -341,6 +362,7 @@ fn test_validate_file_path_dangerous() {
 }
 
 #[test]
+#[serial]
 fn test_validate_file_path_invalid_characters() {
     let invalid_paths = ["file\0.txt", "file\r.txt", "file\n.txt"];
 
@@ -360,6 +382,7 @@ fn test_validate_file_path_invalid_characters() {
 // Tests for Validate::positive_number
 
 #[test]
+#[serial]
 fn test_validate_positive_number_valid() {
     assert!(Validate::positive_number(0, None, "test").is_ok());
     assert!(Validate::positive_number(1, None, "test").is_ok());
@@ -369,6 +392,7 @@ fn test_validate_positive_number_valid() {
 }
 
 #[test]
+#[serial]
 fn test_validate_positive_number_negative() {
     let result = Validate::positive_number(-1, None, "count");
     assert!(result.is_err());
@@ -383,6 +407,7 @@ fn test_validate_positive_number_negative() {
 }
 
 #[test]
+#[serial]
 fn test_validate_positive_number_exceeds_max() {
     let result = Validate::positive_number(15, Some(10), "limit");
     assert!(result.is_err());
@@ -399,6 +424,7 @@ fn test_validate_positive_number_exceeds_max() {
 // Tests for Validate::git_date_format
 
 #[test]
+#[serial]
 fn test_validate_git_date_format_valid() {
     assert!(Validate::git_date_format("2023-01-01").is_ok());
     assert!(Validate::git_date_format("yesterday").is_ok());
@@ -408,6 +434,7 @@ fn test_validate_git_date_format_valid() {
 }
 
 #[test]
+#[serial]
 fn test_validate_git_date_format_empty() {
     let result = Validate::git_date_format("");
     assert!(result.is_err());
@@ -421,6 +448,7 @@ fn test_validate_git_date_format_empty() {
 }
 
 #[test]
+#[serial]
 fn test_validate_git_date_format_dangerous() {
     let dangerous_dates = ["2023-01-01; rm -rf /", "date && ls", "2023|whoami"];
 
@@ -438,6 +466,7 @@ fn test_validate_git_date_format_dangerous() {
 }
 
 #[test]
+#[serial]
 fn test_validate_git_date_format_too_long() {
     let long_date = "a".repeat(101);
     let result = Validate::git_date_format(&long_date);
@@ -454,6 +483,7 @@ fn test_validate_git_date_format_too_long() {
 // Tests for Validate::safe_string
 
 #[test]
+#[serial]
 fn test_validate_safe_string_valid() {
     assert!(Validate::safe_string("simple", "test").is_ok());
     assert!(Validate::safe_string("test123", "field").is_ok());
@@ -463,6 +493,7 @@ fn test_validate_safe_string_valid() {
 }
 
 #[test]
+#[serial]
 fn test_validate_safe_string_empty() {
     let result = Validate::safe_string("", "field");
     assert!(result.is_err());
@@ -476,6 +507,7 @@ fn test_validate_safe_string_empty() {
 }
 
 #[test]
+#[serial]
 fn test_validate_safe_string_dangerous() {
     let dangerous_strings = [
         "test;command",
@@ -505,6 +537,7 @@ fn test_validate_safe_string_dangerous() {
 }
 
 #[test]
+#[serial]
 fn test_validate_safe_string_too_long() {
     let long_string = "a".repeat(1001);
     let result = Validate::safe_string(&long_string, "data");
@@ -522,6 +555,7 @@ fn test_validate_safe_string_too_long() {
 // Tests for BranchNameValidator
 
 #[test]
+#[serial]
 fn test_branch_name_validator() {
     let validator = BranchNameValidator;
 
@@ -547,6 +581,7 @@ fn test_branch_name_validator() {
 // Tests for CommitHashValidator
 
 #[test]
+#[serial]
 fn test_commit_hash_validator() {
     let validator = CommitHashValidator;
 
@@ -570,6 +605,7 @@ fn test_commit_hash_validator() {
 // Tests for RemoteNameValidator
 
 #[test]
+#[serial]
 fn test_remote_name_validator() {
     let validator = RemoteNameValidator;
 
@@ -594,6 +630,7 @@ fn test_remote_name_validator() {
 // Integration tests for validator combinations
 
 #[test]
+#[serial]
 fn test_multiple_validators_same_input() {
     let branch_validator = BranchNameValidator;
     let commit_validator = CommitHashValidator;
@@ -612,6 +649,7 @@ fn test_multiple_validators_same_input() {
 // Edge case tests
 
 #[test]
+#[serial]
 fn test_validate_branch_name_edge_cases() {
     // Test very long but valid name
     let long_name = "a".repeat(200);
@@ -627,6 +665,7 @@ fn test_validate_branch_name_edge_cases() {
 }
 
 #[test]
+#[serial]
 fn test_validate_file_path_edge_cases() {
     // Test single character
     assert!(Validate::file_path("a").is_ok());
@@ -640,6 +679,7 @@ fn test_validate_file_path_edge_cases() {
 }
 
 #[test]
+#[serial]
 fn test_validate_positive_number_edge_cases() {
     // Test zero
     assert!(Validate::positive_number(0, Some(0), "test").is_ok());

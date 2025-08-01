@@ -1,3 +1,4 @@
+use serial_test::serial;
 mod common;
 
 use common::repo_with_commits;
@@ -15,6 +16,7 @@ fn should_run_destructive_tests() -> bool {
 }
 
 #[test]
+#[serial]
 fn test_git_undo_soft_resets_last_commit() {
     if !should_run_destructive_tests() {
         return;
@@ -46,6 +48,7 @@ fn test_git_undo_soft_resets_last_commit() {
 }
 
 #[test]
+#[serial]
 fn test_undo_command_direct() {
     if !should_run_destructive_tests() {
         return;

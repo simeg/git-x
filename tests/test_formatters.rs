@@ -5,6 +5,7 @@ use git_x::domain::{
     BranchCreationResult, BranchSwitchResult, CleanBranchesResult, HealthLevel, HealthStatus,
     RepositoryInfo,
 };
+use serial_test::serial;
 
 // Helper function to strip ANSI escape codes for testing
 fn strip_ansi_codes(text: &str) -> String {
@@ -28,17 +29,20 @@ fn strip_ansi_codes(text: &str) -> String {
 }
 
 #[test]
+#[serial]
 fn test_branch_formatter_new() {
     let _formatter = BranchFormatter::new();
     // Just verify it can be created
 }
 
 #[test]
+#[serial]
 fn test_branch_formatter_default() {
     let _formatter = BranchFormatter;
 }
 
 #[test]
+#[serial]
 fn test_branch_formatter_format_creation_result_minimal() {
     let formatter = BranchFormatter::new();
     let result = BranchCreationResult {
@@ -55,6 +59,7 @@ fn test_branch_formatter_format_creation_result_minimal() {
 }
 
 #[test]
+#[serial]
 fn test_branch_formatter_format_creation_result_with_backup() {
     let formatter = BranchFormatter::new();
     let result = BranchCreationResult {
@@ -71,6 +76,7 @@ fn test_branch_formatter_format_creation_result_with_backup() {
 }
 
 #[test]
+#[serial]
 fn test_branch_formatter_format_creation_result_with_base_commit() {
     let formatter = BranchFormatter::new();
     let result = BranchCreationResult {
@@ -87,6 +93,7 @@ fn test_branch_formatter_format_creation_result_with_base_commit() {
 }
 
 #[test]
+#[serial]
 fn test_branch_formatter_format_creation_result_complete() {
     let formatter = BranchFormatter::new();
     let result = BranchCreationResult {
@@ -103,6 +110,7 @@ fn test_branch_formatter_format_creation_result_complete() {
 }
 
 #[test]
+#[serial]
 fn test_branch_formatter_format_clean_result_no_candidates() {
     let formatter = BranchFormatter::new();
     let result = CleanBranchesResult {
@@ -117,6 +125,7 @@ fn test_branch_formatter_format_clean_result_no_candidates() {
 }
 
 #[test]
+#[serial]
 fn test_branch_formatter_format_clean_result_dry_run() {
     let formatter = BranchFormatter::new();
     let result = CleanBranchesResult {
@@ -133,6 +142,7 @@ fn test_branch_formatter_format_clean_result_dry_run() {
 }
 
 #[test]
+#[serial]
 fn test_branch_formatter_format_clean_result_successful_deletion() {
     let formatter = BranchFormatter::new();
     let result = CleanBranchesResult {
@@ -150,6 +160,7 @@ fn test_branch_formatter_format_clean_result_successful_deletion() {
 }
 
 #[test]
+#[serial]
 fn test_branch_formatter_format_clean_result_with_failures() {
     let formatter = BranchFormatter::new();
     let result = CleanBranchesResult {
@@ -167,6 +178,7 @@ fn test_branch_formatter_format_clean_result_with_failures() {
 }
 
 #[test]
+#[serial]
 fn test_branch_formatter_format_switch_result_minimal() {
     let formatter = BranchFormatter::new();
     let result = BranchSwitchResult {
@@ -181,6 +193,7 @@ fn test_branch_formatter_format_switch_result_minimal() {
 }
 
 #[test]
+#[serial]
 fn test_branch_formatter_format_switch_result_with_checkpoint() {
     let formatter = BranchFormatter::new();
     let result = BranchSwitchResult {
@@ -195,16 +208,19 @@ fn test_branch_formatter_format_switch_result_with_checkpoint() {
 }
 
 #[test]
+#[serial]
 fn test_repository_formatter_new() {
     let _formatter = RepositoryFormatter::new();
 }
 
 #[test]
+#[serial]
 fn test_repository_formatter_default() {
     let _formatter = RepositoryFormatter;
 }
 
 #[test]
+#[serial]
 fn test_repository_formatter_format_repository_info_basic() {
     let formatter = RepositoryFormatter::new();
     let info = RepositoryInfo {
@@ -232,6 +248,7 @@ fn test_repository_formatter_format_repository_info_basic() {
 }
 
 #[test]
+#[serial]
 fn test_repository_formatter_format_repository_info_detailed() {
     let formatter = RepositoryFormatter::new();
     let info = RepositoryInfo {
@@ -259,6 +276,7 @@ fn test_repository_formatter_format_repository_info_detailed() {
 }
 
 #[test]
+#[serial]
 fn test_repository_formatter_format_repository_info_in_sync() {
     let formatter = RepositoryFormatter::new();
     let info = RepositoryInfo {
@@ -278,6 +296,7 @@ fn test_repository_formatter_format_repository_info_in_sync() {
 }
 
 #[test]
+#[serial]
 fn test_repository_formatter_format_repository_info_only_ahead() {
     let formatter = RepositoryFormatter::new();
     let info = RepositoryInfo {
@@ -297,6 +316,7 @@ fn test_repository_formatter_format_repository_info_only_ahead() {
 }
 
 #[test]
+#[serial]
 fn test_repository_formatter_format_repository_info_only_behind() {
     let formatter = RepositoryFormatter::new();
     let info = RepositoryInfo {
@@ -316,6 +336,7 @@ fn test_repository_formatter_format_repository_info_only_behind() {
 }
 
 #[test]
+#[serial]
 fn test_repository_formatter_format_health_status_healthy() {
     let formatter = RepositoryFormatter::new();
     let health = HealthStatus {
@@ -334,6 +355,7 @@ fn test_repository_formatter_format_health_status_healthy() {
 }
 
 #[test]
+#[serial]
 fn test_repository_formatter_format_health_status_warning() {
     let formatter = RepositoryFormatter::new();
     let health = HealthStatus {
@@ -355,6 +377,7 @@ fn test_repository_formatter_format_health_status_warning() {
 }
 
 #[test]
+#[serial]
 fn test_repository_formatter_format_health_status_unhealthy() {
     let formatter = RepositoryFormatter::new();
     let health = HealthStatus {
@@ -377,16 +400,19 @@ fn test_repository_formatter_format_health_status_unhealthy() {
 }
 
 #[test]
+#[serial]
 fn test_analysis_formatter_new() {
     let _formatter = AnalysisFormatter::new();
 }
 
 #[test]
+#[serial]
 fn test_analysis_formatter_default() {
     let _formatter = AnalysisFormatter;
 }
 
 #[test]
+#[serial]
 fn test_analysis_formatter_format_commit_stats() {
     let formatter = AnalysisFormatter::new();
     let output = formatter.format_commit_stats(42, "last 30 days");
@@ -394,6 +420,7 @@ fn test_analysis_formatter_format_commit_stats() {
 }
 
 #[test]
+#[serial]
 fn test_analysis_formatter_format_commit_stats_zero() {
     let formatter = AnalysisFormatter::new();
     let output = formatter.format_commit_stats(0, "last week");
@@ -401,6 +428,7 @@ fn test_analysis_formatter_format_commit_stats_zero() {
 }
 
 #[test]
+#[serial]
 fn test_analysis_formatter_format_contributors_empty() {
     let formatter = AnalysisFormatter::new();
     let contributors = vec![];
@@ -414,6 +442,7 @@ fn test_analysis_formatter_format_contributors_empty() {
 }
 
 #[test]
+#[serial]
 fn test_analysis_formatter_format_contributors_single() {
     let formatter = AnalysisFormatter::new();
     let contributors = vec![("Alice".to_string(), 10)];
@@ -426,6 +455,7 @@ fn test_analysis_formatter_format_contributors_single() {
 }
 
 #[test]
+#[serial]
 fn test_analysis_formatter_format_contributors_top_three() {
     let formatter = AnalysisFormatter::new();
     let contributors = vec![
@@ -442,6 +472,7 @@ fn test_analysis_formatter_format_contributors_top_three() {
 }
 
 #[test]
+#[serial]
 fn test_analysis_formatter_format_contributors_many() {
     let formatter = AnalysisFormatter::new();
     let contributors = vec![
@@ -461,12 +492,14 @@ fn test_analysis_formatter_format_contributors_many() {
 }
 
 #[test]
+#[serial]
 fn test_formatter_utils_section_header() {
     let output = FormatterUtils::section_header("Test Section");
     assert_eq!(output, "Test Section\n============\n");
 }
 
 #[test]
+#[serial]
 fn test_formatter_utils_section_header_long() {
     let output = FormatterUtils::section_header("This is a very long section header");
     assert_eq!(
@@ -476,18 +509,21 @@ fn test_formatter_utils_section_header_long() {
 }
 
 #[test]
+#[serial]
 fn test_formatter_utils_section_header_empty() {
     let output = FormatterUtils::section_header("");
     assert_eq!(output, "\n\n");
 }
 
 #[test]
+#[serial]
 fn test_formatter_utils_subsection_header() {
     let output = FormatterUtils::subsection_header("Subsection");
     assert_eq!(output, "\nSubsection\n----------\n");
 }
 
 #[test]
+#[serial]
 fn test_formatter_utils_subsection_header_long() {
     let output = FormatterUtils::subsection_header("This is a long subsection");
     assert_eq!(
@@ -497,12 +533,14 @@ fn test_formatter_utils_subsection_header_long() {
 }
 
 #[test]
+#[serial]
 fn test_formatter_utils_subsection_header_empty() {
     let output = FormatterUtils::subsection_header("");
     assert_eq!(output, "\n\n\n");
 }
 
 #[test]
+#[serial]
 fn test_formatter_utils_bullet_list_empty() {
     let items = vec![];
     let output = FormatterUtils::bullet_list(&items, "•");
@@ -510,6 +548,7 @@ fn test_formatter_utils_bullet_list_empty() {
 }
 
 #[test]
+#[serial]
 fn test_formatter_utils_bullet_list_single() {
     let items = vec!["First item".to_string()];
     let output = FormatterUtils::bullet_list(&items, "•");
@@ -517,6 +556,7 @@ fn test_formatter_utils_bullet_list_single() {
 }
 
 #[test]
+#[serial]
 fn test_formatter_utils_bullet_list_multiple() {
     let items = vec![
         "First item".to_string(),
@@ -528,6 +568,7 @@ fn test_formatter_utils_bullet_list_multiple() {
 }
 
 #[test]
+#[serial]
 fn test_formatter_utils_bullet_list_custom_bullet() {
     let items = vec!["Item 1".to_string(), "Item 2".to_string()];
     let output = FormatterUtils::bullet_list(&items, "→");
@@ -535,6 +576,7 @@ fn test_formatter_utils_bullet_list_custom_bullet() {
 }
 
 #[test]
+#[serial]
 fn test_formatter_utils_numbered_list_empty() {
     let items = vec![];
     let output = FormatterUtils::numbered_list(&items);
@@ -542,6 +584,7 @@ fn test_formatter_utils_numbered_list_empty() {
 }
 
 #[test]
+#[serial]
 fn test_formatter_utils_numbered_list_single() {
     let items = vec!["First item".to_string()];
     let output = FormatterUtils::numbered_list(&items);
@@ -549,6 +592,7 @@ fn test_formatter_utils_numbered_list_single() {
 }
 
 #[test]
+#[serial]
 fn test_formatter_utils_numbered_list_multiple() {
     let items = vec![
         "First item".to_string(),
@@ -560,6 +604,7 @@ fn test_formatter_utils_numbered_list_multiple() {
 }
 
 #[test]
+#[serial]
 fn test_formatter_utils_numbered_list_ten_items() {
     let items: Vec<String> = (1..=10).map(|i| format!("Item {i}")).collect();
     let output = FormatterUtils::numbered_list(&items);
@@ -571,6 +616,7 @@ fn test_formatter_utils_numbered_list_ten_items() {
 // Edge case tests
 
 #[test]
+#[serial]
 fn test_branch_formatter_empty_branch_names() {
     let formatter = BranchFormatter::new();
     let result = BranchCreationResult {
@@ -585,6 +631,7 @@ fn test_branch_formatter_empty_branch_names() {
 }
 
 #[test]
+#[serial]
 fn test_repository_formatter_special_characters_in_repo_name() {
     let formatter = RepositoryFormatter::new();
     let info = RepositoryInfo {
@@ -605,6 +652,7 @@ fn test_repository_formatter_special_characters_in_repo_name() {
 }
 
 #[test]
+#[serial]
 fn test_analysis_formatter_large_commit_counts() {
     let formatter = AnalysisFormatter::new();
     let output = formatter.format_commit_stats(9999, "all time");
@@ -612,6 +660,7 @@ fn test_analysis_formatter_large_commit_counts() {
 }
 
 #[test]
+#[serial]
 fn test_analysis_formatter_contributors_single_commit() {
     let formatter = AnalysisFormatter::new();
     let contributors = vec![("SingleCommitter".to_string(), 1)];
@@ -620,6 +669,7 @@ fn test_analysis_formatter_contributors_single_commit() {
 }
 
 #[test]
+#[serial]
 fn test_formatter_utils_bullet_list_with_empty_strings() {
     let items = vec!["".to_string(), "Non-empty".to_string(), "".to_string()];
     let output = FormatterUtils::bullet_list(&items, "•");
@@ -627,6 +677,7 @@ fn test_formatter_utils_bullet_list_with_empty_strings() {
 }
 
 #[test]
+#[serial]
 fn test_formatter_utils_numbered_list_with_empty_strings() {
     let items = vec!["".to_string(), "Item".to_string()];
     let output = FormatterUtils::numbered_list(&items);
@@ -636,6 +687,7 @@ fn test_formatter_utils_numbered_list_with_empty_strings() {
 // Test Default trait implementations
 
 #[test]
+#[serial]
 fn test_all_formatter_defaults() {
     let _branch_formatter: BranchFormatter = Default::default();
     let _repo_formatter: RepositoryFormatter = Default::default();

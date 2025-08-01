@@ -1,5 +1,6 @@
 use console::Color;
 use git_x::core::output::{BufferedOutput, Format, ProgressIndicator, TableFormatter};
+use serial_test::serial;
 
 // Helper function to strip ANSI escape codes for testing
 fn strip_ansi_codes(text: &str) -> String {
@@ -25,6 +26,7 @@ fn strip_ansi_codes(text: &str) -> String {
 // Tests for BufferedOutput
 
 #[test]
+#[serial]
 fn test_buffered_output_new() {
     let output = BufferedOutput::new();
     assert!(output.is_empty());
@@ -33,6 +35,7 @@ fn test_buffered_output_new() {
 }
 
 #[test]
+#[serial]
 fn test_buffered_output_default() {
     let output = BufferedOutput::default();
     assert!(output.is_empty());
@@ -41,6 +44,7 @@ fn test_buffered_output_default() {
 }
 
 #[test]
+#[serial]
 fn test_buffered_output_add_line() {
     let mut output = BufferedOutput::new();
     output.add_line("First line".to_string());
@@ -51,6 +55,7 @@ fn test_buffered_output_add_line() {
 }
 
 #[test]
+#[serial]
 fn test_buffered_output_add_multiple_lines() {
     let mut output = BufferedOutput::new();
     output.add_line("First line".to_string());
@@ -62,6 +67,7 @@ fn test_buffered_output_add_multiple_lines() {
 }
 
 #[test]
+#[serial]
 fn test_buffered_output_add_lines() {
     let mut output = BufferedOutput::new();
     let lines = vec![
@@ -76,6 +82,7 @@ fn test_buffered_output_add_lines() {
 }
 
 #[test]
+#[serial]
 fn test_buffered_output_add_formatted() {
     let mut output = BufferedOutput::new();
     output.add_formatted("Formatted line".to_string());
@@ -85,6 +92,7 @@ fn test_buffered_output_add_formatted() {
 }
 
 #[test]
+#[serial]
 fn test_buffered_output_mixed_operations() {
     let mut output = BufferedOutput::new();
     output.add_line("Single line".to_string());
@@ -96,6 +104,7 @@ fn test_buffered_output_mixed_operations() {
 }
 
 #[test]
+#[serial]
 fn test_buffered_output_display_trait() {
     let mut output = BufferedOutput::new();
     output.add_line("Display test".to_string());
@@ -106,6 +115,7 @@ fn test_buffered_output_display_trait() {
 }
 
 #[test]
+#[serial]
 fn test_buffered_output_empty_content() {
     let output = BufferedOutput::new();
     assert_eq!(output.content(), "");
@@ -113,6 +123,7 @@ fn test_buffered_output_empty_content() {
 }
 
 #[test]
+#[serial]
 fn test_buffered_output_single_empty_line() {
     let mut output = BufferedOutput::new();
     output.add_line("".to_string());
@@ -123,6 +134,7 @@ fn test_buffered_output_single_empty_line() {
 }
 
 #[test]
+#[serial]
 fn test_buffered_output_lines_with_newlines() {
     let mut output = BufferedOutput::new();
     output.add_line("Line with\nembedded newline".to_string());
@@ -135,6 +147,7 @@ fn test_buffered_output_lines_with_newlines() {
 // Tests for Format
 
 #[test]
+#[serial]
 fn test_format_error() {
     let result = Format::error("Something went wrong");
     let clean_result = strip_ansi_codes(&result);
@@ -143,6 +156,7 @@ fn test_format_error() {
 }
 
 #[test]
+#[serial]
 fn test_format_success() {
     let result = Format::success("Operation completed");
     let clean_result = strip_ansi_codes(&result);
@@ -151,6 +165,7 @@ fn test_format_success() {
 }
 
 #[test]
+#[serial]
 fn test_format_info() {
     let result = Format::info("Information message");
     let clean_result = strip_ansi_codes(&result);
@@ -159,6 +174,7 @@ fn test_format_info() {
 }
 
 #[test]
+#[serial]
 fn test_format_warning() {
     let result = Format::warning("Warning message");
     let clean_result = strip_ansi_codes(&result);
@@ -167,6 +183,7 @@ fn test_format_warning() {
 }
 
 #[test]
+#[serial]
 fn test_format_bold() {
     let result = Format::bold("Bold text");
     let clean_result = strip_ansi_codes(&result);
@@ -177,6 +194,7 @@ fn test_format_bold() {
 }
 
 #[test]
+#[serial]
 fn test_format_colored_red() {
     let result = Format::colored("Red text", Color::Red);
     let clean_result = strip_ansi_codes(&result);
@@ -186,6 +204,7 @@ fn test_format_colored_red() {
 }
 
 #[test]
+#[serial]
 fn test_format_colored_blue() {
     let result = Format::colored("Blue text", Color::Blue);
     let clean_result = strip_ansi_codes(&result);
@@ -195,6 +214,7 @@ fn test_format_colored_blue() {
 }
 
 #[test]
+#[serial]
 fn test_format_colored_green() {
     let result = Format::colored("Green text", Color::Green);
     let clean_result = strip_ansi_codes(&result);
@@ -204,6 +224,7 @@ fn test_format_colored_green() {
 }
 
 #[test]
+#[serial]
 fn test_format_empty_strings() {
     assert_eq!(strip_ansi_codes(&Format::error("")), "❌ ");
     assert_eq!(strip_ansi_codes(&Format::success("")), "✅ ");
@@ -214,6 +235,7 @@ fn test_format_empty_strings() {
 }
 
 #[test]
+#[serial]
 fn test_format_special_characters() {
     let special_text = "Special: @#$%^&*(){}[]";
     let result = Format::bold(special_text);
@@ -222,6 +244,7 @@ fn test_format_special_characters() {
 }
 
 #[test]
+#[serial]
 fn test_format_unicode_characters() {
     let unicode_text = "Unicode: 你好 🌟 ñoël";
     let result = Format::colored(unicode_text, Color::Cyan);
@@ -232,6 +255,7 @@ fn test_format_unicode_characters() {
 // Tests for TableFormatter
 
 #[test]
+#[serial]
 fn test_table_formatter_new() {
     let headers = vec!["Name".to_string(), "Age".to_string(), "City".to_string()];
     let formatter = TableFormatter::new(headers.clone());
@@ -242,6 +266,7 @@ fn test_table_formatter_new() {
 }
 
 #[test]
+#[serial]
 fn test_table_formatter_empty_table() {
     let headers = vec!["Col1".to_string(), "Col2".to_string()];
     let formatter = TableFormatter::new(headers);
@@ -251,6 +276,7 @@ fn test_table_formatter_empty_table() {
 }
 
 #[test]
+#[serial]
 fn test_table_formatter_single_row() {
     let headers = vec!["Name".to_string(), "Age".to_string()];
     let mut formatter = TableFormatter::new(headers);
@@ -265,6 +291,7 @@ fn test_table_formatter_single_row() {
 }
 
 #[test]
+#[serial]
 fn test_table_formatter_multiple_rows() {
     let headers = vec!["Name".to_string(), "Age".to_string(), "City".to_string()];
     let mut formatter = TableFormatter::new(headers);
@@ -308,6 +335,7 @@ fn test_table_formatter_multiple_rows() {
 }
 
 #[test]
+#[serial]
 fn test_table_formatter_column_width_adjustment() {
     let headers = vec!["Short".to_string(), "Very Long Header".to_string()];
     let mut formatter = TableFormatter::new(headers);
@@ -334,6 +362,7 @@ fn test_table_formatter_column_width_adjustment() {
 }
 
 #[test]
+#[serial]
 fn test_table_formatter_uneven_rows() {
     let headers = vec!["Col1".to_string(), "Col2".to_string(), "Col3".to_string()];
     let mut formatter = TableFormatter::new(headers);
@@ -359,6 +388,7 @@ fn test_table_formatter_uneven_rows() {
 }
 
 #[test]
+#[serial]
 fn test_table_formatter_empty_cells() {
     let headers = vec!["Name".to_string(), "Value".to_string()];
     let mut formatter = TableFormatter::new(headers);
@@ -375,6 +405,7 @@ fn test_table_formatter_empty_cells() {
 }
 
 #[test]
+#[serial]
 fn test_table_formatter_special_characters() {
     let headers = vec!["Symbol".to_string(), "Unicode".to_string()];
     let mut formatter = TableFormatter::new(headers);
@@ -390,6 +421,7 @@ fn test_table_formatter_special_characters() {
 }
 
 #[test]
+#[serial]
 fn test_table_formatter_single_column() {
     let headers = vec!["Only Column".to_string()];
     let mut formatter = TableFormatter::new(headers);
@@ -407,6 +439,7 @@ fn test_table_formatter_single_column() {
 // Tests for ProgressIndicator
 
 #[test]
+#[serial]
 fn test_progress_indicator_new() {
     let progress = ProgressIndicator::new("Testing".to_string());
 
@@ -416,6 +449,7 @@ fn test_progress_indicator_new() {
 }
 
 #[test]
+#[serial]
 fn test_progress_indicator_with_total() {
     let progress = ProgressIndicator::with_total("Processing".to_string(), 100);
 
@@ -424,6 +458,7 @@ fn test_progress_indicator_with_total() {
 }
 
 #[test]
+#[serial]
 fn test_progress_indicator_increment() {
     let mut progress = ProgressIndicator::new("Counting".to_string());
 
@@ -436,6 +471,7 @@ fn test_progress_indicator_increment() {
 }
 
 #[test]
+#[serial]
 fn test_progress_indicator_set_current() {
     let mut progress = ProgressIndicator::with_total("Setting".to_string(), 50);
 
@@ -448,6 +484,7 @@ fn test_progress_indicator_set_current() {
 }
 
 #[test]
+#[serial]
 fn test_progress_indicator_mixed_operations() {
     let mut progress = ProgressIndicator::with_total("Mixed".to_string(), 20);
 
@@ -461,12 +498,14 @@ fn test_progress_indicator_mixed_operations() {
 }
 
 #[test]
+#[serial]
 fn test_progress_indicator_zero_total() {
     let progress = ProgressIndicator::with_total("Zero".to_string(), 0);
     progress.finish(); // Should not panic even with zero total
 }
 
 #[test]
+#[serial]
 fn test_progress_indicator_large_numbers() {
     let mut progress = ProgressIndicator::with_total("Large".to_string(), 1000000);
 
@@ -476,6 +515,7 @@ fn test_progress_indicator_large_numbers() {
 }
 
 #[test]
+#[serial]
 fn test_progress_indicator_unicode_message() {
     let mut progress = ProgressIndicator::new("Processing 🔄 files".to_string());
     progress.increment();
@@ -483,6 +523,7 @@ fn test_progress_indicator_unicode_message() {
 }
 
 #[test]
+#[serial]
 fn test_progress_indicator_empty_message() {
     let mut progress = ProgressIndicator::new("".to_string());
     progress.increment();
@@ -490,6 +531,7 @@ fn test_progress_indicator_empty_message() {
 }
 
 #[test]
+#[serial]
 fn test_progress_indicator_long_message() {
     let long_message = "This is a very long progress message that should still work correctly without causing any issues".to_string();
     let mut progress = ProgressIndicator::with_total(long_message, 10);
@@ -500,6 +542,7 @@ fn test_progress_indicator_long_message() {
 // Integration tests combining multiple components
 
 #[test]
+#[serial]
 fn test_buffered_output_with_formatted_content() {
     let mut output = BufferedOutput::new();
 
@@ -524,6 +567,7 @@ fn test_buffered_output_with_formatted_content() {
 }
 
 #[test]
+#[serial]
 fn test_table_in_buffered_output() {
     let mut output = BufferedOutput::new();
 
@@ -547,6 +591,7 @@ fn test_table_in_buffered_output() {
 }
 
 #[test]
+#[serial]
 fn test_mixed_formatting_in_buffered_output() {
     let mut output = BufferedOutput::new();
 
@@ -575,6 +620,7 @@ fn test_mixed_formatting_in_buffered_output() {
 }
 
 #[test]
+#[serial]
 fn test_buffered_output_flush_methods() {
     let mut output = BufferedOutput::new();
     output.add_line("Test output to stdout".to_string());
@@ -593,6 +639,7 @@ fn test_buffered_output_flush_methods() {
 }
 
 #[test]
+#[serial]
 fn test_buffered_output_add_formatted_method() {
     let mut output = BufferedOutput::new();
 
@@ -611,6 +658,7 @@ fn test_buffered_output_add_formatted_method() {
 }
 
 #[test]
+#[serial]
 fn test_buffered_output_add_lines_method() {
     let mut output = BufferedOutput::new();
 
@@ -639,6 +687,7 @@ fn test_buffered_output_add_lines_method() {
 }
 
 #[test]
+#[serial]
 fn test_progress_indicator_edge_cases() {
     // Test ProgressIndicator with various edge cases
 

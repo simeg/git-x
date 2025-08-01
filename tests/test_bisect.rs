@@ -1,6 +1,7 @@
 use assert_cmd::Command;
 use git_x::cli::BisectAction;
 use predicates::prelude::*;
+use serial_test::serial;
 use std::fs;
 use std::path::PathBuf;
 use tempfile::TempDir;
@@ -84,6 +85,7 @@ fn create_commit_history(repo_path: &PathBuf) -> Vec<String> {
 // Direct run() function tests for maximum coverage
 
 #[test]
+#[serial]
 fn test_bisect_run_start_function() {
     let (_temp_dir, repo_path) = create_test_repo();
     let commits = create_commit_history(&repo_path);
@@ -118,6 +120,7 @@ fn test_bisect_run_start_function() {
 }
 
 #[test]
+#[serial]
 fn test_bisect_run_start_function_invalid_commits() {
     let (_temp_dir, repo_path) = create_test_repo();
 
@@ -148,6 +151,7 @@ fn test_bisect_run_start_function_invalid_commits() {
 }
 
 #[test]
+#[serial]
 fn test_bisect_run_good_function() {
     let (_temp_dir, repo_path) = create_test_repo();
 
@@ -175,6 +179,7 @@ fn test_bisect_run_good_function() {
 }
 
 #[test]
+#[serial]
 fn test_bisect_run_bad_function() {
     let (_temp_dir, repo_path) = create_test_repo();
 
@@ -202,6 +207,7 @@ fn test_bisect_run_bad_function() {
 }
 
 #[test]
+#[serial]
 fn test_bisect_run_skip_function() {
     let (_temp_dir, repo_path) = create_test_repo();
 
@@ -229,6 +235,7 @@ fn test_bisect_run_skip_function() {
 }
 
 #[test]
+#[serial]
 fn test_bisect_run_reset_function() {
     let (_temp_dir, repo_path) = create_test_repo();
 
@@ -258,6 +265,7 @@ fn test_bisect_run_reset_function() {
 }
 
 #[test]
+#[serial]
 fn test_bisect_run_status_function() {
     let (_temp_dir, repo_path) = create_test_repo();
 
@@ -289,6 +297,7 @@ fn test_bisect_run_status_function() {
 // CLI integration tests
 
 #[test]
+#[serial]
 fn test_bisect_start_command_help() {
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["bisect", "start", "--help"])
@@ -298,6 +307,7 @@ fn test_bisect_start_command_help() {
 }
 
 #[test]
+#[serial]
 fn test_bisect_good_command_help() {
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["bisect", "good", "--help"])
@@ -307,6 +317,7 @@ fn test_bisect_good_command_help() {
 }
 
 #[test]
+#[serial]
 fn test_bisect_bad_command_help() {
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["bisect", "bad", "--help"])
@@ -316,6 +327,7 @@ fn test_bisect_bad_command_help() {
 }
 
 #[test]
+#[serial]
 fn test_bisect_skip_command_help() {
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["bisect", "skip", "--help"])
@@ -325,6 +337,7 @@ fn test_bisect_skip_command_help() {
 }
 
 #[test]
+#[serial]
 fn test_bisect_reset_command_help() {
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["bisect", "reset", "--help"])
@@ -334,6 +347,7 @@ fn test_bisect_reset_command_help() {
 }
 
 #[test]
+#[serial]
 fn test_bisect_status_command_help() {
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["bisect", "status", "--help"])
@@ -343,6 +357,7 @@ fn test_bisect_status_command_help() {
 }
 
 #[test]
+#[serial]
 fn test_bisect_main_command_help() {
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["bisect", "--help"])
@@ -352,6 +367,7 @@ fn test_bisect_main_command_help() {
 }
 
 #[test]
+#[serial]
 fn test_bisect_start_invalid_commits() {
     let (_temp_dir, repo_path) = create_test_repo();
 
@@ -364,6 +380,7 @@ fn test_bisect_start_invalid_commits() {
 }
 
 #[test]
+#[serial]
 fn test_bisect_start_valid_commits() {
     let (_temp_dir, repo_path) = create_test_repo();
     let commits = create_commit_history(&repo_path);
@@ -378,6 +395,7 @@ fn test_bisect_start_valid_commits() {
 }
 
 #[test]
+#[serial]
 fn test_bisect_good_not_in_bisect_mode() {
     let (_temp_dir, repo_path) = create_test_repo();
 
@@ -390,6 +408,7 @@ fn test_bisect_good_not_in_bisect_mode() {
 }
 
 #[test]
+#[serial]
 fn test_bisect_bad_not_in_bisect_mode() {
     let (_temp_dir, repo_path) = create_test_repo();
 
@@ -402,6 +421,7 @@ fn test_bisect_bad_not_in_bisect_mode() {
 }
 
 #[test]
+#[serial]
 fn test_bisect_skip_not_in_bisect_mode() {
     let (_temp_dir, repo_path) = create_test_repo();
 
@@ -414,6 +434,7 @@ fn test_bisect_skip_not_in_bisect_mode() {
 }
 
 #[test]
+#[serial]
 fn test_bisect_reset_not_in_bisect_mode() {
     let (_temp_dir, repo_path) = create_test_repo();
 
@@ -426,6 +447,7 @@ fn test_bisect_reset_not_in_bisect_mode() {
 }
 
 #[test]
+#[serial]
 fn test_bisect_status_not_in_bisect_mode() {
     let (_temp_dir, repo_path) = create_test_repo();
 
@@ -438,6 +460,7 @@ fn test_bisect_status_not_in_bisect_mode() {
 }
 
 #[test]
+#[serial]
 fn test_bisect_command_outside_git_repo() {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
 
@@ -450,6 +473,7 @@ fn test_bisect_command_outside_git_repo() {
 }
 
 #[test]
+#[serial]
 fn test_bisect_start_same_commits_twice() {
     let (_temp_dir, repo_path) = create_test_repo();
     let commits = create_commit_history(&repo_path);
@@ -471,6 +495,7 @@ fn test_bisect_start_same_commits_twice() {
 }
 
 #[test]
+#[serial]
 fn test_bisect_help_commands() {
     // Test that all bisect subcommand help works
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
@@ -488,6 +513,7 @@ fn test_bisect_help_commands() {
 }
 
 #[test]
+#[serial]
 fn test_bisect_start_same_commits() {
     let (_temp_dir, repo_path) = create_test_repo();
     let commits = create_commit_history(&repo_path);
@@ -502,6 +528,7 @@ fn test_bisect_start_same_commits() {
 }
 
 #[test]
+#[serial]
 fn test_bisect_start_with_tags() {
     let (_temp_dir, repo_path) = create_test_repo();
     let commits = create_commit_history(&repo_path);
@@ -522,6 +549,7 @@ fn test_bisect_start_with_tags() {
 }
 
 #[test]
+#[serial]
 fn test_bisect_start_with_branches() {
     let (_temp_dir, repo_path) = create_test_repo();
     let commits = create_commit_history(&repo_path);
@@ -542,6 +570,7 @@ fn test_bisect_start_with_branches() {
 }
 
 #[test]
+#[serial]
 fn test_bisect_various_commit_formats() {
     let (_temp_dir, repo_path) = create_test_repo();
     let commits = create_commit_history(&repo_path);
@@ -566,6 +595,7 @@ fn test_bisect_various_commit_formats() {
 }
 
 #[test]
+#[serial]
 fn test_bisect_error_scenarios() {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
 
@@ -579,6 +609,7 @@ fn test_bisect_error_scenarios() {
 }
 
 #[test]
+#[serial]
 fn test_bisect_start_relative_commits() {
     let (_temp_dir, repo_path) = create_test_repo();
     create_commit_history(&repo_path);
@@ -600,6 +631,7 @@ fn test_bisect_start_relative_commits() {
 }
 
 #[test]
+#[serial]
 fn test_bisect_command_direct() {
     use git_x::commands::commit::{BisectAction, BisectCommand};
     use git_x::core::traits::Command;

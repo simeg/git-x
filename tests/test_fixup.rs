@@ -1,3 +1,4 @@
+use serial_test::serial;
 mod common;
 
 use assert_cmd::Command;
@@ -7,6 +8,7 @@ use std::fs;
 use tempfile::TempDir;
 
 #[test]
+#[serial]
 fn test_fixup_run_function_outside_git_repo() {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
 
@@ -19,6 +21,7 @@ fn test_fixup_run_function_outside_git_repo() {
 }
 
 #[test]
+#[serial]
 fn test_fixup_command_direct() {
     use git_x::commands::commit::FixupCommand;
     use git_x::core::traits::Command;
@@ -50,6 +53,7 @@ fn test_fixup_command_direct() {
 }
 
 #[test]
+#[serial]
 fn test_fixup_invalid_commit_hash() {
     let repo = basic_repo();
 
@@ -59,6 +63,7 @@ fn test_fixup_invalid_commit_hash() {
 }
 
 #[test]
+#[serial]
 fn test_fixup_no_staged_changes() {
     let repo = basic_repo();
     let commit_hash = repo.create_commit_with_hash("test.txt", "test content", "Test commit");
@@ -69,6 +74,7 @@ fn test_fixup_no_staged_changes() {
 }
 
 #[test]
+#[serial]
 fn test_fixup_with_staged_changes() {
     let repo = basic_repo();
     let commit_hash = repo.create_commit_with_hash("test.txt", "test content", "Test commit");
@@ -83,6 +89,7 @@ fn test_fixup_with_staged_changes() {
 }
 
 #[test]
+#[serial]
 fn test_fixup_with_rebase_flag() {
     let repo = basic_repo();
     let commit_hash = repo.create_commit_with_hash("test.txt", "test content", "Test commit");
@@ -104,6 +111,7 @@ fn test_fixup_with_rebase_flag() {
 }
 
 #[test]
+#[serial]
 fn test_fixup_command_help() {
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["fixup", "--help"])

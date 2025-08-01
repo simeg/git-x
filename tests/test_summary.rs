@@ -1,3 +1,4 @@
+use serial_test::serial;
 mod common;
 
 use common::repo_with_conventional_commits;
@@ -6,6 +7,7 @@ use git_x::core::traits::Command;
 use predicates::str::contains;
 
 #[test]
+#[serial]
 fn test_git_summary_shows_grouped_commits() {
     let repo = repo_with_conventional_commits();
 
@@ -17,6 +19,7 @@ fn test_git_summary_shows_grouped_commits() {
 }
 
 #[test]
+#[serial]
 fn test_summary_command_direct() {
     let repo = repo_with_conventional_commits();
     let original_dir = std::env::current_dir().unwrap();
@@ -36,6 +39,7 @@ fn test_summary_command_direct() {
 }
 
 #[test]
+#[serial]
 fn test_summary_command_no_since() {
     let repo = common::basic_repo();
     let original_dir = std::env::current_dir().unwrap();

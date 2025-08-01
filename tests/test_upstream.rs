@@ -1,3 +1,4 @@
+use serial_test::serial;
 mod common;
 
 use assert_cmd::Command;
@@ -10,6 +11,7 @@ use tempfile::TempDir;
 // Direct run() function tests for maximum coverage
 
 #[test]
+#[serial]
 fn test_upstream_run_set_function() {
     let repo = basic_repo();
 
@@ -26,6 +28,7 @@ fn test_upstream_run_set_function() {
 }
 
 #[test]
+#[serial]
 fn test_upstream_run_status_function() {
     let repo = basic_repo();
 
@@ -39,6 +42,7 @@ fn test_upstream_run_status_function() {
 }
 
 #[test]
+#[serial]
 fn test_upstream_run_sync_all_function() {
     let repo = basic_repo();
 
@@ -52,6 +56,7 @@ fn test_upstream_run_sync_all_function() {
 }
 
 #[test]
+#[serial]
 fn test_upstream_set_command_help() {
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["upstream", "set", "--help"])
@@ -61,6 +66,7 @@ fn test_upstream_set_command_help() {
 }
 
 #[test]
+#[serial]
 fn test_upstream_status_command_help() {
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["upstream", "status", "--help"])
@@ -72,6 +78,7 @@ fn test_upstream_status_command_help() {
 }
 
 #[test]
+#[serial]
 fn test_upstream_sync_all_command_help() {
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["upstream", "sync-all", "--help"])
@@ -83,6 +90,7 @@ fn test_upstream_sync_all_command_help() {
 }
 
 #[test]
+#[serial]
 fn test_upstream_set_invalid_format() {
     let repo = basic_repo();
 
@@ -106,6 +114,7 @@ fn test_upstream_set_invalid_format() {
 }
 
 #[test]
+#[serial]
 fn test_upstream_status_no_branches() {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
     let repo_path = temp_dir.path().to_path_buf();
@@ -138,6 +147,7 @@ fn test_upstream_status_no_branches() {
 }
 
 #[test]
+#[serial]
 fn test_upstream_command_outside_git_repo() {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
 
@@ -152,6 +162,7 @@ fn test_upstream_command_outside_git_repo() {
 }
 
 #[test]
+#[serial]
 fn test_upstream_main_command_help() {
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["upstream", "--help"])
@@ -163,6 +174,7 @@ fn test_upstream_main_command_help() {
 }
 
 #[test]
+#[serial]
 fn test_upstream_command_direct() {
     let repo = basic_repo();
     let original_dir = std::env::current_dir().unwrap();

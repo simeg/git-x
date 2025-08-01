@@ -989,6 +989,7 @@ impl GitCommand for NewBranchCommand {}
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
 
     /// Helper function to strip ANSI escape codes for testing
     fn strip_ansi_codes(text: &str) -> String {
@@ -1013,6 +1014,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_ansi_stripping() {
         // Test the ANSI stripping helper function
         let formatted_text = Format::bold("main");
@@ -1026,6 +1028,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_info_command_creation() {
         let cmd = InfoCommand::new();
         assert!(!cmd.show_detailed);
@@ -1035,6 +1038,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_command_trait_implementations() {
         let info_cmd = InfoCommand::new();
         assert_eq!(info_cmd.name(), "info");
@@ -1056,6 +1060,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_branch_info_formatting() {
         let formatted = InfoCommand::format_branch_info("main", Some("origin/main"), 2, 1);
         let clean_text = strip_ansi_codes(&formatted);
@@ -1067,6 +1072,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_branch_info_formatting_no_upstream() {
         let formatted = InfoCommand::format_branch_info("feature", None, 0, 0);
         let clean_text = strip_ansi_codes(&formatted);
@@ -1076,6 +1082,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_branch_info_formatting_up_to_date() {
         let formatted = InfoCommand::format_branch_info("main", Some("origin/main"), 0, 0);
         let clean_text = strip_ansi_codes(&formatted);
@@ -1084,6 +1091,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_sync_strategy_auto_selection() {
         // Test the auto strategy logic
         let sync_cmd = SyncCommand::new(SyncStrategy::Auto);

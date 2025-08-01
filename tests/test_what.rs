@@ -1,3 +1,4 @@
+use serial_test::serial;
 mod common;
 
 use common::repo_with_feature_ahead;
@@ -27,6 +28,7 @@ fn strip_ansi_codes(text: &str) -> String {
 }
 
 #[test]
+#[serial]
 fn test_git_what_shows_diff_and_commits() {
     let repo = repo_with_feature_ahead("feature/test", "main");
 
@@ -39,6 +41,7 @@ fn test_git_what_shows_diff_and_commits() {
 }
 
 #[test]
+#[serial]
 fn test_what_command_direct() {
     let repo = repo_with_feature_ahead("feature/test", "main");
     let original_dir = std::env::current_dir().unwrap();

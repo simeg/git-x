@@ -263,6 +263,7 @@ The project uses comprehensive testing across all layers:
 #### Unit Tests
 ```rust
 #[test]
+#[serial]
 fn test_command_execution() {
     let repo = common::basic_repo();
     let original_dir = std::env::current_dir().unwrap();
@@ -280,6 +281,7 @@ fn test_command_execution() {
 #### Integration Tests
 ```rust
 #[test]
+#[serial]
 fn test_cli_integration() {
     let repo = common::basic_repo();
     

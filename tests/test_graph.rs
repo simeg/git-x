@@ -1,14 +1,17 @@
+use serial_test::serial;
 mod common;
 
 use common::basic_repo;
 
 #[test]
+#[serial]
 fn test_git_graph_runs_without_error() {
     let repo = basic_repo();
     repo.run_git_x(&["graph"]).success();
 }
 
 #[test]
+#[serial]
 fn test_git_graph_outputs_graph_symbols() {
     use git_x::commands::analysis::GraphCommand;
     use git_x::core::traits::Command;
@@ -35,6 +38,7 @@ fn test_git_graph_outputs_graph_symbols() {
 // Unit tests now handled by common module tests
 
 #[test]
+#[serial]
 fn test_graph_run_function() {
     use git_x::commands::analysis::GraphCommand;
     use git_x::core::traits::Command;
@@ -55,6 +59,7 @@ fn test_graph_run_function() {
 }
 
 #[test]
+#[serial]
 fn test_graph_run_function_in_non_git_directory() {
     use git_x::commands::analysis::GraphCommand;
     use git_x::core::traits::Command;

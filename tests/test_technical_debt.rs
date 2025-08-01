@@ -1,5 +1,6 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
+use serial_test::serial;
 use std::fs;
 use std::process::Command as StdCommand;
 use tempfile::TempDir;
@@ -10,6 +11,7 @@ use git_x::commands::analysis::TechnicalDebtCommand;
 use git_x::core::traits::Command as CommandTrait;
 
 #[test]
+#[serial]
 fn test_technical_debt_in_non_git_repo() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
     let original_dir = std::env::current_dir().unwrap();
@@ -28,6 +30,7 @@ fn test_technical_debt_in_non_git_repo() {
 }
 
 #[test]
+#[serial]
 fn test_technical_debt_in_empty_git_repo() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
 
@@ -66,6 +69,7 @@ fn test_technical_debt_in_empty_git_repo() {
 }
 
 #[test]
+#[serial]
 fn test_technical_debt_help() {
     let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
     cmd.args(["technical-debt", "--help"])
@@ -77,6 +81,7 @@ fn test_technical_debt_help() {
 }
 
 #[test]
+#[serial]
 fn test_technical_debt_with_files() {
     let repo = common::basic_repo();
 
@@ -112,6 +117,7 @@ fn test_technical_debt_with_files() {
 }
 
 #[test]
+#[serial]
 fn test_technical_debt_command_direct() {
     let repo = common::basic_repo();
     let original_dir = std::env::current_dir().unwrap();
@@ -131,6 +137,7 @@ fn test_technical_debt_command_direct() {
 }
 
 #[test]
+#[serial]
 fn test_technical_debt_command_outside_git_repo() {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
     let original_dir = std::env::current_dir().unwrap();

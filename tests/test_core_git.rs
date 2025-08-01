@@ -1,3 +1,4 @@
+use serial_test::serial;
 // Tests for src/core/git.rs
 //
 // NOTE: These tests are designed to work both inside and outside git repositories.
@@ -14,6 +15,7 @@ fn is_in_git_repo() -> bool {
 // Tests for GitOperations
 
 #[test]
+#[serial]
 fn test_git_operations_run() {
     // Test the basic run command
     let result = GitOperations::run(&["--version"]);
@@ -31,6 +33,7 @@ fn test_git_operations_run() {
 }
 
 #[test]
+#[serial]
 fn test_git_operations_run_status() {
     // Test run_status with a safe command
     let result = GitOperations::run_status(&["--version"]);
@@ -49,6 +52,7 @@ fn test_git_operations_run_status() {
 }
 
 #[test]
+#[serial]
 fn test_git_operations_repo_root() {
     let result = GitOperations::repo_root();
 
@@ -68,6 +72,7 @@ fn test_git_operations_repo_root() {
 }
 
 #[test]
+#[serial]
 fn test_git_operations_current_branch() {
     let result = GitOperations::current_branch();
 
@@ -89,6 +94,7 @@ fn test_git_operations_current_branch() {
 }
 
 #[test]
+#[serial]
 fn test_git_operations_commit_exists() {
     if is_in_git_repo() {
         // Test with HEAD (should exist)
@@ -117,6 +123,7 @@ fn test_git_operations_commit_exists() {
 }
 
 #[test]
+#[serial]
 fn test_git_operations_short_hash() {
     if is_in_git_repo() {
         let result = GitOperations::short_hash("HEAD");
@@ -134,6 +141,7 @@ fn test_git_operations_short_hash() {
 }
 
 #[test]
+#[serial]
 fn test_git_operations_is_working_directory_clean() {
     if is_in_git_repo() {
         let result = GitOperations::is_working_directory_clean();
@@ -152,6 +160,7 @@ fn test_git_operations_is_working_directory_clean() {
 }
 
 #[test]
+#[serial]
 fn test_git_operations_staged_files() {
     if is_in_git_repo() {
         let result = GitOperations::staged_files();
@@ -170,6 +179,7 @@ fn test_git_operations_staged_files() {
 }
 
 #[test]
+#[serial]
 fn test_git_operations_local_branches() {
     if is_in_git_repo() {
         let result = GitOperations::local_branches();
@@ -192,6 +202,7 @@ fn test_git_operations_local_branches() {
 }
 
 #[test]
+#[serial]
 fn test_git_operations_recent_branches() {
     if is_in_git_repo() {
         // Test with limit
@@ -220,6 +231,7 @@ fn test_git_operations_recent_branches() {
 }
 
 #[test]
+#[serial]
 fn test_git_operations_merged_branches() {
     if is_in_git_repo() {
         let result = GitOperations::merged_branches();
@@ -243,6 +255,7 @@ fn test_git_operations_merged_branches() {
 // Tests for BranchOperations
 
 #[test]
+#[serial]
 fn test_branch_operations_exists() {
     if is_in_git_repo() {
         // Test with current branch
@@ -274,6 +287,7 @@ fn test_branch_operations_exists() {
 // Tests for CommitOperations
 
 #[test]
+#[serial]
 fn test_commit_operations_get_message() {
     if is_in_git_repo() {
         let result = CommitOperations::get_message("HEAD");
@@ -289,6 +303,7 @@ fn test_commit_operations_get_message() {
 }
 
 #[test]
+#[serial]
 fn test_commit_operations_get_author() {
     if is_in_git_repo() {
         let result = CommitOperations::get_author("HEAD");
@@ -307,6 +322,7 @@ fn test_commit_operations_get_author() {
 // Tests for RemoteOperations
 
 #[test]
+#[serial]
 fn test_remote_operations_list() {
     if is_in_git_repo() {
         let result = RemoteOperations::list();
@@ -330,6 +346,7 @@ fn test_remote_operations_list() {
 // Tests for error handling
 
 #[test]
+#[serial]
 fn test_git_operations_error_handling() {
     // Test with invalid git command
     let result = GitOperations::run(&["invalid-command-that-does-not-exist"]);
@@ -341,6 +358,7 @@ fn test_git_operations_error_handling() {
 }
 
 #[test]
+#[serial]
 fn test_git_operations_branch_info_optimized() {
     if is_in_git_repo() {
         let result = GitOperations::branch_info_optimized();
@@ -366,6 +384,7 @@ fn test_git_operations_branch_info_optimized() {
 }
 
 #[test]
+#[serial]
 fn test_git_operations_upstream_branch() {
     if is_in_git_repo() {
         let result = GitOperations::upstream_branch();
@@ -383,6 +402,7 @@ fn test_git_operations_upstream_branch() {
 }
 
 #[test]
+#[serial]
 fn test_git_operations_ahead_behind_counts() {
     if is_in_git_repo() {
         let result = GitOperations::ahead_behind_counts();

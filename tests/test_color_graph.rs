@@ -1,9 +1,11 @@
+use serial_test::serial;
 mod common;
 
 use git_x::commands::analysis::ColorGraphCommand;
 use git_x::core::traits::Command;
 
 #[test]
+#[serial]
 fn test_color_graph_run_function() {
     let repo = common::basic_repo();
     let original_dir = std::env::current_dir().unwrap();
@@ -21,6 +23,7 @@ fn test_color_graph_run_function() {
 }
 
 #[test]
+#[serial]
 fn test_color_graph_run_function_in_non_git_directory() {
     let temp_dir = tempfile::tempdir().unwrap();
     let original_dir = std::env::current_dir().unwrap();
