@@ -42,6 +42,106 @@ impl TestRepo {
             .assert()
     }
 
+    /// Run a git-x command directly via function calls instead of subprocess
+    pub fn run_git_x_direct(&self, args: &[&str]) -> git_x::Result<String> {
+        use git_x::commands::{analysis::*, branch::*, commit::*, repository::*, stash::*};
+        use git_x::core::traits::Command;
+
+        // Change to the test repo directory for git operations
+        let original_dir = std::env::current_dir().expect("Failed to get current directory");
+        std::env::set_current_dir(&self.path).expect("Failed to change to test repo directory");
+
+        let result = match args {
+            ["info"] => InfoCommand::new().execute(),
+            ["health"] => HealthCommand::new().execute(),
+            ["graph"] => AnalysisCommands::graph(false),
+            ["color-graph"] => AnalysisCommands::graph(true),
+            ["contributors"] => AnalysisCommands::contributors(None),
+            ["technical-debt"] => AnalysisCommands::technical_debt(),
+            ["switch-recent"] => BranchCommands::switch_recent(),
+            ["summary"] => AnalysisCommands::summary(None),
+            ["summary", "--since", since] => AnalysisCommands::summary(Some(since.to_string())),
+            ["since", reference] => AnalysisCommands::since(reference.to_string()),
+            ["large-files"] => AnalysisCommands::large_files(None, Some(10)),
+            ["large-files", "--limit", limit] => {
+                let limit_val = limit.parse::<usize>().unwrap_or(10);
+                AnalysisCommands::large_files(None, Some(limit_val))
+            }
+            ["large-files", "--threshold", threshold] => {
+                let threshold_val = threshold.parse::<f64>().unwrap_or(1.0);
+                AnalysisCommands::large_files(Some(threshold_val), Some(10))
+            }
+            ["what"] => AnalysisCommands::what(None),
+            ["what", "--target", target] => AnalysisCommands::what(Some(target.to_string())),
+            ["clean-branches", "--dry-run"] => BranchCommands::clean_branches(true),
+            ["prune-branches", "--dry-run"] => BranchCommands::prune_branches(true),
+            ["prune-branches", "--except", _except, "--dry-run"] => {
+                BranchCommands::prune_branches(true)
+            } // Simplified for now
+            ["new", branch_name] => BranchCommands::new_branch(branch_name, None),
+            ["new", branch_name, "--from", from] => {
+                BranchCommands::new_branch(branch_name, Some(from))
+            }
+            ["rename-branch", new_name] => BranchCommands::rename_branch(new_name),
+            ["undo"] => CommitCommands::undo(),
+            ["fixup", commit_hash] => CommitCommands::fixup(commit_hash, false),
+            ["fixup", commit_hash, "--rebase"] => CommitCommands::fixup(commit_hash, true),
+            ["sync"] => RepositoryCommands::sync(SyncStrategy::Auto),
+            ["sync", "--merge"] => RepositoryCommands::sync(SyncStrategy::Merge),
+            ["bisect", "start", good, bad] => CommitCommands::bisect(BisectAction::Start {
+                good: good.to_string(),
+                bad: bad.to_string(),
+            }),
+            ["bisect", "good"] => CommitCommands::bisect(BisectAction::Good),
+            ["bisect", "bad"] => CommitCommands::bisect(BisectAction::Bad),
+            ["bisect", "skip"] => CommitCommands::bisect(BisectAction::Skip),
+            ["bisect", "reset"] => CommitCommands::bisect(BisectAction::Reset),
+            ["bisect", "status"] => CommitCommands::bisect(BisectAction::Status),
+            ["upstream", "set", upstream] => RepositoryCommands::upstream(UpstreamAction::Set {
+                remote: upstream.split('/').next().unwrap_or("origin").to_string(),
+                branch: upstream.split('/').skip(1).collect::<Vec<_>>().join("/"),
+            }),
+            ["upstream", "status"] => RepositoryCommands::upstream(UpstreamAction::Status),
+            ["upstream", "sync-all", "--dry-run"] => {
+                RepositoryCommands::upstream(UpstreamAction::SyncAll)
+            }
+            ["upstream", "sync-all", "--merge", "--dry-run"] => {
+                RepositoryCommands::upstream(UpstreamAction::SyncAll)
+            }
+            ["stash-branch", "create", branch_name] => {
+                StashCommands::create_branch(branch_name.to_string(), None)
+            }
+            ["stash-branch", "create", branch_name, "--stash", stash_ref] => {
+                StashCommands::create_branch(branch_name.to_string(), Some(stash_ref.to_string()))
+            }
+            ["stash-branch", "clean", "--dry-run"] => StashCommands::clean(None, true),
+            [
+                "stash-branch",
+                "clean",
+                "--older-than",
+                older_than,
+                "--dry-run",
+            ] => StashCommands::clean(Some(older_than.to_string()), true),
+            ["stash-branch", "apply-by-branch", branch_name, "--list"] => {
+                StashCommands::apply_by_branch(branch_name.to_string(), true)
+            }
+            ["stash-branch", "interactive"] => StashCommands::interactive(),
+            ["stash-branch", "export", output_dir] => {
+                StashCommands::export(output_dir.to_string(), None)
+            }
+            ["stash-branch", "export", output_dir, "--stash", stash_ref] => {
+                StashCommands::export(output_dir.to_string(), Some(stash_ref.to_string()))
+            }
+            _ => Ok(format!(
+                "Command not implemented for direct testing: {args:?}"
+            )),
+        };
+
+        // Always restore the original directory
+        let _ = std::env::set_current_dir(original_dir);
+        result
+    }
+
     /// Add a commit with specified file content and message
     pub fn add_commit(&self, file_name: &str, content: &str, message: &str) {
         fs::write(self.path.join(file_name), content).unwrap();

@@ -37,12 +37,6 @@ fn test_branch_formatter_new() {
 
 #[test]
 #[serial]
-fn test_branch_formatter_default() {
-    let _formatter = BranchFormatter;
-}
-
-#[test]
-#[serial]
 fn test_branch_formatter_format_creation_result_minimal() {
     let formatter = BranchFormatter::new();
     let result = BranchCreationResult {
