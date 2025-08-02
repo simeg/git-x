@@ -42,6 +42,7 @@ It wraps common Git actions in muscle-memory-friendly, no-brainer commands — p
         - [`sync`](#sync) - Sync with upstream
 - [Git Integration: How `git-x` Just Works™](#git-integration-how-git-x-just-works)
 - [What's Under the Hood?](#whats-under-the-hood)
+- [Performance](#performance)
 - [Command Transparency](#command-transparency)
 - [Roadmap Ideas](#roadmap-ideas)
 - [Built With](#built-with)
@@ -862,6 +863,47 @@ git log --graph --oneline --all -20
 - **Zero dependencies** — Single binary, no runtime requirements
 - **Cross-platform** — Works on macOS, Linux, Windows
 - **Memory safe** — No crashes, no memory leaks
+
+---
+
+## Performance
+
+`git-x` is designed with speed and efficiency at its core. Every command has been optimized for performance through parallel execution and smart concurrency.
+
+### Parallel & Async Architecture
+
+All major analysis commands leverage:
+- **Multi-threading** for CPU-intensive operations (file processing, data aggregation)
+- **Async execution** for I/O-bound Git operations (fetching, status checks)
+- **Concurrent Git calls** to minimize total execution time
+
+### Under the Hood
+
+```rust
+// Example: Parallel Git operations
+let (repo_info, branch_status, working_dir) = tokio::try_join!(
+    AsyncGitOperations::repo_root(),
+    AsyncGitOperations::branch_info_parallel(),
+    AsyncGitOperations::is_working_directory_clean(),
+)?;
+```
+
+```rust
+// Example: Multi-threaded file processing
+let large_files: Vec<LargeFile> = files
+    .par_iter()
+    .filter_map(|file| analyze_file_size(file))
+    .collect();
+```
+
+### Performance Philosophy
+
+- **Algorithmic optimization first** — Fix O(n²) problems before adding concurrency
+- **Smart parallelization** — I/O operations run async, CPU work runs multi-threaded
+- **Minimal overhead** — Native Git subprocess calls, no unnecessary abstractions
+- **Responsive feedback** — Show progress and timing information
+
+The result? Commands that feel instant, even on large repositories.
 
 ---
 
