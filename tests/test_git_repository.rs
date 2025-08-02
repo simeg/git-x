@@ -1,11 +1,6 @@
 use git_x::domain::{GitRepository, HealthLevel, RepositoryInfo};
 use serial_test::serial;
 
-// Helper function to get a repository instance
-fn get_test_repository() -> Result<GitRepository, git_x::GitXError> {
-    GitRepository::open()
-}
-
 #[test]
 #[serial]
 fn test_git_repository_open() {
@@ -566,4 +561,11 @@ fn test_git_repository_integration() {
         let root_path = repository.root_path();
         assert!(!root_path.is_empty());
     }
+}
+
+// Helper functions
+
+// Helper function to get a repository instance
+fn get_test_repository() -> Result<GitRepository, git_x::GitXError> {
+    GitRepository::open()
 }

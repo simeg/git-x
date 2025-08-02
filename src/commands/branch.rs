@@ -118,6 +118,111 @@ impl Command for CleanBranchesCommand {
 }
 
 impl GitCommand for CleanBranchesCommand {}
+
+/// Async parallel version of CleanBranchesCommand
+pub struct AsyncCleanBranchesCommand {
+    dry_run: bool,
+}
+
+impl AsyncCleanBranchesCommand {
+    pub fn new(dry_run: bool) -> Self {
+        Self { dry_run }
+    }
+
+    pub async fn execute_parallel(&self) -> Result<String> {
+        use crate::core::{git::AsyncGitOperations, safety::Safety};
+
+        // Get merged branches and current branch in parallel
+        let (merged_branches_result, current_branch_result) = tokio::try_join!(
+            AsyncGitOperations::merged_branches(),
+            AsyncGitOperations::current_branch()
+        )?;
+
+        let branches_to_delete: Vec<String> = merged_branches_result
+            .into_iter()
+            .filter(|branch| branch != &current_branch_result)
+            .filter(|branch| !Self::is_protected_branch(branch))
+            .collect();
+
+        if branches_to_delete.is_empty() {
+            return Ok("No merged branches to delete.".to_string());
+        }
+
+        if self.dry_run {
+            let mut result = format!(
+                "🧪 (dry run) {} branches would be deleted:\n",
+                branches_to_delete.len()
+            );
+            for branch in &branches_to_delete {
+                result.push_str(&format!("(dry run) Would delete: {branch}\n"));
+            }
+            return Ok(result);
+        }
+
+        // Confirm deletion
+        let details = format!(
+            "This will delete {} merged branches: {}",
+            branches_to_delete.len(),
+            branches_to_delete.join(", ")
+        );
+
+        if !Safety::confirm_destructive_operation("Clean merged branches", &details)? {
+            return Ok("Operation cancelled by user.".to_string());
+        }
+
+        // Delete branches in parallel (but carefully)
+        let delete_tasks = branches_to_delete
+            .iter()
+            .map(|branch| self.delete_branch_async(branch.clone()));
+
+        let results = futures::future::join_all(delete_tasks).await;
+
+        let mut deleted = Vec::new();
+        let mut failed = Vec::new();
+
+        for (branch, result) in branches_to_delete.iter().zip(results.iter()) {
+            match result {
+                Ok(true) => deleted.push(branch.clone()),
+                Ok(false) | Err(_) => failed.push(branch.clone()),
+            }
+        }
+
+        let mut result = String::new();
+
+        if !deleted.is_empty() {
+            result.push_str(&format!("✅ Deleted {} branches:\n", deleted.len()));
+            for branch in deleted {
+                result.push_str(&format!("   🗑️  {branch}\n"));
+            }
+        }
+
+        if !failed.is_empty() {
+            result.push_str(&format!("❌ Failed to delete {} branches:\n", failed.len()));
+            for branch in failed {
+                result.push_str(&format!("   ⚠️  {branch}\n"));
+            }
+        }
+
+        Ok(result)
+    }
+
+    async fn delete_branch_async(&self, branch: String) -> Result<bool> {
+        use crate::core::git::AsyncGitOperations;
+
+        match AsyncGitOperations::run_status(&["branch", "-d", &branch]).await {
+            Ok(_) => Ok(true),
+            Err(_) => Ok(false),
+        }
+    }
+
+    fn get_protected_branches() -> Vec<&'static str> {
+        vec!["main", "master", "develop"]
+    }
+
+    fn is_protected_branch(branch: &str) -> bool {
+        Self::get_protected_branches().contains(&branch)
+    }
+}
 impl DryRunnable for CleanBranchesCommand {
     fn execute_dry_run(&self) -> Result<String> {
         CleanBranchesCommand::new(true).execute()

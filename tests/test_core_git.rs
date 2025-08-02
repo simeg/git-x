@@ -7,11 +7,6 @@ use serial_test::serial;
 
 use git_x::core::git::{BranchOperations, CommitOperations, GitOperations, RemoteOperations};
 
-// Helper function to check if we're in a git repository
-fn is_in_git_repo() -> bool {
-    GitOperations::repo_root().is_ok()
-}
-
 // Tests for GitOperations
 
 #[test]
@@ -417,4 +412,11 @@ fn test_git_operations_ahead_behind_counts() {
             }
         }
     }
+}
+
+// Helper functions
+
+// Helper function to check if we're in a git repository
+fn is_in_git_repo() -> bool {
+    GitOperations::repo_root().is_ok()
 }

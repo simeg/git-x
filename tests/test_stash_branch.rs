@@ -7,65 +7,6 @@ use std::fs;
 use std::path::PathBuf;
 use tempfile::TempDir;
 
-// Helper to check if we should run potentially destructive tests
-fn should_run_destructive_tests() -> bool {
-    // Only run destructive tests in CI or when explicitly enabled
-    std::env::var("CI").is_ok()
-        || std::env::var("GITHUB_ACTIONS").is_ok()
-        || std::env::var("ENABLE_DESTRUCTIVE_TESTS").is_ok()
-}
-
-fn create_test_repo() -> (TempDir, PathBuf, String) {
-    let temp_dir = TempDir::new().expect("Failed to create temp directory");
-    let repo_path = temp_dir.path().to_path_buf();
-
-    // Initialize git repo
-    Command::new("git")
-        .args(["init"])
-        .current_dir(&repo_path)
-        .assert()
-        .success();
-
-    // Configure git
-    Command::new("git")
-        .args(["config", "user.name", "Test User"])
-        .current_dir(&repo_path)
-        .assert()
-        .success();
-
-    Command::new("git")
-        .args(["config", "user.email", "test@example.com"])
-        .current_dir(&repo_path)
-        .assert()
-        .success();
-
-    // Create initial commit
-    fs::write(repo_path.join("README.md"), "Initial commit").expect("Failed to write file");
-    Command::new("git")
-        .args(["add", "README.md"])
-        .current_dir(&repo_path)
-        .assert()
-        .success();
-
-    Command::new("git")
-        .args(["commit", "-m", "Initial commit"])
-        .current_dir(&repo_path)
-        .assert()
-        .success();
-
-    // Get the actual default branch name
-    let branch_output = Command::new("git")
-        .args(["branch", "--show-current"])
-        .current_dir(&repo_path)
-        .output()
-        .expect("Failed to get current branch");
-    let default_branch = String::from_utf8_lossy(&branch_output.stdout)
-        .trim()
-        .to_string();
-
-    (temp_dir, repo_path, default_branch)
-}
-
 #[test]
 #[serial]
 fn test_stash_export_functionality() {
@@ -133,21 +74,6 @@ fn test_stash_interactive_command_exists() {
 
     // Restore original directory
     let _ = std::env::set_current_dir(&original_dir);
-}
-
-fn create_stash(repo_path: &PathBuf, filename: &str, content: &str, message: &str) {
-    fs::write(repo_path.join(filename), content).expect("Failed to write file");
-    Command::new("git")
-        .args(["add", filename])
-        .current_dir(repo_path)
-        .assert()
-        .success();
-
-    Command::new("git")
-        .args(["stash", "push", "-m", message])
-        .current_dir(repo_path)
-        .assert()
-        .success();
 }
 
 #[test]
@@ -914,4 +840,80 @@ fn test_stash_command_apply_by_branch_no_stashes() {
 
     // Restore original directory
     let _ = std::env::set_current_dir(&original_dir);
+}
+
+// Helper functions
+
+// Helper to check if we should run potentially destructive tests
+fn should_run_destructive_tests() -> bool {
+    // Only run destructive tests in CI or when explicitly enabled
+    std::env::var("CI").is_ok()
+        || std::env::var("GITHUB_ACTIONS").is_ok()
+        || std::env::var("ENABLE_DESTRUCTIVE_TESTS").is_ok()
+}
+
+fn create_test_repo() -> (TempDir, PathBuf, String) {
+    let temp_dir = TempDir::new().expect("Failed to create temp directory");
+    let repo_path = temp_dir.path().to_path_buf();
+
+    // Initialize git repo
+    Command::new("git")
+        .args(["init"])
+        .current_dir(&repo_path)
+        .assert()
+        .success();
+
+    // Configure git
+    Command::new("git")
+        .args(["config", "user.name", "Test User"])
+        .current_dir(&repo_path)
+        .assert()
+        .success();
+
+    Command::new("git")
+        .args(["config", "user.email", "test@example.com"])
+        .current_dir(&repo_path)
+        .assert()
+        .success();
+
+    // Create initial commit
+    fs::write(repo_path.join("README.md"), "Initial commit").expect("Failed to write file");
+    Command::new("git")
+        .args(["add", "README.md"])
+        .current_dir(&repo_path)
+        .assert()
+        .success();
+
+    Command::new("git")
+        .args(["commit", "-m", "Initial commit"])
+        .current_dir(&repo_path)
+        .assert()
+        .success();
+
+    // Get the actual default branch name
+    let branch_output = Command::new("git")
+        .args(["branch", "--show-current"])
+        .current_dir(&repo_path)
+        .output()
+        .expect("Failed to get current branch");
+    let default_branch = String::from_utf8_lossy(&branch_output.stdout)
+        .trim()
+        .to_string();
+
+    (temp_dir, repo_path, default_branch)
+}
+
+fn create_stash(repo_path: &PathBuf, filename: &str, content: &str, message: &str) {
+    fs::write(repo_path.join(filename), content).expect("Failed to write file");
+    Command::new("git")
+        .args(["add", filename])
+        .current_dir(repo_path)
+        .assert()
+        .success();
+
+    Command::new("git")
+        .args(["stash", "push", "-m", message])
+        .current_dir(repo_path)
+        .assert()
+        .success();
 }

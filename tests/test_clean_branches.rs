@@ -112,7 +112,7 @@ fn test_clean_branches_actually_deletes_branch() {
     // Run the command (no dry run)
     repo.run_git_x(&["clean-branches"])
         .success()
-        .stdout(contains("🧹 Deleted 1 merged branches:"));
+        .stdout(contains("✅ Deleted 1 branches:"));
 
     // Confirm branch was deleted
     let output_after = StdCommand::new("git")

@@ -1,4 +1,5 @@
 use crate::Result;
+use crate::core::git::AsyncGitOperations;
 use crate::core::traits::*;
 use crate::core::{git::*, output::*};
 use chrono::{NaiveDate, Utc};

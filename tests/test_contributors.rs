@@ -1,4 +1,5 @@
 use assert_cmd::Command;
+use git_x::core::traits::Command as CommandTrait;
 use predicates::prelude::*;
 use serial_test::serial;
 use std::fs;
@@ -11,7 +12,6 @@ mod common;
 #[serial]
 fn test_contributors_in_non_git_repo() {
     use git_x::commands::analysis::ContributorsCommand;
-    use git_x::core::traits::Command as CommandTrait;
 
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
     let original_dir = std::env::current_dir().unwrap();
@@ -368,12 +368,11 @@ fn test_contributors_ranking_icons() {
         .stdout(predicate::str::contains("🥉")); // Bronze medal for third
 }
 
-use git_x::commands::analysis::ContributorsCommand;
-use git_x::core::traits::Command as CommandTrait;
-
 #[test]
 #[serial]
 fn test_contributors_command_direct() {
+    use git_x::commands::analysis::ContributorsCommand;
+
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
     let original_dir = std::env::current_dir().unwrap();
 

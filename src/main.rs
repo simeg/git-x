@@ -4,14 +4,19 @@ use clap::Parser;
 use git_x::cli::{Cli, Commands};
 
 use git_x::commands::analysis::{
-    ColorGraphCommand, ContributorsCommand, GraphCommand, SinceCommand as NewSinceCommand,
-    SummaryCommand, WhatCommand,
+    AsyncSummaryCommand, ColorGraphCommand, GraphCommand, ParallelContributorsCommand,
+    ParallelLargeFilesCommand, ParallelTechnicalDebtCommand, SinceCommand as NewSinceCommand,
+    WhatCommand,
 };
+use git_x::commands::branch::AsyncCleanBranchesCommand;
 use git_x::commands::commit::{BisectCommand, FixupCommand, UndoCommand as NewUndoCommand};
-use git_x::commands::repository::{HealthCommand, InfoCommand, NewBranchCommand};
+use git_x::commands::repository::{
+    AsyncHealthCommand, AsyncInfoCommand, AsyncUpstreamCommand, NewBranchCommand,
+};
 use git_x::core::traits::Command as NewCommand;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let cli = Cli::parse();
 
     match cli.command {
@@ -34,8 +39,8 @@ fn main() {
         }
 
         Commands::Info => {
-            let cmd = InfoCommand::new();
-            match NewCommand::execute(&cmd) {
+            let cmd = AsyncInfoCommand::new();
+            match cmd.execute_parallel().await {
                 Ok(output) => println!("{output}"),
                 Err(e) => eprintln!("❌ {e}"),
             }
@@ -57,8 +62,8 @@ fn main() {
         }
 
         Commands::Health => {
-            let cmd = HealthCommand::new();
-            match NewCommand::execute(&cmd) {
+            let cmd = AsyncHealthCommand::new();
+            match cmd.execute_parallel().await {
                 Ok(output) => println!("{output}"),
                 Err(e) => eprintln!("❌ {e}"),
             }
@@ -81,9 +86,8 @@ fn main() {
         }
 
         Commands::CleanBranches { dry_run } => {
-            use git_x::commands::branch::CleanBranchesCommand;
-            let cmd = CleanBranchesCommand::new(dry_run);
-            match NewCommand::execute(&cmd) {
+            let cmd = AsyncCleanBranchesCommand::new(dry_run);
+            match cmd.execute_parallel().await {
                 Ok(output) => println!("{output}"),
                 Err(e) => eprintln!("❌ {e}"),
             }
@@ -98,8 +102,8 @@ fn main() {
         }
 
         Commands::Summary { since } => {
-            let cmd = SummaryCommand::new(since);
-            match NewCommand::execute(&cmd) {
+            let cmd = AsyncSummaryCommand::new(since);
+            match cmd.execute_parallel().await {
                 Ok(output) => println!("{output}"),
                 Err(e) => eprintln!("❌ {e}"),
             }
@@ -128,9 +132,8 @@ fn main() {
         }
 
         Commands::LargeFiles { limit, threshold } => {
-            use git_x::commands::analysis::LargeFilesCommand;
-            let cmd = LargeFilesCommand::new(threshold, Some(limit));
-            match NewCommand::execute(&cmd) {
+            let cmd = ParallelLargeFilesCommand::new(threshold, Some(limit));
+            match cmd.execute_parallel() {
                 Ok(output) => println!("{output}"),
                 Err(e) => eprintln!("❌ {e}"),
             }
@@ -190,7 +193,6 @@ fn main() {
         }
 
         Commands::Upstream { action } => {
-            use git_x::commands::repository::UpstreamCommand;
             // Convert CLI action to repository action
             let repo_action = match action {
                 git_x::cli::UpstreamAction::Set { upstream } => {
@@ -216,8 +218,9 @@ fn main() {
                     merge: _,
                 } => git_x::commands::repository::UpstreamAction::SyncAll,
             };
-            let cmd = UpstreamCommand::new(repo_action);
-            match NewCommand::execute(&cmd) {
+
+            let cmd = AsyncUpstreamCommand::new(repo_action);
+            match cmd.execute_parallel().await {
                 Ok(output) => println!("{output}"),
                 Err(e) => eprintln!("❌ {e}"),
             }
@@ -233,17 +236,16 @@ fn main() {
         }
 
         Commands::Contributors => {
-            let cmd = ContributorsCommand::new(None);
-            match NewCommand::execute(&cmd) {
+            let cmd = ParallelContributorsCommand::new(None);
+            match cmd.execute_parallel() {
                 Ok(output) => println!("{output}"),
                 Err(e) => eprintln!("❌ {e}"),
             }
         }
 
         Commands::TechnicalDebt => {
-            use git_x::commands::analysis::TechnicalDebtCommand;
-            let cmd = TechnicalDebtCommand::new();
-            match NewCommand::execute(&cmd) {
+            let cmd = ParallelTechnicalDebtCommand::new();
+            match cmd.execute_parallel() {
                 Ok(output) => println!("{output}"),
                 Err(e) => eprintln!("❌ {e}"),
             }

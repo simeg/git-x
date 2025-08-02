@@ -5,20 +5,6 @@ use git_x::domain::{
     RecentBranchesRequest, RenameBranchRequest, SwitchBranchRequest,
 };
 
-// Helper function to get a manager instance (tests GitRepository::open)
-fn get_test_manager() -> Result<BranchManager, git_x::GitXError> {
-    let repository = GitRepository::open()?;
-    Ok(BranchManager::new(repository))
-}
-
-// Helper to check if we should run potentially destructive tests
-fn should_run_destructive_tests() -> bool {
-    // Only run destructive tests in CI or when explicitly enabled
-    std::env::var("CI").is_ok()
-        || std::env::var("GITHUB_ACTIONS").is_ok()
-        || std::env::var("ENABLE_DESTRUCTIVE_TESTS").is_ok()
-}
-
 #[test]
 #[serial]
 fn test_branch_manager_new() {
@@ -608,4 +594,20 @@ fn test_branch_manager_rename_branch_request_validation() {
             );
         }
     }
+}
+
+// Helper functions
+
+// Helper function to get a manager instance (tests GitRepository::open)
+fn get_test_manager() -> Result<BranchManager, git_x::GitXError> {
+    let repository = GitRepository::open()?;
+    Ok(BranchManager::new(repository))
+}
+
+// Helper to check if we should run potentially destructive tests
+fn should_run_destructive_tests() -> bool {
+    // Only run destructive tests in CI or when explicitly enabled
+    std::env::var("CI").is_ok()
+        || std::env::var("GITHUB_ACTIONS").is_ok()
+        || std::env::var("ENABLE_DESTRUCTIVE_TESTS").is_ok()
 }
