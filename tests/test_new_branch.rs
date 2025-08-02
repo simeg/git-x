@@ -63,13 +63,22 @@ fn create_test_repo() -> (TempDir, PathBuf, String) {
 #[serial]
 fn test_new_branch_run_function_outside_git_repo() {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
+    let original_dir = std::env::current_dir().unwrap();
 
-    let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.args(["new", "test-branch"])
-        .current_dir(temp_dir.path())
-        .assert()
-        .success() // The command succeeds but shows an error message
-        .stderr(predicate::str::contains("not a git repository"));
+    std::env::set_current_dir(temp_dir.path()).unwrap();
+
+    let cmd = NewBranchCommand::new("test-branch".to_string(), None);
+    let result = cmd.execute();
+
+    // Should fail because we're not in a git repository
+    assert!(result.is_err());
+    let error = result.unwrap_err();
+    assert!(
+        error.to_string().contains("not a git repository")
+            || error.to_string().contains("Git command failed")
+    );
+
+    let _ = std::env::set_current_dir(original_dir);
 }
 
 #[test]

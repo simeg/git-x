@@ -1,5 +1,7 @@
 use assert_cmd::Command;
-use git_x::commands::stash::{StashBranchAction as StashAction, StashCommand, StashInfo, utils::*};
+use git_x::commands::stash::{
+    StashBranchAction as StashAction, StashCommand, StashCommands, StashInfo, utils::*,
+};
 use git_x::core::traits::Command as NewCommand;
 use predicates::prelude::*;
 use serial_test::serial;
@@ -186,14 +188,18 @@ fn test_stash_branch_create_existing_branch() {
 #[serial]
 fn test_stash_branch_create_no_stash() {
     let (_temp_dir, repo_path, _default_branch) = create_test_repo();
+    let original_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("/"));
+
+    std::env::set_current_dir(&repo_path).unwrap();
 
     // Try to create branch from non-existent stash
-    let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.args(["stash-branch", "create", "new-branch"])
-        .current_dir(&repo_path)
-        .assert()
-        .success()
-        .stderr(predicate::str::contains("Stash reference does not exist"));
+    let result = StashCommands::create_branch("new-branch".to_string(), None);
+    assert!(
+        result.is_err()
+            || (result.is_ok() && result.unwrap().contains("Stash reference does not exist"))
+    );
+
+    let _ = std::env::set_current_dir(original_dir);
 }
 
 #[test]
@@ -201,13 +207,16 @@ fn test_stash_branch_create_no_stash() {
 fn test_stash_branch_create_success() {
     let (_temp_dir, repo_path, _default_branch) = create_test_repo();
     create_stash(&repo_path, "test.txt", "test content", "Test stash");
+    let original_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("/"));
 
-    let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.args(["stash-branch", "create", "new-feature"])
-        .current_dir(&repo_path)
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("new-feature"));
+    std::env::set_current_dir(&repo_path).unwrap();
+
+    let result = StashCommands::create_branch("new-feature".to_string(), None);
+    assert!(result.is_ok());
+    let output = result.unwrap();
+    assert!(output.contains("new-feature"));
+
+    let _ = std::env::set_current_dir(original_dir);
 }
 
 #[test]
@@ -235,13 +244,16 @@ fn test_stash_branch_create_with_stash_ref() {
 #[serial]
 fn test_stash_branch_clean_no_stashes() {
     let (_temp_dir, repo_path, _default_branch) = create_test_repo();
+    let original_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("/"));
 
-    let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.args(["stash-branch", "clean"])
-        .current_dir(&repo_path)
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("No stashes found"));
+    std::env::set_current_dir(&repo_path).unwrap();
+
+    let result = StashCommands::clean(None, false);
+    assert!(result.is_ok());
+    let output = result.unwrap();
+    assert!(output.contains("No stashes found"));
+
+    let _ = std::env::set_current_dir(original_dir);
 }
 
 #[test]

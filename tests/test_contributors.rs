@@ -295,14 +295,18 @@ fn test_contributors_displays_email_and_dates() {
         .output()
         .expect("Failed to commit");
 
-    let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.current_dir(temp_dir.path())
-        .arg("contributors")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("test@example.com"))
-        .stdout(predicate::str::contains("📧")) // Email icon
-        .stdout(predicate::str::contains("📅")); // Date icon
+    let original_dir = std::env::current_dir().unwrap();
+    std::env::set_current_dir(temp_dir.path()).unwrap();
+
+    use git_x::commands::analysis::ContributorsCommand;
+    let cmd = ContributorsCommand::new(None);
+    let result = cmd.execute().expect("Contributors command should succeed");
+
+    assert!(result.contains("test@example.com"));
+    assert!(result.contains("📧")); // Email icon
+    assert!(result.contains("📅")); // Date icon
+
+    let _ = std::env::set_current_dir(original_dir);
 }
 
 #[test]
@@ -358,14 +362,18 @@ fn test_contributors_ranking_icons() {
         }
     }
 
-    let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.current_dir(temp_dir.path())
-        .arg("contributors")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("🥇")) // Gold medal for top contributor
-        .stdout(predicate::str::contains("🥈")) // Silver medal for second
-        .stdout(predicate::str::contains("🥉")); // Bronze medal for third
+    let original_dir = std::env::current_dir().unwrap();
+    std::env::set_current_dir(temp_dir.path()).unwrap();
+
+    use git_x::commands::analysis::ContributorsCommand;
+    let cmd = ContributorsCommand::new(None);
+    let result = cmd.execute().expect("Contributors command should succeed");
+
+    assert!(result.contains("🥇")); // Gold medal for top contributor
+    assert!(result.contains("🥈")); // Silver medal for second
+    assert!(result.contains("🥉")); // Bronze medal for third
+
+    let _ = std::env::set_current_dir(original_dir);
 }
 
 #[test]

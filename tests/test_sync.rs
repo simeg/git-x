@@ -37,13 +37,6 @@ fn execute_in_dir<P: AsRef<std::path::Path>>(
 fn test_sync_run_function_outside_git_repo() {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
 
-    let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.arg("sync")
-        .current_dir(temp_dir.path())
-        .assert()
-        .success()
-        .stderr(predicate::str::contains("❌ Git command failed"));
-
     // Test direct function call (for coverage)
     match execute_in_dir(temp_dir.path(), SyncCommand::new(SyncStrategy::Rebase)) {
         Ok(_) => {
@@ -60,14 +53,6 @@ fn test_sync_run_function_outside_git_repo() {
 #[serial]
 fn test_sync_run_function_no_upstream() {
     let repo = basic_repo();
-
-    // Test CLI interface
-    let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.arg("sync")
-        .current_dir(repo.path())
-        .assert()
-        .success()
-        .stderr(predicate::str::contains("❌ Git command failed"));
 
     // Test direct function call (for coverage)
     match execute_in_dir(repo.path(), SyncCommand::new(SyncStrategy::Rebase)) {

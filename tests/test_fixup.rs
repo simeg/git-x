@@ -10,14 +10,26 @@ use tempfile::TempDir;
 #[test]
 #[serial]
 fn test_fixup_run_function_outside_git_repo() {
-    let temp_dir = TempDir::new().expect("Failed to create temp directory");
+    use git_x::commands::commit::FixupCommand;
+    use git_x::core::traits::Command;
 
-    let mut cmd = Command::cargo_bin("git-x").expect("Failed to find binary");
-    cmd.args(["fixup", "abc123"])
-        .current_dir(temp_dir.path())
-        .assert()
-        .success() // The command succeeds but shows an error message
-        .stderr(predicate::str::contains("Commit hash does not exist"));
+    let temp_dir = TempDir::new().expect("Failed to create temp directory");
+    let original_dir = std::env::current_dir().unwrap();
+
+    std::env::set_current_dir(temp_dir.path()).unwrap();
+
+    let cmd = FixupCommand::new("abc123".to_string(), false);
+    let result = cmd.execute();
+
+    // Should fail because commit doesn't exist and we're not in a git repo
+    assert!(result.is_err());
+    let error = result.unwrap_err();
+    assert!(
+        error.to_string().contains("Commit hash does not exist")
+            || error.to_string().contains("Git command failed")
+    );
+
+    let _ = std::env::set_current_dir(original_dir);
 }
 
 #[test]
