@@ -1,4 +1,5 @@
 use clap::Parser;
+use clap_complete::Shell;
 
 #[derive(Parser)]
 pub struct Cli {
@@ -109,6 +110,11 @@ pub enum Commands {
     Bisect {
         #[clap(subcommand)]
         action: BisectAction,
+    },
+    #[clap(about = "Generate shell completion scripts")]
+    Completion {
+        #[clap(help = "Shell to generate completion for")]
+        shell: Shell,
     },
 }
 

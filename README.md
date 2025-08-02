@@ -78,13 +78,50 @@ Most Git tools either:
 cargo install git-x
 ```
 
-
 Or clone and run manually:
 
 ```shell
 git clone https://github.com/simeg/git-x
 cd git-x
 cargo install --path .
+```
+
+### Shell Completion
+
+`git-x` supports tab completion for all shells. Generate completion scripts using:
+
+```shell
+# For bash (add to ~/.bashrc or ~/.bash_profile)
+git x completion bash >> ~/.bashrc
+
+# For zsh (add to ~/.zshrc)
+git x completion zsh >> ~/.zshrc
+
+# For fish (save to fish completions directory)
+git x completion fish > ~/.config/fish/completions/git-x.fish
+
+# For PowerShell (add to your profile)
+git x completion powershell >> $PROFILE
+
+# For elvish (add to rc.elv)
+git x completion elvish >> ~/.config/elvish/rc.elv
+```
+
+After adding completion scripts, restart your shell or source the configuration files.
+
+**Note:** If tab completion doesn't work immediately, you may need to clear completion caches:
+
+```shell
+# For zsh
+rm ~/.zcompdump*
+
+# For bash
+hash -r
+
+# For fish
+fish -c "complete --erase"
+
+# Then restart your shell
 ```
 
 ---

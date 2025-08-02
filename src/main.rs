@@ -1,6 +1,6 @@
 mod cli;
 
-use clap::Parser;
+use clap::{CommandFactory, Parser};
 use git_x::cli::{Cli, Commands};
 
 use git_x::commands::analysis::{
@@ -270,6 +270,43 @@ async fn main() {
             match NewCommand::execute(&cmd) {
                 Ok(output) => println!("{output}"),
                 Err(e) => eprintln!("❌ {e}"),
+            }
+        }
+
+        Commands::Completion { shell } => {
+            use clap_complete::generate;
+            use std::io;
+
+            fn print_completions<G: clap_complete::Generator>(
+                generator: G,
+                cmd: &mut clap::Command,
+            ) {
+                generate(
+                    generator,
+                    cmd,
+                    cmd.get_name().to_string(),
+                    &mut io::stdout(),
+                );
+            }
+
+            let mut cmd = Cli::command();
+            match shell {
+                clap_complete::Shell::Bash => {
+                    print_completions(clap_complete::shells::Bash, &mut cmd)
+                }
+                clap_complete::Shell::Zsh => {
+                    print_completions(clap_complete::shells::Zsh, &mut cmd)
+                }
+                clap_complete::Shell::Fish => {
+                    print_completions(clap_complete::shells::Fish, &mut cmd)
+                }
+                clap_complete::Shell::PowerShell => {
+                    print_completions(clap_complete::shells::PowerShell, &mut cmd)
+                }
+                clap_complete::Shell::Elvish => {
+                    print_completions(clap_complete::shells::Elvish, &mut cmd)
+                }
+                _ => eprintln!("❌ Unsupported shell: {shell:?}"),
             }
         }
     }
