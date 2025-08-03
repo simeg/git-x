@@ -66,12 +66,8 @@ analyze-size: build
 	@echo "=== Top Functions ==="
 	$(CARGO) bloat --release -n 10
 
-## Publish optimized binary to crates.io
-publish-optimized: build test
-	$(CARGO) publish
-
 ## Publish to crates.io (standard)
-publish:
+publish: build test
 	$(CARGO) publish
 
 ## Show this help message
