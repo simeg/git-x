@@ -88,37 +88,38 @@ cargo install --path .
 
 ### Shell Completion
 
-`git-x` supports tab completion for all shells. Generate completion scripts using:
+`git-x` supports tab completion for all shells.
+
+#### Installation
+
+Install completion files to standard directories:
 
 ```shell
-# For bash (add to ~/.bashrc or ~/.bash_profile)
-git x completion bash >> ~/.bashrc
-
-# For zsh (add to ~/.zshrc)
-git x completion zsh >> ~/.zshrc
-
-# For fish (save to fish completions directory)
-git x completion fish > ~/.config/fish/completions/git-x.fish
-
-# For PowerShell (add to your profile)
-git x completion powershell >> $PROFILE
-
-# For elvish (add to rc.elv)
-git x completion elvish >> ~/.config/elvish/rc.elv
+# Install for your shell
+git x completion-install bash
+git x completion-install zsh
+git x completion-install fish
 ```
 
-After adding completion scripts, restart your shell or source the configuration files.
+This will:
+- Install completion files to the standard system directories
+- Provide shell-specific setup instructions
+- Create directories if they don't exist
 
-**Note:** If tab completion doesn't work immediately, you may need to clear completion caches:
+**Follow the printed instructions after installation to enable completions in your shell configuration.**
+
+#### Troubleshooting
+
+If tab completion doesn't work immediately, you may need to:
 
 ```shell
-# For zsh
+# For zsh - clear completion cache
 rm ~/.zcompdump*
 
-# For bash
+# For bash - refresh command hash
 hash -r
 
-# For fish
+# For fish - clear completion cache
 fish -c "complete --erase"
 
 # Then restart your shell

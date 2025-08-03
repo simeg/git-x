@@ -111,9 +111,12 @@ pub enum Commands {
         #[clap(subcommand)]
         action: BisectAction,
     },
-    #[clap(about = "Generate shell completion scripts")]
-    Completion {
-        #[clap(help = "Shell to generate completion for")]
+    #[clap(
+        name = "completion-install",
+        about = "Install shell completion to standard location"
+    )]
+    CompletionInstall {
+        #[clap(help = "Shell to install completion for")]
         shell: Shell,
     },
 }

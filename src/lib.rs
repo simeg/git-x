@@ -25,6 +25,7 @@ pub enum GitXError {
     Parse(String),
     Dialog(String),
     Join(String),
+    Other(String),
 }
 
 impl std::fmt::Display for GitXError {
@@ -35,6 +36,7 @@ impl std::fmt::Display for GitXError {
             GitXError::Parse(msg) => write!(f, "Parse error: {msg}"),
             GitXError::Dialog(msg) => write!(f, "Dialog error: {msg}"),
             GitXError::Join(msg) => write!(f, "Join error: {msg}"),
+            GitXError::Other(msg) => write!(f, "{msg}"),
         }
     }
 }
@@ -46,7 +48,8 @@ impl std::error::Error for GitXError {
             GitXError::GitCommand(_)
             | GitXError::Parse(_)
             | GitXError::Dialog(_)
-            | GitXError::Join(_) => None,
+            | GitXError::Join(_)
+            | GitXError::Other(_) => None,
         }
     }
 }
