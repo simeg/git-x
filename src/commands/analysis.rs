@@ -186,13 +186,13 @@ impl SummaryCommand {
         let mut authors = Vec::new();
 
         for line in output.lines() {
-            if let Some((count_str, name)) = line.trim().split_once('\t') {
-                if let Ok(count) = count_str.trim().parse::<u32>() {
-                    authors.push(AuthorStats {
-                        name: name.to_string(),
-                        commits: count,
-                    });
-                }
+            if let Some((count_str, name)) = line.trim().split_once('\t')
+                && let Ok(count) = count_str.trim().parse::<u32>()
+            {
+                authors.push(AuthorStats {
+                    name: name.to_string(),
+                    commits: count,
+                });
             }
         }
 
@@ -456,13 +456,13 @@ impl AsyncSummaryCommand {
         let mut authors = Vec::new();
 
         for line in output.lines() {
-            if let Some((count_str, name)) = line.trim().split_once('\t') {
-                if let Ok(count) = count_str.trim().parse::<u32>() {
-                    authors.push(AuthorStats {
-                        name: name.to_string(),
-                        commits: count,
-                    });
-                }
+            if let Some((count_str, name)) = line.trim().split_once('\t')
+                && let Ok(count) = count_str.trim().parse::<u32>()
+            {
+                authors.push(AuthorStats {
+                    name: name.to_string(),
+                    commits: count,
+                });
             }
         }
 

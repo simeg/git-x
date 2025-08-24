@@ -250,10 +250,10 @@ impl SafetyBuilder {
             Ok(result) => Ok(result),
             Err(e) => {
                 // Try to restore from checkpoint on failure
-                if self.checkpoint_needed {
-                    if let Err(restore_err) = Safety::restore_checkpoint() {
-                        eprintln!("Warning: Failed to restore checkpoint: {restore_err}");
-                    }
+                if self.checkpoint_needed
+                    && let Err(restore_err) = Safety::restore_checkpoint()
+                {
+                    eprintln!("Warning: Failed to restore checkpoint: {restore_err}");
                 }
                 Err(e)
             }

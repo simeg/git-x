@@ -314,30 +314,30 @@ fn test_branch_cli_handler_creation_outside_git_repo() {
     let current_dir = std::env::current_dir().unwrap();
 
     // Try to change to a non-git directory (system temp)
-    if let Ok(temp_dir) = std::env::temp_dir().canonicalize() {
-        if std::env::set_current_dir(&temp_dir).is_ok() {
-            // We're now in a temp directory (likely not a git repo)
-            let result = BranchCliHandler::new();
+    if let Ok(temp_dir) = std::env::temp_dir().canonicalize()
+        && std::env::set_current_dir(&temp_dir).is_ok()
+    {
+        // We're now in a temp directory (likely not a git repo)
+        let result = BranchCliHandler::new();
 
-            // This should fail since we're not in a git repo
-            match result {
-                Ok(_) => {
-                    // Unexpectedly succeeded (temp dir might be in a git repo)
-                }
-                Err(err) => {
-                    // Expected to fail
-                    let error_msg = err.to_string();
-                    assert!(
-                        error_msg.contains("not a git repository")
-                            || error_msg.contains("Git command failed")
-                            || error_msg.contains("IO error")
-                    );
-                }
+        // This should fail since we're not in a git repo
+        match result {
+            Ok(_) => {
+                // Unexpectedly succeeded (temp dir might be in a git repo)
             }
-
-            // Restore original directory
-            let _ = std::env::set_current_dir(current_dir);
+            Err(err) => {
+                // Expected to fail
+                let error_msg = err.to_string();
+                assert!(
+                    error_msg.contains("not a git repository")
+                        || error_msg.contains("Git command failed")
+                        || error_msg.contains("IO error")
+                );
+            }
         }
+
+        // Restore original directory
+        let _ = std::env::set_current_dir(current_dir);
     }
 }
 
@@ -347,27 +347,27 @@ fn test_repository_cli_handler_creation_outside_git_repo() {
     // Test behavior when not in a git repository
     let current_dir = std::env::current_dir().unwrap();
 
-    if let Ok(temp_dir) = std::env::temp_dir().canonicalize() {
-        if std::env::set_current_dir(&temp_dir).is_ok() {
-            let result = RepositoryCliHandler::new();
+    if let Ok(temp_dir) = std::env::temp_dir().canonicalize()
+        && std::env::set_current_dir(&temp_dir).is_ok()
+    {
+        let result = RepositoryCliHandler::new();
 
-            match result {
-                Ok(_) => {
-                    // Unexpectedly succeeded
-                }
-                Err(err) => {
-                    // Expected to fail
-                    let error_msg = err.to_string();
-                    assert!(
-                        error_msg.contains("not a git repository")
-                            || error_msg.contains("Git command failed")
-                            || error_msg.contains("IO error")
-                    );
-                }
+        match result {
+            Ok(_) => {
+                // Unexpectedly succeeded
             }
-
-            let _ = std::env::set_current_dir(current_dir);
+            Err(err) => {
+                // Expected to fail
+                let error_msg = err.to_string();
+                assert!(
+                    error_msg.contains("not a git repository")
+                        || error_msg.contains("Git command failed")
+                        || error_msg.contains("IO error")
+                );
+            }
         }
+
+        let _ = std::env::set_current_dir(current_dir);
     }
 }
 

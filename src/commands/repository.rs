@@ -500,12 +500,12 @@ impl HealthCommand {
         }
 
         // Check for stale branches
-        if let Ok(stale_count) = Self::count_stale_branches() {
-            if stale_count > 0 {
-                issues.push(format!(
-                    "⚠️  {stale_count} potentially stale branches found"
-                ));
-            }
+        if let Ok(stale_count) = Self::count_stale_branches()
+            && stale_count > 0
+        {
+            issues.push(format!(
+                "⚠️  {stale_count} potentially stale branches found"
+            ));
         }
 
         issues
@@ -560,14 +560,14 @@ impl HealthCommand {
         // Use git count-objects for repository size
         if let Ok(output) = GitOperations::run(&["count-objects", "-vH"]) {
             for line in output.lines() {
-                if line.starts_with("size-pack") {
-                    if let Some(size_str) = line.split_whitespace().nth(1) {
-                        // Parse size and check if it's concerning
-                        if size_str.ends_with("GiB") || size_str.contains("1024") {
-                            issues.push(format!(
-                                "⚠️  Repository size: {size_str} (consider cleanup)"
-                            ));
-                        }
+                if line.starts_with("size-pack")
+                    && let Some(size_str) = line.split_whitespace().nth(1)
+                {
+                    // Parse size and check if it's concerning
+                    if size_str.ends_with("GiB") || size_str.contains("1024") {
+                        issues.push(format!(
+                            "⚠️  Repository size: {size_str} (consider cleanup)"
+                        ));
                     }
                 }
             }
@@ -714,29 +714,29 @@ impl HealthCommand {
                 files_checked += 1;
 
                 // Use filesystem metadata instead of external commands
-                if let Ok(metadata) = std::fs::metadata(file) {
-                    if metadata.is_file() {
-                        let size = metadata.len();
+                if let Ok(metadata) = std::fs::metadata(file)
+                    && metadata.is_file()
+                {
+                    let size = metadata.len();
 
-                        // Simple heuristic: consider it binary if it's over 1MB or has certain extensions
-                        let is_likely_binary = size > 1_000_000
-                            || file.ends_with(".exe")
-                            || file.ends_with(".dll")
-                            || file.ends_with(".so")
-                            || file.ends_with(".dylib")
-                            || file.ends_with(".bin")
-                            || file.ends_with(".jpg")
-                            || file.ends_with(".png")
-                            || file.ends_with(".gif")
-                            || file.ends_with(".pdf")
-                            || file.ends_with(".zip");
+                    // Simple heuristic: consider it binary if it's over 1MB or has certain extensions
+                    let is_likely_binary = size > 1_000_000
+                        || file.ends_with(".exe")
+                        || file.ends_with(".dll")
+                        || file.ends_with(".so")
+                        || file.ends_with(".dylib")
+                        || file.ends_with(".bin")
+                        || file.ends_with(".jpg")
+                        || file.ends_with(".png")
+                        || file.ends_with(".gif")
+                        || file.ends_with(".pdf")
+                        || file.ends_with(".zip");
 
-                        if is_likely_binary {
-                            binary_count += 1;
+                    if is_likely_binary {
+                        binary_count += 1;
 
-                            if size > 1_000_000 {
-                                large_files.push((file.to_string(), size));
-                            }
+                        if size > 1_000_000 {
+                            large_files.push((file.to_string(), size));
                         }
                     }
                 }

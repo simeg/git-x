@@ -128,12 +128,12 @@ impl Validate {
             )));
         }
 
-        if let Some(max_val) = max {
-            if value > max_val {
-                return Err(GitXError::Parse(format!(
-                    "{field_name} must be <= {max_val}, got {value}"
-                )));
-            }
+        if let Some(max_val) = max
+            && value > max_val
+        {
+            return Err(GitXError::Parse(format!(
+                "{field_name} must be <= {max_val}, got {value}"
+            )));
         }
 
         Ok(())

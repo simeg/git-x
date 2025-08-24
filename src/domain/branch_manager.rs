@@ -20,12 +20,12 @@ impl BranchManager {
         // Validate inputs
         Validate::branch_name(&request.name)?;
 
-        if let Some(ref base) = request.from {
-            if !GitOperations::commit_exists(base)? {
-                return Err(GitXError::GitCommand(format!(
-                    "Base branch or ref '{base}' does not exist"
-                )));
-            }
+        if let Some(ref base) = request.from
+            && !GitOperations::commit_exists(base)?
+        {
+            return Err(GitXError::GitCommand(format!(
+                "Base branch or ref '{base}' does not exist"
+            )));
         }
 
         // Check if branch already exists

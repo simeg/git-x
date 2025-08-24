@@ -410,10 +410,10 @@ impl StashCommand {
     fn get_stash_info(&self, stash_ref: &str) -> Result<StashInfo> {
         let output = GitOperations::run(&["stash", "list", "--pretty=format:%gd|%s", stash_ref])?;
 
-        if let Some(line) = output.lines().next() {
-            if let Some(stash) = self.parse_stash_line_with_branch(line) {
-                return Ok(stash);
-            }
+        if let Some(line) = output.lines().next()
+            && let Some(stash) = self.parse_stash_line_with_branch(line)
+        {
+            return Ok(stash);
         }
 
         Err(GitXError::GitCommand(
