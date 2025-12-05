@@ -23,6 +23,9 @@ You add the validation and now need to incorporate it into the original auth com
 # Make your changes
 git add login-form.js
 
+# Find the relevant commit hash
+git log --oneline
+
 # Create fixup commit manually
 git commit --fixup=abc123f
 
@@ -57,6 +60,10 @@ You write the tests and want them to be part of the original feature commit, not
 **Traditional Git Approach:**
 ```shell
 git add cart.test.js
+
+# Find the relevant commit hash
+git log --oneline
+
 git commit --fixup=5a7b8c9
 git rebase -i --autosquash 5a7b8c9^
 # Navigate the interactive rebase interface
